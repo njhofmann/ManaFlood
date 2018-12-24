@@ -1,0 +1,108 @@
+CREATE TABLE ManaType (
+  id INTEGER PRIMARY KEY,
+  symbol TEXT NOT NULL
+);
+
+CREATE TABLE SuperType (
+  id INTEGER PRIMARY KEY,
+  type TEXT NOT NULL
+);
+
+CREATE TABLE Subtype (
+  id INTEGER PRIMARY KEY,
+  type TEXT NOT NULL
+);
+
+CREATE TABLE Rarity (
+  id INTEGER PRIMARY KEY,
+  rarity TEXT NOT NULL
+);
+
+CREATE TABLE Expansion (
+  id INTEGER PRIMARY KEY,
+  expansion TEXT NOT NULL,
+  abbrv TEXT NOT NULL
+ );
+
+CREATE TABLE Card (
+  name TEXT PRIMARY KEY,
+  card_text TEXT NOT NULL,
+  cmc INTEGER NOT NULL
+ );
+
+CREATE TABLE CreatureStats (
+  card_name TEXT PRIMARY KEY,
+  power INTEGER,
+  toughness INTEGER,
+  FOREIGN KEY(card_name) REFERENCES Card(name)
+ );
+
+CREATE TABLE PlaneswalkerStats (
+  card_name TEXT PRIMARY KEY,
+  loyalty INTEGER,
+  FOREIGN KEY(card_name) REFERENCES Card(name)
+);
+
+CREATE TABLE CardMana (
+  card_name TEXT,
+  mana_type INTEGER,
+  quantity INTEGER,
+  PRIMARY KEY(card_name, mana_type),
+  FOREIGN KEY(card_name) REFERENCES Card(name),
+  FOREIGN KEY(mana_type) REFERENCES ManaType(id)
+);
+
+CREATE TABLE CardExpansion (
+  card_name TEXT,
+  expansion INTEGER,
+  rarity INTEGER,
+  PRIMARY KEY(card_name, expansion),
+  FOREIGN KEY(card_name) REFERENCES Card(name),
+  FOREIGN KEY(expansion) REFERENCES Expansion(id),
+  FOREIGN KEY(rarity) REFERENCES RARITY(id)
+);
+
+CREATE TABLE CardSupertype (
+  card_name TEXT,
+  supertype INTEGER,
+  PRIMARY KEY(card_name, supertype),
+  FOREIGN KEY(card_name) REFERENCES Card(name),
+  FOREIGN KEY(supertype) REFERENCES Supertype(id)
+);
+
+CREATE TABLE CardSubtype (
+  card_name TEXT,
+  subtype INTEGER,
+  PRIMARY KEY(card_name, subtype),
+  FOREIGN KEY(card_name) REFERENCES Card(name),
+  FOREIGN KEY(subtype) REFERENCES Subtype(id)
+);
+
+CREATE TABLE Deck (
+  id INTEGER PRIMARY KEY,
+  name TEXT,
+  desp TEXT
+);
+
+CREATE TABLE DeckInstance (
+  id INTEGER PRIMARY KEY,
+  deck_id INTEGER,
+  creation DATETIME,
+  FOREIGN KEY(deck_id) REFERENCES DECK(id)
+);
+
+CREATE TABLE Quantity (
+  deck_id INTEGER,
+  card_name TEXT,
+  quantity INTEGER,
+  PRIMARY KEY(deck_id, card_name),
+  FOREIGN KEY(deck_id) REFERENCES DECK(id)
+);
+
+CREATE TABLE Category (
+  deck_id INTEGER,
+  card_name TEXT,
+  category TEXT,
+  PRIMARY KEY(deck_id, card_name),
+  FOREIGN KEY(deck_id) REFERENCES DECK(id)
+);
