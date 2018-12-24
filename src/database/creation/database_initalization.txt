@@ -1,35 +1,111 @@
+--Types of mana / mana costs, read as "___ mana".
+--Intended to be an enum
 CREATE TABLE ManaType (
   id INTEGER PRIMARY KEY,
-  symbol TEXT NOT NULL
+  symbol TEXT NOT NULL,
+  type TEXT NOT NULL
 );
 
-CREATE TABLE SuperType (
+INSERT INTO ManaType (symbol, type) VALUES
+("{G}", "Green"),
+("{U}", "Blue"),
+("{R}", "Red"),
+("{W}", "White"),
+("{B}", "Black"),
+("{X}", "Generic"),
+("{G/P}", "Phyrexian Green"),
+("{U/P}", "Phyrexian Blue"),
+("{R/P}", "Phyrexian Red"),
+("{W/P}", "Phyrexian White"),
+("{B/P}", "Phyrexian Black"),
+("{W/U}", "White Blue"),
+("{W/B}", "White Black"),
+("{B/R}", "Black Red"),
+("{B/G}", "Black Green"),
+("{U/B}", "Blue Black"),
+("{U/R}", "Blue Red"),
+("{R/G}", "Red Green"),
+("{R/W}", "Red White"),
+("{G/W}", "Green White"),
+("{G/U}", "Green Blue"),
+("{2/W}", "2 Generic or White"),
+("{2/B}", "2 Generic or Black"),
+("{2/R}", "2 Generic or Red"),
+("{2/U}", "2 Generic or Blue"),
+("{2/G}", "2 Generic or Green");
+
+--Characteristics appearing before card types and subtypes
+--Intended to be an enum
+CREATE TABLE Supertype (
+  id INTEGER PRIMARY KEY,
+  type TEXT
+);
+
+INSERT INTO Supertype (type) VALUES
+("basic"),
+("elite"),
+("host"),
+("legendary"),
+("ongoing"),
+("snow"),
+("world");
+
+--Main possible types of a card
+--Intended to be an enum
+CREATE TABLE Type (
   id INTEGER PRIMARY KEY,
   type TEXT NOT NULL
 );
 
-CREATE TABLE Subtype (
-  id INTEGER PRIMARY KEY,
-  type TEXT NOT NULL
-);
+INSERT INTO Type (type) VALUES
+("artifact"),
+("conspiracy"),
+("creature"),
+("enchantment"),
+("instant"),
+("land"),
+("phenomenon"),
+("plane"),
+("planeswalker"),
+("scheme"),
+("sorcery"),
+("tribal"),
+("vanguard");
 
+--Different rarities of a card
+--Intended to be an enum
 CREATE TABLE Rarity (
   id INTEGER PRIMARY KEY,
   rarity TEXT NOT NULL
 );
 
-CREATE TABLE Expansion (
+INSERT INTO Rarity(rarity) VALUES
+("mythic rare"),
+("rare"),
+("uncommon"),
+("common");
+
+--Different subtypes of a card
+CREATE TABLE Subtype (
   id INTEGER PRIMARY KEY,
+  type TEXT NOT NULL
+);
+
+--All the different expansions that have been released in MTG's history
+CREATE TABLE Expansion (
+  abbrv TEXT PRIMARY KEY,
   expansion TEXT NOT NULL,
-  abbrv TEXT NOT NULL
+  block TEXT NOT NULL
  );
 
+--An individual card
 CREATE TABLE Card (
   name TEXT PRIMARY KEY,
   card_text TEXT NOT NULL,
   cmc INTEGER NOT NULL
  );
 
+--If a card is of creature type, or can gain creature type (Vehicles), store
 CREATE TABLE CreatureStats (
   card_name TEXT PRIMARY KEY,
   power INTEGER,
@@ -37,12 +113,14 @@ CREATE TABLE CreatureStats (
   FOREIGN KEY(card_name) REFERENCES Card(name)
  );
 
+--Different planeswalker loyalties
 CREATE TABLE PlaneswalkerStats (
   card_name TEXT PRIMARY KEY,
   loyalty INTEGER,
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
+--
 CREATE TABLE CardMana (
   card_name TEXT,
   mana_type INTEGER,
@@ -54,11 +132,11 @@ CREATE TABLE CardMana (
 
 CREATE TABLE CardExpansion (
   card_name TEXT,
-  expansion INTEGER,
+  expansion TEXT,
   rarity INTEGER,
   PRIMARY KEY(card_name, expansion),
   FOREIGN KEY(card_name) REFERENCES Card(name),
-  FOREIGN KEY(expansion) REFERENCES Expansion(id),
+  FOREIGN KEY(expansion) REFERENCES Expansion(abbrv),
   FOREIGN KEY(rarity) REFERENCES RARITY(id)
 );
 
@@ -68,6 +146,14 @@ CREATE TABLE CardSupertype (
   PRIMARY KEY(card_name, supertype),
   FOREIGN KEY(card_name) REFERENCES Card(name),
   FOREIGN KEY(supertype) REFERENCES Supertype(id)
+);
+
+CREATE TABLE CardType (
+  card_name TEXT,
+  type INTEGER,
+  PRIMARY KEY(card_name, type),
+  FOREIGN KEY(card_name) REFERENCES Card(name),
+  FOREIGN KEY(type) REFERENCES Type(id)
 );
 
 CREATE TABLE CardSubtype (
