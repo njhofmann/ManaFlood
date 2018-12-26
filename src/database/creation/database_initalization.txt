@@ -41,14 +41,13 @@ CREATE TABLE Supertype (
   type TEXT
 );
 
-INSERT INTO Supertype (type) VALUES
-("basic"),
-("elite"),
-("host"),
-("legendary"),
-("ongoing"),
-("snow"),
-("world");
+INSERT INTO Supertype (id, type) VALUES
+(1, "basic"),
+(2, "elite"),
+(3, "legendary"),
+(4, "ongoing"),
+(5, "snow"),
+(6, "world");
 
 --Main possible types of a card
 --Intended to be an enum
@@ -57,20 +56,20 @@ CREATE TABLE Type (
   type TEXT NOT NULL
 );
 
-INSERT INTO Type (type) VALUES
-("artifact"),
-("conspiracy"),
-("creature"),
-("enchantment"),
-("instant"),
-("land"),
-("phenomenon"),
-("plane"),
-("planeswalker"),
-("scheme"),
-("sorcery"),
-("tribal"),
-("vanguard");
+INSERT INTO Type (id, type) VALUES
+(1, "artifact"),
+(2, "conspiracy"),
+(3, "creature"),
+(4, "enchantment"),
+(5, "instant"),
+(6, "land"),
+(7, "phenomenon"),
+(8, "plane"),
+(9, "planeswalker"),
+(10, "scheme"),
+(11, "sorcery"),
+(12, "tribal"),
+(13, "vanguard");
 
 --Different rarities of a card
 --Intended to be an enum
@@ -79,11 +78,11 @@ CREATE TABLE Rarity (
   rarity TEXT NOT NULL
 );
 
-INSERT INTO Rarity(rarity) VALUES
-("mythic rare"),
-("rare"),
-("uncommon"),
-("common");
+INSERT INTO Rarity(id, rarity) VALUES
+(1, "mythic rare"),
+(2, "rare"),
+(3, "uncommon"),
+(4, "common");
 
 --Different subtypes of a card
 CREATE TABLE Subtype (
@@ -105,11 +104,12 @@ CREATE TABLE Card (
   cmc INTEGER NOT NULL
  );
 
---If a card is of creature type, or can gain creature type (Vehicles), store
+--If a card is of creature type, or can gain creature type (Vehicles), stores its power and toughness
+--Not all p/t's are integers, some may be non-integer symbols like X or *
 CREATE TABLE CreatureStats (
   card_name TEXT PRIMARY KEY,
-  power INTEGER,
-  toughness INTEGER,
+  power STRING,
+  toughness STRING,
   FOREIGN KEY(card_name) REFERENCES Card(name)
  );
 
@@ -134,6 +134,8 @@ CREATE TABLE CardExpansion (
   card_name TEXT,
   expansion TEXT,
   rarity INTEGER,
+  flavor_text TEXT,
+  artist TEXT,
   PRIMARY KEY(card_name, expansion),
   FOREIGN KEY(card_name) REFERENCES Card(name),
   FOREIGN KEY(expansion) REFERENCES Expansion(abbrv),

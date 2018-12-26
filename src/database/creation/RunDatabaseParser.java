@@ -12,8 +12,11 @@ public class RunDatabaseParser {
   public static void main(String[] arg) {
     DatabaseParser parser = new DefaultDatabaseParser();
 
-    Path pathToJSON = Paths.get("resources\\GRN.json").toAbsolutePath();
+    parser.connect();
 
+    Path pathToJSON = Paths.get("resources\\GRN.json").toAbsolutePath();
     parser.parse(pathToJSON);
+
+    parser.disconnect();
   }
 }
