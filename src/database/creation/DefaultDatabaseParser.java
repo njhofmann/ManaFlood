@@ -1,18 +1,18 @@
 package database.creation;
 
-import database.creation.database_enums.Rarity;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Set;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -110,17 +110,17 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     boolean cardAdded = true;
     try {
       // See if card has already been added to the CDDB
-      String selectStatement = "SELECT name FROM Card WHERE name=?";
+      String selectStatement = "SELECT name FROM Card WHERE name = ?";
       PreparedStatement preparedStatement = connection.prepareStatement(selectStatement);
       preparedStatement.setString(1, cardName);
       ResultSet result = preparedStatement.executeQuery();
-
+      int numOfRows = result.getRow();
       // Resulting table should either have 0 or 1 rows, if 0 then card hasn't been added, if 1 then
       // card has been added
-      if (!result.first()) {
+      System.out.println(cardName + numOfRows);
+      if (!result.next()) {
         cardAdded = false;
       }
-      // See if version of this card from set currently being read has already been added
     }
     catch (SQLException e) {
       System.out.print(e);
@@ -129,11 +129,19 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
 
     // Card hasn't been added, add card, super types, types, and subtypes, mana types,
     if (!cardAdded) {
+      PreparedStatement preparedStatement;
       try {
-        String insertStatement = "INSERT INTO Card(name,text,cmc) VALUES (?,?,?)";
-        PreparedStatement preparedStatement = connection.prepareStatement(insertStatement);
-        String cardText = card.getString("text");
-        int cardCMC = (int)card.getFloat("convertedManaCost");
+
+        // Add card
+        String insertCard = "INSERT INTO Card(name,card_text,cmc) VALUES (?,?,?)";
+        preparedStatement = connection.prepareStatement(insertCard);
+
+        String cardText = "";
+        if (card.has("text")) {
+          cardText = card.getString("text");
+        }
+
+        int cardCMC = (int) card.getFloat("convertedManaCost");
         preparedStatement.setString(1, cardName);
         preparedStatement.setString(2, cardText);
         preparedStatement.setInt(3, cardCMC);
@@ -143,24 +151,169 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
         System.out.println(e);
         throw new IllegalStateException("Failed to add card " + cardName + "!");
       }
+
+      try {
+        // Add supertypes
+        String[] supertypes = JSONArrayToStringArray(card.getJSONArray("supertypes"));
+        for (String supertype : supertypes) {
+          String insertSupertype = "INSERT INTO CardSupertype(card_name,supertype) VALUES (?,?)";
+          preparedStatement = connection.prepareStatement(insertSupertype);
+          preparedStatement.setString(1, cardName);
+          preparedStatement.setString(2, supertype.toLowerCase());
+          preparedStatement.executeUpdate();
+        }
+      }
+      catch (SQLException e) {
+        System.out.println(e);
+        throw new IllegalStateException("Failed to add supertypes for " + cardName + "!");
+      }
+
+      if (card.has("types")) {
+        try {
+          //Add types
+          String[] types = JSONArrayToStringArray(card.getJSONArray("types"));
+          for (String type : types) {
+            String insertType = "INSERT INTO CardType(card_name,type) VALUES (?,?)";
+            preparedStatement = connection.prepareStatement(insertType);
+            preparedStatement.setString(1, cardName);
+            preparedStatement.setString(2, type.toLowerCase());
+            preparedStatement.executeUpdate();
+          }
+        }
+        catch (SQLException e) {
+          System.out.println(e);
+          throw new IllegalStateException("Failed to add types for " + cardName + "!");
+        }
+      }
+
+      if (card.has("subtypes")) {
+        try {
+          // Add subtypes
+          String[] subtypes = JSONArrayToStringArray(card.getJSONArray("subtypes"));
+          for (String subtype : subtypes) {
+            String insertSubtype = "INSERT INTO CardSubtype(card_name,subtype) VALUES (?,?)";
+            preparedStatement = connection.prepareStatement(insertSubtype);
+            preparedStatement.setString(1, cardName);
+            preparedStatement.setString(2, subtype.toLowerCase());
+            preparedStatement.executeUpdate();
+          }
+        }
+        catch (SQLException e) {
+          System.out.println(e);
+          throw new IllegalStateException("Failed to add subtypes for " + cardName + "!");
+        }
+      }
+
+      if (card.has("manaCost"))
+      try {
+        // Add mana costs
+        String[] manaCosts = card.getString("manaCost").split("(?=\\{)");
+        HashMap<String, Integer> uniqueManaCosts = new HashMap<>();
+        for (String manaCost : manaCosts) {
+          if (uniqueManaCosts.containsKey(manaCost)) {
+            uniqueManaCosts.replace(manaCost, uniqueManaCosts.get(manaCost) + 1);
+          } else {
+            uniqueManaCosts.put(manaCost, 1);
+          }
+        }
+        for (String manaCost : uniqueManaCosts.keySet()) {
+          String manaCostInsert = "INSERT INTO CardMana(card_name,mana_type,quantity) VALUES (?,?,?)";
+          preparedStatement = connection.prepareStatement(manaCostInsert);
+          preparedStatement.setString(1, cardName);
+          preparedStatement.setString(2, manaCost);
+          preparedStatement.setInt(3, uniqueManaCosts.get(manaCost));
+          preparedStatement.executeUpdate();
+        }
+      }
+      catch (SQLException e) {
+        System.out.println(e);
+        throw new IllegalStateException("Failed to add mana costs for " + cardName + "!");
+      }
+
+      try {
+        // If creature or vehicle, add p/t - if planeswalker add loyalty
+        if (card.has("power") && card.has("toughness")) {
+          String ptInsert = "INSERT INTO PTStats(card_name,power,toughness) VALUES (?,?,?)";
+          preparedStatement = connection.prepareStatement(ptInsert);
+          preparedStatement.setString(1, cardName);
+          preparedStatement.setString(2, card.getString("power"));
+          preparedStatement.setString(3, card.getString("toughness"));
+          preparedStatement.executeUpdate();
+        } else if (card.has("loyalty")) {
+          String planeswalkerInsert = "INSERT INTO PlaneswalkerStats(card_name,loyalty) VALUES (?,?)";
+          preparedStatement = connection.prepareStatement(planeswalkerInsert);
+          preparedStatement.setString(1, cardName);
+          preparedStatement.setString(2, card.getString("loyalty"));
+          preparedStatement.executeUpdate();
+        }
+      }
+      catch (SQLException e) {
+        System.out.println(e);
+        throw new IllegalStateException("Failed to add extra stats for  " + cardName + "!");
+      }
     }
 
 
     // Card is for sure in database, add relevant set
     try {
-      String insertStatement
-          = "INSERT INTO CardExpansion(name,expansion,rarity,flavor_text,artist) VALUES (?,?,?,?,?)";
-      PreparedStatement preparedStatement = connection.prepareStatement(insertStatement);
+      // See if card has already been added to the CDDB
+      String selectStatement = "SELECT card_name, expansion FROM CardExpansion "
+          + "WHERE card_name = ?"
+          + "AND expansion = ?";
+      PreparedStatement preparedStatement = connection.prepareStatement(selectStatement);
       preparedStatement.setString(1, cardName);
       preparedStatement.setString(2, shorthandSetName);
-      preparedStatement.setInt(3, Rarity.matches(card.getString("rarity")).getDatabaseID());
-      preparedStatement.setString(4, card.getString("flavorText"));
-      preparedStatement.setString(5, card.getString("artist"));
-      preparedStatement.executeUpdate();
+      ResultSet result = preparedStatement.executeQuery();
+      int numOfRows = result.getRow();
+      // Resulting table should either have 0 or 1 rows, if 0 then card hasn't been added, if 1 then
+      // card has been added
+      System.out.println(cardName + numOfRows);
+      if (!result.next()) {
+        String insertStatement
+            = "INSERT INTO CardExpansion(card_name,expansion,rarity,flavor_text,artist) VALUES (?,?,?,?,?)";
+        preparedStatement = connection.prepareStatement(insertStatement);
+        preparedStatement.setString(1, cardName);
+        preparedStatement.setString(2, shorthandSetName);
+        preparedStatement.setString(3, card.getString("rarity"));
+
+        String flavorText = "";
+        if (card.has("flavorText")) {
+          flavorText = card.getString("flavorText");
+        }
+
+        preparedStatement.setString(4, flavorText);
+        preparedStatement.setString(5, card.getString("artist"));
+        preparedStatement.executeUpdate();
+      }
     }
     catch (SQLException e) {
       System.out.println(e);
       throw new IllegalStateException("Failed to add card " + cardName + " and set info!");
+    }
+  }
+
+  /**
+   * Given a JSONArray of Strings, converts it to an array of Strings.
+   * @param toConvert JSONArray of Strings to convert
+   * @return resulting String array
+   * @throws IllegalArgumentException if given JSONArray is null, or isn't entirely made of Strings
+   */
+  private String[] JSONArrayToStringArray(JSONArray toConvert) throws IllegalArgumentException {
+    if (toConvert == null) {
+      throw new IllegalArgumentException("Give JSONArray can't be null!");
+    }
+
+    try {
+      int length = toConvert.length();
+      String[] toReturn = new String[length];
+      for (int i = 0; i < length; i += 1) {
+        toReturn[i] = toConvert.getString(i);
+      }
+      return toReturn;
+    }
+    catch (JSONException e) {
+      System.out.println(e);
+      throw new IllegalArgumentException("Given JSON array isn't entirely made of Strings!");
     }
   }
 

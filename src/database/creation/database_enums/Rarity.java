@@ -4,23 +4,17 @@ package database.creation.database_enums;
  * Represents the different types of rarities on a MTG card, with IDs as reflected in the CDDB.
  */
 public enum Rarity {
-  MYTHIC_RARE(1, "mythic rare"),
-  RARE(2, "rare"),
-  UNCOMMON(3, "uncommon"),
-  COMMON(4, "common");
-
-  /**
-   * Primary key ID of this supertype in the CDDB.
-   */
-  private final int databaseID;
+  MYTHIC_RARE("mythic rare"),
+  RARE("rare"),
+  UNCOMMON("uncommon"),
+  COMMON("common");
 
   /**
    * String version of this rarity in the CDDB.
    */
   private final String type;
 
-  Rarity(final int databaseID, final String type) {
-    this.databaseID = databaseID;
+  Rarity(final String type) {
     this.type = type;
   }
 
@@ -51,13 +45,5 @@ public enum Rarity {
    */
   public String getType() {
     return type;
-  }
-
-  /**
-   * Returns the primary key ID of this {@link Rarity} in the CDDB.
-   * @return primary key ID in of this type
-   */
-  public int getDatabaseID() {
-    return databaseID;
   }
 }

@@ -2,24 +2,19 @@ package database.creation.database_enums;
 
 public enum Type {
 
-  ARTIFACT(1, "artifact"),
-  CONSPIRACY(2, "conspiracy"),
-  CREATURE(3, "creature"),
-  ENCHANTMENT(4, "enchantment"),
-  INSTANT(5, "instant"),
-  LAND(6, "land"),
-  PHENOMENON(7, "phenomenon"),
-  PLANE(8, "plane"),
-  PLANESWALKER(9, "planeswalker"),
-  SCHEME(10, "scheme"),
-  SORCERY(11, "sorcery"),
-  TRIBAL(12, "tribal"),
-  VANGUARD(13, "vanguard");
-
-  /**
-   * Primary key ID of this type in the CDDB.
-   */
-  private final int databaseID;
+  ARTIFACT("artifact"),
+  CONSPIRACY("conspiracy"),
+  CREATURE("creature"),
+  ENCHANTMENT("enchantment"),
+  INSTANT("instant"),
+  LAND("land"),
+  PHENOMENON("phenomenon"),
+  PLANE("plane"),
+  PLANESWALKER("planeswalker"),
+  SCHEME("scheme"),
+  SORCERY("sorcery"),
+  TRIBAL("tribal"),
+  VANGUARD("vanguard");
 
   /**
    * String version of this type in the CDDB.
@@ -28,11 +23,9 @@ public enum Type {
 
   /**
    *
-   * @param databaseID
    * @param type
    */
-  Type(final int databaseID, final String type) {
-    this.databaseID = databaseID;
+  Type(final String type) {
     this.type = type;
   }
 
@@ -63,13 +56,5 @@ public enum Type {
    */
   public String getType() {
     return type;
-  }
-
-  /**
-   * Returns the primary key ID of this {@link Type} in the CDDB.
-   * @return primary key ID in of this type
-   */
-  public int getDatabaseID() {
-    return databaseID;
   }
 }

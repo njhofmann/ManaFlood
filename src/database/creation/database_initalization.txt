@@ -34,62 +34,6 @@ INSERT INTO ManaType (symbol, type) VALUES
 ("{2/U}", "2 Generic or Blue"),
 ("{2/G}", "2 Generic or Green");
 
---Characteristics appearing before card types and subtypes
---Intended to be an enum
-CREATE TABLE Supertype (
-  id INTEGER PRIMARY KEY,
-  type TEXT
-);
-
-INSERT INTO Supertype (id, type) VALUES
-(1, "basic"),
-(2, "elite"),
-(3, "legendary"),
-(4, "ongoing"),
-(5, "snow"),
-(6, "world");
-
---Main possible types of a card
---Intended to be an enum
-CREATE TABLE Type (
-  id INTEGER PRIMARY KEY,
-  type TEXT NOT NULL
-);
-
-INSERT INTO Type (id, type) VALUES
-(1, "artifact"),
-(2, "conspiracy"),
-(3, "creature"),
-(4, "enchantment"),
-(5, "instant"),
-(6, "land"),
-(7, "phenomenon"),
-(8, "plane"),
-(9, "planeswalker"),
-(10, "scheme"),
-(11, "sorcery"),
-(12, "tribal"),
-(13, "vanguard");
-
---Different rarities of a card
---Intended to be an enum
-CREATE TABLE Rarity (
-  id INTEGER PRIMARY KEY,
-  rarity TEXT NOT NULL
-);
-
-INSERT INTO Rarity(id, rarity) VALUES
-(1, "mythic rare"),
-(2, "rare"),
-(3, "uncommon"),
-(4, "common");
-
---Different subtypes of a card
-CREATE TABLE Subtype (
-  id INTEGER PRIMARY KEY,
-  type TEXT NOT NULL
-);
-
 --All the different expansions that have been released in MTG's history
 CREATE TABLE Expansion (
   abbrv TEXT PRIMARY KEY,
@@ -106,64 +50,59 @@ CREATE TABLE Card (
 
 --If a card is of creature type, or can gain creature type (Vehicles), stores its power and toughness
 --Not all p/t's are integers, some may be non-integer symbols like X or *
-CREATE TABLE CreatureStats (
+CREATE TABLE PTStats (
   card_name TEXT PRIMARY KEY,
-  power STRING,
-  toughness STRING,
+  power TEXT,
+  toughness TEXT,
   FOREIGN KEY(card_name) REFERENCES Card(name)
  );
 
---Different planeswalker loyalties
+--Different planeswalker loyalties, loyalty may not always be an integer
 CREATE TABLE PlaneswalkerStats (
   card_name TEXT PRIMARY KEY,
-  loyalty INTEGER,
+  loyalty TEXT,
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
 --
 CREATE TABLE CardMana (
   card_name TEXT,
-  mana_type INTEGER,
+  mana_type TEXT,
   quantity INTEGER,
   PRIMARY KEY(card_name, mana_type),
-  FOREIGN KEY(card_name) REFERENCES Card(name),
-  FOREIGN KEY(mana_type) REFERENCES ManaType(id)
+  FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
 CREATE TABLE CardExpansion (
   card_name TEXT,
   expansion TEXT,
-  rarity INTEGER,
+  rarity TEXT,
   flavor_text TEXT,
   artist TEXT,
   PRIMARY KEY(card_name, expansion),
   FOREIGN KEY(card_name) REFERENCES Card(name),
-  FOREIGN KEY(expansion) REFERENCES Expansion(abbrv),
-  FOREIGN KEY(rarity) REFERENCES RARITY(id)
+  FOREIGN KEY(expansion) REFERENCES Expansion(abbrv)
 );
 
 CREATE TABLE CardSupertype (
   card_name TEXT,
-  supertype INTEGER,
+  supertype TEXT,
   PRIMARY KEY(card_name, supertype),
-  FOREIGN KEY(card_name) REFERENCES Card(name),
-  FOREIGN KEY(supertype) REFERENCES Supertype(id)
+  FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
 CREATE TABLE CardType (
   card_name TEXT,
-  type INTEGER,
+  type TEXT,
   PRIMARY KEY(card_name, type),
-  FOREIGN KEY(card_name) REFERENCES Card(name),
-  FOREIGN KEY(type) REFERENCES Type(id)
+  FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
 CREATE TABLE CardSubtype (
   card_name TEXT,
-  subtype INTEGER,
+  subtype TEXT,
   PRIMARY KEY(card_name, subtype),
-  FOREIGN KEY(card_name) REFERENCES Card(name),
-  FOREIGN KEY(subtype) REFERENCES Subtype(id)
+  FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
 CREATE TABLE Deck (

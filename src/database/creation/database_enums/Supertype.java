@@ -4,25 +4,19 @@ package database.creation.database_enums;
  * Represents all the possible supertypes a MTG card may have, as reflected in the CDDB.
  */
 public enum Supertype {
-  BASIC(1, "basic"),
-  ELITE(2, "elite"),
-  LEGENDARY(3, "legendary"),
-  ONGOING(4, "ongoing"),
-  SNOW(5, "snow"),
-  WORLD(6, "world");
-
-  /**
-   * Primary key ID of this supertype in the CDDB.
-   */
-  private final int databaseID;
+  BASIC("basic"),
+  ELITE("elite"),
+  LEGENDARY("legendary"),
+  ONGOING("ongoing"),
+  SNOW("snow"),
+  WORLD("world");
 
   /**
    * String version of this supertype in the CDDB.
    */
   private final String type;
 
-  Supertype(final int databaseID, final String type) {
-    this.databaseID = databaseID;
+  Supertype(final String type) {
     this.type = type;
   }
 
@@ -55,11 +49,4 @@ public enum Supertype {
     return type;
   }
 
-  /**
-   * Returns the primary key ID of this {@link Supertype} in the CDDB.
-   * @return primary key ID in of this type
-   */
-  public int getDatabaseID() {
-    return databaseID;
-  }
 }
