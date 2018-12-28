@@ -1,3 +1,4 @@
+-Type enforcement for rarities, mana costs, types, supertypes
 -Two sided and three sided card support
 -Add same set with no errors
 -Parse all sets and all cards options for database

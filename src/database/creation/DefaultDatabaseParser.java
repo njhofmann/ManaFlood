@@ -30,30 +30,88 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    */
   private String shorthandSetName;
 
-  /**
-   * Creates a new MTG set in the CDDB based off the given info.
-   * @param abbreviation shorthand name of the set
-   * @param expansion full name of the set
-   * @param block block the set is apart of
-   * @throws IllegalArgumentException if any of the given parameters are null, or if CDDB fails
-   *         add the given set info
-   */
-  private void addSet(String abbreviation, String expansion, String block) throws IllegalArgumentException {
-    if (abbreviation == null || expansion == null || block == null) {
-      throw new IllegalArgumentException("Given parameters can't be null!");
-    }
-    String insertStatement = "INSERT INTO Expansion(abbrv,expansion,block) VALUES (?,?,?)";
 
+  /**
+   * Given a JSONObject of a MTG set from MTGJSON, adds its info to the CDB. If set has already been
+   * added, does nothing.
+   * @param set JSON object of a MTG set to add to
+   * @throws IllegalArgumentException if given set is null, doesn't have one of the required /
+   *         documented fields, or fails to be added / queried to the CDDB
+   */
+  private void addSet(JSONObject set) throws IllegalArgumentException {
+    if (set == null) {
+      throw new IllegalArgumentException("Given set can't be null!");
+    }
+
+    PreparedStatement preparedStatement;
+
+    String code;
     try {
-      PreparedStatement preparedStatement = connection.prepareStatement(insertStatement);
-      preparedStatement.setString(1, abbreviation);
-      preparedStatement.setString(2, expansion);
-      preparedStatement.setString(3, block);
-      preparedStatement.executeUpdate();
+      code = set.getString("code").toUpperCase();
+    }
+    catch (JSONException e) {
+      System.out.println(e);
+      throw new IllegalArgumentException("Given JSONObject isn't a set, doesn't have attribute 'code'!");
+    }
+
+    // Check if set has been added
+    boolean setAdded = false;
+    try {
+      String checkForSet = "SELECT abbrv FROM Expansion WHERE abbrv = ?";
+      preparedStatement = connection.prepareStatement(checkForSet);
+      preparedStatement.setString(1, code);
+      ResultSet result = preparedStatement.executeQuery();
+
+      if (!result.next()) {
+        setAdded = false;
+      }
     }
     catch (SQLException e) {
-      System.out.println("Failed to add set!");
-      System.out.println(e.getMessage());
+      System.out.println(e);
+      throw new IllegalArgumentException("Failed to query for set " + code + "!");
+    }
+
+    if (!setAdded) {
+      String name;
+      try {
+        name = set.getString("name");
+      }
+      catch (JSONException e) {
+        System.out.println(e);
+        throw new IllegalArgumentException("Given JSONObject isn't a set, doesn't have attribute 'name'!");
+      }
+
+      String block;
+      try {
+        block = set.getString("block");
+      }
+      catch (JSONException e) {
+        System.out.println(e);
+        throw new IllegalArgumentException("Given JSONObject isn't a set, doesn't have attribute 'block'!");
+      }
+
+      int size;
+      try {
+        size = set.getInt("totalSetSize");
+      }
+      catch (JSONException e) {
+        System.out.println(e);
+        throw new IllegalArgumentException("Given JSONObject isn't a set, doesn't have attribute 'size'!");
+      }
+
+      try {
+        String insertStatement = "INSERT INTO Expansion(abbrv,expansion,block,size) VALUES (?,?,?,?)";
+        preparedStatement = connection.prepareStatement(insertStatement);
+        preparedStatement.setString(1, code);
+        preparedStatement.setString(2, name);
+        preparedStatement.setString(3, block);
+        preparedStatement.setInt(4, size);
+        preparedStatement.executeUpdate();
+      }
+      catch (SQLException e) {
+        System.out.println(e.getMessage());
+        throw new IllegalArgumentException("Failed to add given set!");
+      }
     }
   }
 
@@ -69,6 +127,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       throw new IllegalArgumentException("Given path doesn't exist!");
     }
 
+    JSONObject setBeingRead;
     try {
       String fileAsString = pathToString(path);
       setBeingRead = new JSONObject(fileAsString);
@@ -78,13 +137,18 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       throw new IllegalArgumentException("Given path failed to be successfully read!");
     }
 
-    //System.out.println(setBeingRead.getString("code") + setBeingRead.getString("name") + setBeingRead.getString("block"));
-    addSet(setBeingRead.getString("code"),
-           setBeingRead.getString("name"),
-           setBeingRead.getString("block"));
+    addSet(setBeingRead);
 
-    shorthandSetName = setBeingRead.getString("code");
-    JSONArray cards = setBeingRead.getJSONArray("cards");
+    shorthandSetName = setBeingRead.getString("code").toUpperCase();
+
+    JSONArray cards;
+    try {
+      cards = setBeingRead.getJSONArray("cards");
+    }
+    catch (JSONException e) {
+      System.out.println(e);
+      throw new IllegalArgumentException("Given JSONObject isn't a set, doesn't have attribute 'cards'!");
+    }
 
     int length = cards.length();
     for (int i = 0; i < length; i += 1) {
@@ -115,9 +179,9 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       preparedStatement.setString(1, cardName);
       ResultSet result = preparedStatement.executeQuery();
       int numOfRows = result.getRow();
+
       // Resulting table should either have 0 or 1 rows, if 0 then card hasn't been added, if 1 then
       // card has been added
-      System.out.println(cardName + numOfRows);
       if (!result.next()) {
         cardAdded = false;
       }
@@ -204,30 +268,40 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
         }
       }
 
-      if (card.has("manaCost"))
-      try {
-        // Add mana costs
-        String[] manaCosts = card.getString("manaCost").split("(?=\\{)");
-        HashMap<String, Integer> uniqueManaCosts = new HashMap<>();
-        for (String manaCost : manaCosts) {
-          if (uniqueManaCosts.containsKey(manaCost)) {
-            uniqueManaCosts.replace(manaCost, uniqueManaCosts.get(manaCost) + 1);
-          } else {
-            uniqueManaCosts.put(manaCost, 1);
+      if (card.has("manaCost")) {
+        try {
+          // Add mana costs
+          String[] manaCosts = card.getString("manaCost").split("(?=\\{)");
+          HashMap<String, Integer> uniqueManaCosts = new HashMap<>();
+          for (String manaCost : manaCosts) {
+            if (uniqueManaCosts.containsKey(manaCost)) {
+              uniqueManaCosts.replace(manaCost, uniqueManaCosts.get(manaCost) + 1);
+            } else {
+              uniqueManaCosts.put(manaCost, 1);
+            }
+          }
+          for (String manaCost : uniqueManaCosts.keySet()) {
+            String manaCostInsert = "INSERT INTO CardMana(card_name,mana_type,quantity) VALUES (?,?,?)";
+
+            int quantity =  uniqueManaCosts.get(manaCost);
+
+            String withOutBrackets = manaCost.substring(1, manaCost.length() - 1);
+            if (withOutBrackets.matches("\\d+")) {
+              manaCost = "{1}";
+              quantity = Integer.parseInt(withOutBrackets);
+            }
+
+            preparedStatement = connection.prepareStatement(manaCostInsert);
+            preparedStatement.setString(1, cardName);
+            preparedStatement.setString(2, manaCost);
+            preparedStatement.setInt(3, quantity);
+            preparedStatement.executeUpdate();
           }
         }
-        for (String manaCost : uniqueManaCosts.keySet()) {
-          String manaCostInsert = "INSERT INTO CardMana(card_name,mana_type,quantity) VALUES (?,?,?)";
-          preparedStatement = connection.prepareStatement(manaCostInsert);
-          preparedStatement.setString(1, cardName);
-          preparedStatement.setString(2, manaCost);
-          preparedStatement.setInt(3, uniqueManaCosts.get(manaCost));
-          preparedStatement.executeUpdate();
+        catch (SQLException e) {
+          System.out.println(e);
+          throw new IllegalStateException("Failed to add mana costs for " + cardName + "!");
         }
-      }
-      catch (SQLException e) {
-        System.out.println(e);
-        throw new IllegalStateException("Failed to add mana costs for " + cardName + "!");
       }
 
       try {
@@ -270,24 +344,27 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       System.out.println(cardName + numOfRows);
       if (!result.next()) {
         String insertStatement
-            = "INSERT INTO CardExpansion(card_name,expansion,rarity,flavor_text,artist) VALUES (?,?,?,?,?)";
+            = "INSERT INTO CardExpansion(card_name,expansion,number,rarity,flavor_text,artist) VALUES (?,?,?,?,?,?)";
         preparedStatement = connection.prepareStatement(insertStatement);
         preparedStatement.setString(1, cardName);
         preparedStatement.setString(2, shorthandSetName);
-        preparedStatement.setString(3, card.getString("rarity"));
+        preparedStatement.setInt(3, Integer.parseInt(card.getString("number")));
+        preparedStatement.setString(4, card.getString("rarity"));
 
         String flavorText = "";
         if (card.has("flavorText")) {
           flavorText = card.getString("flavorText");
         }
 
-        preparedStatement.setString(4, flavorText);
-        preparedStatement.setString(5, card.getString("artist"));
+        preparedStatement.setString(5, flavorText);
+        preparedStatement.setString(6, card.getString("artist"));
         preparedStatement.executeUpdate();
       }
     }
     catch (SQLException e) {
       System.out.println(e);
+      System.out.println(shorthandSetName);
+      System.out.println(card.getString("rarity"));
       throw new IllegalStateException("Failed to add card " + cardName + " and set info!");
     }
   }
