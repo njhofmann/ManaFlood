@@ -28,7 +28,7 @@ public abstract class DefaultDatabasePort implements DatabasePort{
       // Connect to CDDB
       connection = DriverManager.getConnection(url, config.toProperties());
 
-      System.out.println("Connection to CDDB successful!");
+      System.out.println("Connected to CDDB successful!");
     } catch (SQLException e) {
       System.out.println(e.getMessage());
     }
@@ -38,6 +38,7 @@ public abstract class DefaultDatabasePort implements DatabasePort{
   public void disconnect() {
     try {
       if (connection != null) {
+        System.out.println("Closed connection to CDDB successful!");
         connection.close();
       }
     } catch (SQLException e) {

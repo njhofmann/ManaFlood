@@ -1,4 +1,9 @@
--Type enforcement for rarities, mana costs, types, supertypes
--Two sided and three sided card support
--Add same set with no errors
+-
+-Modularize add card method
+-If optional key in card, add check
+-Add checks that inputted json value has all required params
+-For keys with enum types in db, add checks (generic mana) that given string matches query for types table
 -Parse all sets and all cards options for database
+-Update text on cards
+-Rerun same files with no errors, simply don't update if already added
+-Comprehensive readme explaining project structure and plan

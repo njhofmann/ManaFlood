@@ -9,7 +9,9 @@ import java.nio.file.Path;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -29,6 +31,8 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * Shorthand name of set currently being processed.
    */
   private String shorthandSetName;
+
+  List<PreparedStatement> multifacedCards = new ArrayList<>();
 
 
   /**
@@ -150,10 +154,23 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       throw new IllegalArgumentException("Given JSONObject isn't a set, doesn't have attribute 'cards'!");
     }
 
+    multifacedCards = new ArrayList<>();
+
     int length = cards.length();
     for (int i = 0; i < length; i += 1) {
       JSONObject card = cards.getJSONObject(i);
       addCard(card);
+    }
+
+    // Add multifaced cards
+    try {
+      for (PreparedStatement preparedStatement : multifacedCards) {
+        preparedStatement.executeUpdate();
+      }
+    }
+    catch (SQLException e) {
+      System.out.println(e);
+      throw new IllegalArgumentException("Failed to add multifaced cards!");
     }
   }
 
@@ -178,7 +195,6 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       PreparedStatement preparedStatement = connection.prepareStatement(selectStatement);
       preparedStatement.setString(1, cardName);
       ResultSet result = preparedStatement.executeQuery();
-      int numOfRows = result.getRow();
 
       // Resulting table should either have 0 or 1 rows, if 0 then card hasn't been added, if 1 then
       // card has been added
@@ -205,7 +221,16 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
           cardText = card.getString("text");
         }
 
-        int cardCMC = (int) card.getFloat("convertedManaCost");
+        String cardCMCQuery;
+        if (card.has("faceConvertedManaCost")) {
+          cardCMCQuery = "faceConvertedManaCost";
+        }
+        else {
+          cardCMCQuery = "convertedManaCost";
+        }
+
+        int cardCMC = (int) card.getFloat(cardCMCQuery);
+
         preparedStatement.setString(1, cardName);
         preparedStatement.setString(2, cardText);
         preparedStatement.setInt(3, cardCMC);
@@ -327,21 +352,133 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       }
     }
 
+    // If card is multifaced, and all its components have been added, add multifaced relation to set
+    if (card.has("layout")) {
+      String layout = card.getString("layout");
+      if (layout.matches("flip|split|transform")) {
+        String[] names = JSONArrayToStringArray(card.getJSONArray("names"));
+        String cardA = names[0];
+        String cardB = names[1];
+
+        // Check that each card has been added
+        boolean cardsAdded = true;
+        for (String name : names) {
+          if (!cardAdded(name)) {
+            cardsAdded = false;
+          }
+        }
+
+        if (cardsAdded) {
+          // Check that the query hasn't been added
+          boolean relationshipAdded = true;
+          try {
+            String multifaceQuery = "SELECT * FROM TwoCards WHERE card_a=? AND card_b=?";
+            PreparedStatement preparedStatement = connection.prepareStatement(multifaceQuery);
+            preparedStatement.setString(1, cardA);
+            preparedStatement.setString(2, cardB);
+            ResultSet result = preparedStatement.executeQuery();
+
+            if (!result.next()) {
+              relationshipAdded = false;
+            }
+          }
+          catch (SQLException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("Failed to query for relationship between " +
+                cardA + " and " + cardB +"!");
+          }
+
+          if (!relationshipAdded) {
+            try {
+              String multifaceUpdate = "INSERT INTO TwoCards(card_a,card_b,type,total_cmc) "
+                  + "VALUES (?,?,?,?)";
+              PreparedStatement preparedStatement = connection.prepareStatement(multifaceUpdate);
+              preparedStatement.setString(1, cardA);
+              preparedStatement.setString(2, cardB);
+              preparedStatement.setString(3, layout);
+              preparedStatement.setInt(4, (int) card.getFloat("convertedManaCost"));
+              preparedStatement.executeUpdate();
+            }
+            catch (SQLException e) {
+              e.printStackTrace();
+              throw new IllegalStateException("Failed to query for relationship between " +
+                  cardA + " and " + cardB +"!");
+            }
+          }
+        }
+      }
+      else if (layout.matches("meld")) {
+        String[] names = JSONArrayToStringArray(card.getJSONArray("names"));
+        String cardA = names[0];
+        String cardB = names[1];
+        String cardC = names[2];
+
+        // Check that each card has been added
+        boolean cardsAdded = true;
+        for (String name : names) {
+          if (!cardAdded(name)) {
+            cardsAdded = false;
+          }
+        }
+
+        if (cardsAdded) {
+          // Check that the query hasn't been added
+          boolean relationshipAdded = true;
+          try {
+            String multifaceQuery = "SELECT * FROM ThreeCards WHERE card_a=? AND card_b=? AND card_c=?";
+            PreparedStatement preparedStatement = connection.prepareStatement(multifaceQuery);
+            preparedStatement.setString(1, cardA);
+            preparedStatement.setString(2, cardB);
+            preparedStatement.setString(3, cardC);
+            ResultSet result = preparedStatement.executeQuery();
+
+            if (!result.next()) {
+              relationshipAdded = false;
+            }
+          }
+          catch (SQLException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("Failed to query for relationship between " +
+                cardA + "," + cardB + " and " + cardC + "!");
+          }
+
+          if (!relationshipAdded) {
+            try {
+              String multifaceUpdate = "INSERT INTO ThreeCards(card_a,card_b,card_c,type,total_cmc) "
+                  + "VALUES (?,?,?,?,?)";
+              PreparedStatement preparedStatement = connection.prepareStatement(multifaceUpdate);
+              preparedStatement.setString(1, cardA);
+              preparedStatement.setString(2, cardB);
+              preparedStatement.setString(3, cardC);
+              preparedStatement.setString(4, layout);
+              preparedStatement.setInt(5, (int) card.getFloat("convertedManaCost"));
+              preparedStatement.executeUpdate();
+            }
+            catch (SQLException e) {
+              e.printStackTrace();
+              throw new IllegalStateException("Failed to query for relationship between " +
+                  cardA + "," + cardB + " and " + cardC + "!");
+            }
+          }
+        }
+      }
+    }
 
     // Card is for sure in database, add relevant set
     try {
       // See if card has already been added to the CDDB
-      String selectStatement = "SELECT card_name, expansion FROM CardExpansion "
+      String selectStatement = "SELECT card_name, expansion, number FROM CardExpansion "
           + "WHERE card_name = ?"
-          + "AND expansion = ?";
+          + "AND expansion = ?"
+          + "AND number = ?";
       PreparedStatement preparedStatement = connection.prepareStatement(selectStatement);
       preparedStatement.setString(1, cardName);
       preparedStatement.setString(2, shorthandSetName);
+      preparedStatement.setInt(3, Integer.parseInt(card.getString("number")));
       ResultSet result = preparedStatement.executeQuery();
       int numOfRows = result.getRow();
       // Resulting table should either have 0 or 1 rows, if 0 then card hasn't been added, if 1 then
       // card has been added
-      System.out.println(cardName + numOfRows);
       if (!result.next()) {
         String insertStatement
             = "INSERT INTO CardExpansion(card_name,expansion,number,rarity,flavor_text,artist) VALUES (?,?,?,?,?,?)";
@@ -391,6 +528,32 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     catch (JSONException e) {
       System.out.println(e);
       throw new IllegalArgumentException("Given JSON array isn't entirely made of Strings!");
+    }
+  }
+
+  /**
+   * Given the name of a card, checks if it has been added to the CDDB under the 'Card' table.
+   * @param toCheck name of card to check
+   * @return if card is in CDDB
+   * @throws IllegalArgumentException if given string is null
+   * @throws IllegalStateException failure to query CDDB
+   */
+  private boolean cardAdded(String toCheck) {
+    if (toCheck == null) {
+      throw new IllegalArgumentException("Given string can't be null!");
+    }
+    String cardAddedQuery = "SELECT name FROM Card WHERE name=?";
+
+    try {
+      PreparedStatement preparedStatement = connection.prepareStatement(cardAddedQuery);
+      preparedStatement.setString(1, toCheck);
+      ResultSet result = preparedStatement.executeQuery();
+
+      return result.next();
+    }
+    catch (SQLException e) {
+      e.printStackTrace();
+      throw new IllegalStateException("Failed to query database for card " + toCheck + "!");
     }
   }
 
