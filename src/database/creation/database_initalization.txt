@@ -83,7 +83,6 @@ INSERT INTO Type(type) VALUES
 CREATE TABLE Expansion (
   abbrv TEXT PRIMARY KEY,
   expansion TEXT NOT NULL,
-  block TEXT NOT NULL,
   size INTEGER NOT NULL
  );
 
@@ -123,7 +122,7 @@ CREATE TABLE CardMana (
 CREATE TABLE CardExpansion (
   card_name TEXT,
   expansion TEXT,
-  number INTEGER,
+  number TEXT,
   rarity TEXT NOT NULL,
   flavor_text TEXT NOT NULL,
   artist TEXT NOT NULL,

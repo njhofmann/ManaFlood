@@ -1,5 +1,5 @@
--
--Modularize add card method
+-Documentation
+-Foreign key insertion error
 -If optional key in card, add check
 -Add checks that inputted json value has all required params
 -For keys with enum types in db, add checks (generic mana) that given string matches query for types table

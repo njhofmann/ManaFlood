@@ -18,5 +18,16 @@ public interface DatabaseParser extends DatabasePort {
    *         otherwise invalid
    * @throws IllegalStateException if database hasn't been connected yet
    */
-  void parse(Path path) throws IllegalArgumentException, IllegalStateException;
+  void parseSet(Path path) throws IllegalArgumentException, IllegalStateException;
+
+
+  /**
+   * Given a file {@link Path} to a JSON file of a MTG set (from MTGJSON), updates the CDDB with
+   * cards from the set.
+   * @param path file path to the JSON file
+   * @throws IllegalArgumentException if given Path is null, given Path fails to be opened, or is
+   *         otherwise invalid
+   * @throws IllegalStateException if database hasn't been connected yet
+   */
+  void parseAllSets(Path path) throws IllegalArgumentException, IllegalStateException;
 }

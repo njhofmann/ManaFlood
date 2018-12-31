@@ -1,6 +1,5 @@
 package database.creation;
 
-import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -14,8 +13,13 @@ public class RunDatabaseParser {
 
     parser.connect();
 
+    /*
     Path pathToJSON = Paths.get("resources\\GRN.json").toAbsolutePath();
-    parser.parse(pathToJSON);
+    parser.parseSet(pathToJSON);
+    */
+
+    Path pathToJSON = Paths.get("resources\\AllSets.json").toAbsolutePath();
+    parser.parseAllSets(pathToJSON);
 
     parser.disconnect();
   }
