@@ -1,5 +1,6 @@
 package database;
 
+import database.access.DatabasePort;
 import java.util.HashMap;
 import java.util.List;
 import value_objects.Card;
@@ -10,21 +11,23 @@ import value_objects.DeckInstance;
 /**
  * Represents the set of methods available for interacting with the Card & Deck Database (CDDB).
  */
-public interface DatabaseChannel {
+public interface DatabaseChannel extends DatabasePort {
 
   /**
    * Returns a hashmap of decks in the CDDB, as represented by their unique integer IDs and names.
    * @return collection of deck IDs to deck names of all decks in the CDDB
+   * @throws RuntimeException if there is a failure to query the CDDB for the decks info
    */
-  HashMap<Integer, String> getDecks();
+  HashMap<Integer, String> getDecks() throws RuntimeException;
 
   /**
    * Returns deck in the CDDB with the corresponding unique ID.
    * @param deckID unique integer ID of deck
    * @return deck with corresponding unique ID
    * @throws IllegalArgumentException if CDDB doesn't contain a deck with given ID
+   * @throws RuntimeException if there is a failure to query the CDDB for the desired deck info
    */
-  Deck getDeck(int deckID) throws IllegalArgumentException;
+  Deck getDeck(int deckID) throws IllegalArgumentException, RuntimeException;
 
   /**
    * Updates {@link Deck} in the CDDB with matching {@param deckID} by adding the given

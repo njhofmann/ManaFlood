@@ -201,29 +201,29 @@ CREATE TABLE ThreeCards (
 
 CREATE TABLE Deck (
   id INTEGER PRIMARY KEY,
-  name TEXT,
-  desp TEXT
+  name TEXT NOT NULL,
+  desp TEXT NOT NULL
 );
 
 CREATE TABLE DeckInstance (
   id INTEGER PRIMARY KEY,
-  deck_id INTEGER,
-  creation DATETIME,
+  deck_id INTEGER NOT NULL,
+  creation DATETIME NOT NULL,
   FOREIGN KEY(deck_id) REFERENCES DECK(id)
 );
 
 CREATE TABLE Quantity (
   deck_id INTEGER,
   card_name TEXT,
-  quantity INTEGER,
+  quantity INTEGER NOT NULL,
   PRIMARY KEY(deck_id, card_name),
-  FOREIGN KEY(deck_id) REFERENCES DECK(id)
+  FOREIGN KEY(deck_id) REFERENCES DeckInstance(id)
 );
 
 CREATE TABLE Category (
   deck_id INTEGER,
   card_name TEXT,
-  category TEXT,
+  category TEXT NOT NULL,
   PRIMARY KEY(deck_id, card_name),
-  FOREIGN KEY(deck_id) REFERENCES DECK(id)
+  FOREIGN KEY(deck_id) REFERENCES DeckInstance(id)
 );

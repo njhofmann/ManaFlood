@@ -1,4 +1,4 @@
-package database.creation;
+package database.access;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,7 +10,7 @@ import org.sqlite.SQLiteConfig;
 /**
  * Default base class for opening and closing the CDDB.
  */
-public abstract class DefaultDatabasePort implements DatabasePort{
+public abstract class DefaultDatabasePort implements DatabasePort {
 
   /**
    * Path to the Card and Deck database.

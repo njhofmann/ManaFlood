@@ -1,4 +1,4 @@
-package database.creation;
+package database.access;
 
 /**
  * Provides methods for opening and closing the Card & Deck Database (CDDB).
