@@ -6,12 +6,14 @@ package database.creation;
 public interface DatabasePort {
 
   /**
-   * Opens a connection to the CDDB. Shoulde be called after database is done being used.
+   * Opens a connection to the CDDB. Should be called after database is done being used.
+   * @throws RuntimeException if there is a failure to connect to the CDDB
    */
-  void connect();
+  void connect() throws RuntimeException;
 
   /**
    * Closes any open connection to the CDDB. Should be called after database is done being used.
+   * @throws RuntimeException if there is a failure to close the CDDB
    */
-  void disconnect();
+  void disconnect() throws RuntimeException;
 }

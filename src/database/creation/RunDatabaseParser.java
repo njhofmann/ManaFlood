@@ -9,7 +9,8 @@ import java.nio.file.Paths;
 public class RunDatabaseParser {
 
   public static void main(String[] arg) {
-    DatabaseParser parser = new DefaultDatabaseParser();
+    Path pathToDatabase = Paths.get("src\\database\\creation\\test.db").toAbsolutePath();
+    DatabaseParser parser = new DefaultDatabaseParser(pathToDatabase);
 
     parser.connect();
 
@@ -18,6 +19,7 @@ public class RunDatabaseParser {
     parser.parseSet(pathToJSON);
     */
 
+    //src/database/creation/test.db"
     Path pathToJSON = Paths.get("resources\\AllSets.json").toAbsolutePath();
     parser.parseAllSets(pathToJSON);
 
