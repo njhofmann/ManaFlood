@@ -10,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -62,9 +63,12 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
   public void parseAllSets(Path path) throws IllegalArgumentException, IllegalStateException {
     JSONObject allSets = canConnect(path);
     Iterator<String> iterator = allSets.keys();
+
+    String[] unsupportedSets = {"UNH", "UGL", "UST", "PCEL"};
+
     while (iterator.hasNext()) {
       String currentSetName = iterator.next();
-      if (!currentSetName.matches("PPRE|UNH|UGL|UST")) {
+      if (!currentSetName.matches("UNH|UGL|UST|PCEL")) {
         addSet(allSets.getJSONObject(currentSetName));
       }
 
@@ -97,7 +101,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     PreparedStatement preparedStatement;
 
     // Check if set has been added
-    boolean setAdded = false;
+    boolean setAdded = true;
     try {
       String checkForSet = "SELECT abbrv FROM Expansion WHERE abbrv = ?";
       preparedStatement = connection.prepareStatement(checkForSet);
@@ -462,6 +466,8 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
 
   private void addSetCardInfo(JSONObject card) {
     String cardName = card.getString("name");
+
+    boolean cardSetAdded;
     try {
       // See if card has already been added to the CDDB
       String selectStatement = "SELECT card_name, expansion, number FROM CardExpansion "
@@ -473,13 +479,19 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       preparedStatement.setString(2, shorthandSetName);
       preparedStatement.setString(3, card.getString("number"));
       ResultSet result = preparedStatement.executeQuery();
-      // Resulting table should either have 0 or 1 rows, if 0 then card hasn't been added, if 1 then
-      // card has been added
-      if (!result.next()) {
+      cardSetAdded = result.next();
+    }
+    catch (SQLException e) {
+      e.printStackTrace();
+      throw new IllegalStateException(String.format("Failed to query for card %s and set %s!", cardName, shorthandSetName));
+    }
+
+    try {
+      if (!cardSetAdded) {
         String insertStatement
             = "INSERT INTO CardExpansion(card_name,expansion,number,rarity,flavor_text,artist) "
             + "VALUES (?,?,?,?,?,?)";
-        preparedStatement = connection.prepareStatement(insertStatement);
+        PreparedStatement preparedStatement = connection.prepareStatement(insertStatement);
         preparedStatement.setString(1, cardName);
         preparedStatement.setString(2, shorthandSetName);
         preparedStatement.setString(3, card.getString("number"));
@@ -497,7 +509,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     }
     catch (SQLException e) {
       System.out.println(e);
-      throw new IllegalArgumentException(String.format("Failed to add set info for card %s for "
+      throw new IllegalStateException(String.format("Failed to add set info for card %s for "
           + "set %s!", cardName, shorthandSetName));
     }
   }

@@ -1,5 +1,8 @@
 -Documentation
--Foreign key insertion error
+-Sets not supported list
+-Deal with timeshifted cards
+-Create blank database file
+-Path to database argument
 -If optional key in card, add check
 -Add checks that inputted json value has all required params
 -For keys with enum types in db, add checks (generic mana) that given string matches query for types table
