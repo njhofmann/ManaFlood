@@ -1,16 +1,9 @@
 -Deal with timeshifted cards
--Create blank database file
+-Script to blank database, full database
 -For keys with enum types in db, add checks (generic mana) that given string matches query for types table
--Update text on cards
+  -Get types on opening?
+-Enums / types from database object?
+-Update text on cards option (erreta)
 -Comprehensive readme explaining project structure and plan
+-Documentation on database initialization field;
 
-DeckInstance
--Internal list of cards in deck instances
--Map of categories to cards (reference)
--Map of card to quantity
--Cards are ids (as name), get all info only when selected
-
-Card
--Name
--Text
--

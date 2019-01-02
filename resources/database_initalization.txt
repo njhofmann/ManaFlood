@@ -1,8 +1,7 @@
 --Turn on foreign keys
 PRAGMA foreign_keys = ON;
 
---Types of mana / mana costs, read as "___ mana".
---Intended to be an enum
+--Enum of all mana types in MTG, read as "___ mana".
 CREATE TABLE ManaType (
   symbol TEXT PRIMARY KEY,
   type TEXT NOT NULL
@@ -38,6 +37,7 @@ INSERT INTO ManaType (symbol, type) VALUES
 ("{2/U}", "2 Generic or Blue"),
 ("{2/G}", "2 Generic or Green");
 
+--Enum of all card rarities in MTG
 CREATE TABLE Rarity (
   type TEXT PRIMARY KEY
 );
@@ -51,6 +51,7 @@ INSERT INTO Rarity(type) VALUES
 ("timeshifted uncommon"),
 ("timeshifted common");
 
+--Enum of all card supertypes in MTG
 CREATE TABLE Supertype (
   type TEXT PRIMARY KEY
 );
@@ -63,6 +64,7 @@ INSERT INTO Supertype(type) VALUES
 ("snow"),
 ("world");
 
+--Enum of all card types in MTG
 CREATE TABLE Type (
   type TEXT PRIMARY KEY
 );
@@ -97,19 +99,19 @@ CREATE TABLE Card (
   cmc INTEGER NOT NULL
  );
 
---If a card is of creature type, or can gain creature type (Vehicles), stores its power and toughness
+--If cards has power and toughness, stores those values
 --Not all p/t's are integers, some may be non-integer symbols like X or *
 CREATE TABLE PTStats (
   card_name TEXT PRIMARY KEY,
-  power TEXT,
-  toughness TEXT,
+  power TEXT NOT NULL,
+  toughness TEXT NOT NULL,
   FOREIGN KEY(card_name) REFERENCES Card(name)
- );
+);
 
---Different planeswalker loyalties, loyalty may not always be an integer
+--If card has planeswalker loyalty, stores associated value - may not be an integer
 CREATE TABLE PlaneswalkerStats (
   card_name TEXT PRIMARY KEY,
-  loyalty TEXT,
+  loyalty TEXT NOT NULL,
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
@@ -152,6 +154,8 @@ CREATE TABLE CardType (
   FOREIGN KEY(type) REFERENCES Type(type)
 );
 
+--All the subtypes associated with a card, subtypes are not considered a enum as they are likely to
+--be expanded
 CREATE TABLE CardSubtype (
   card_name TEXT,
   subtype TEXT,
@@ -159,6 +163,7 @@ CREATE TABLE CardSubtype (
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
+--Enum of all the types of two faced cards
 CREATE TABLE TwoCardsType (
   type TEXT PRIMARY KEY
 );
@@ -179,6 +184,7 @@ CREATE TABLE TwoCards (
   FOREIGN KEY(type) REFERENCES TwoCardsType(type)
 );
 
+--Enum of all the types of three faced cards
 CREATE TABLE ThreeCardsType (
   type TEXT PRIMARY KEY
 );
@@ -199,31 +205,64 @@ CREATE TABLE ThreeCards (
   FOREIGN KEY(type) REFERENCES ThreeCardsType(type)
 );
 
+--An individual deck of MTG cards
 CREATE TABLE Deck (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
   desp TEXT NOT NULL
 );
 
+--An instance of an individual deck
 CREATE TABLE DeckInstance (
-  id INTEGER PRIMARY KEY,
   deck_id INTEGER NOT NULL,
   creation DATETIME NOT NULL,
+  PRIMARY KEY(deck_id, creation),
   FOREIGN KEY(deck_id) REFERENCES DECK(id)
 );
 
-CREATE TABLE Quantity (
+--A category of cards in a deck instance
+CREATE TABLE DeckInstCategory (
   deck_id INTEGER,
-  card_name TEXT,
-  quantity INTEGER NOT NULL,
-  PRIMARY KEY(deck_id, card_name),
-  FOREIGN KEY(deck_id) REFERENCES DeckInstance(id)
+  deck_inst_creation DATETIME,
+  category TEXT NOT NULL,
+  PRIMARY KEY(deck_id, deck_inst_creation, category),
+  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation)
 );
 
-CREATE TABLE Category (
+--A card in a deck instance
+CREATE TABLE DeckInstCard (
   deck_id INTEGER,
-  card_name TEXT,
+  deck_inst_creation DATETIME,
+  card_name TEXT NOT NULL,
+  PRIMARY KEY(deck_id, deck_inst_creation, card_name),
+  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation)
+  FOREIGN KEY(card_name) REFERENCES Card(name)
+);
+
+--A specific instance of a card (that is in a deck instance) with some quantity
+CREATE TABLE DeckInstCardExpansion (
+  deck_id INTEGER,
+  deck_inst_creation DATETIME,
+  card_name TEXT NOT NULL,
+  expansion TEXT,
+  card_number TEXT,
+  quantity INTEGER NOT NULL CHECK(quantity > 0),
+  PRIMARY KEY(deck_id, deck_inst_creation, card_name, expansion, card_number),
+  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation),
+  FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, creation, card_name),
+  FOREIGN KEY(card_name) REFERENCES Card(name),
+  FOREIGN KEY(expansion) REFERENCES Expansion(abbrv),
+  FOREIGN KEY(card_name, expansion, card_number) REFERENCES CardExpansion(card_name, expansion, number)
+);
+
+--Category of a card (that is in a deck instance) is in, category is one of categories of that deck instance
+CREATE TABLE DeckInstCardCategory (
+  deck_id INTEGER,
+  deck_inst_creation DATETIME,
+  card_name TEXT NOT NULL,
   category TEXT NOT NULL,
-  PRIMARY KEY(deck_id, card_name),
-  FOREIGN KEY(deck_id) REFERENCES DeckInstance(id)
+  PRIMARY KEY(deck_id, deck_inst_creation, card_name, category),
+  FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, creation, card_name),
+  FOREIGN KEY(deck_id, deck_inst_creation, category) REFERENCES DeckInstCategory(deck_id, creation, category),
+  FOREIGN KEY(card_name) REFERENCES Card(name)
 );
