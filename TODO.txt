@@ -1,9 +1,6 @@
 -Deal with timeshifted cards
+-Deck instance builder
+-DefaultDeckInstance documentation
 -Script to blank database, full database
--For keys with enum types in db, add checks (generic mana) that given string matches query for types table
-  -Get types on opening?
--Enums / types from database object?
 -Update text on cards option (erreta)
 -Comprehensive readme explaining project structure and plan
--Documentation on database initialization field;
-

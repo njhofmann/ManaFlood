@@ -173,7 +173,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     }
 
     // Check for required keys
-    String[] requiredKeys = new String[]{"name", "convertedManaCost", "number"};
+    String[] requiredKeys = new String[]{"name", "convertedManaCost", "number", "rarity"};
     for (String key : requiredKeys) {
       if (!card.has(key)) {
         throw new IllegalArgumentException(String.format("Given JSONObject isn't a card, "
@@ -255,6 +255,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * CDDB, if it has any
    * before.
    * @param card JSONObject of card to add
+   * @throws IllegalArgumentException if card contains an unsupported supertype
    * @throws RuntimeException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
@@ -264,6 +265,12 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       String[] supertypes = JSONArrayToStringArray(card.getJSONArray("supertypes"));
       try {
         for (String supertype : supertypes) {
+
+          if (!getSupertypes().contains(supertype)) {
+            throw new IllegalArgumentException(String.format("Given card contains unsupported "
+                + "supertypes %s!", supertypes));
+          }
+
           String insertSupertype = "INSERT INTO CardSupertype(card_name,supertype) VALUES (?,?)";
           PreparedStatement preparedStatement = connection.prepareStatement(insertSupertype);
           preparedStatement.setString(1, cardName);
@@ -283,6 +290,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * CDDB, if it has any.
    * before.
    * @param card JSONObject of card to add
+   * @throws IllegalArgumentException if given card contains an unsupported type
    * @throws RuntimeException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
@@ -293,6 +301,12 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       try {
         //Add types
         for (String type : types) {
+
+          if (!getTypes().contains(type)) {
+            throw new IllegalArgumentException(String.format("Given card contains unsupported "
+                + "type %s!", type));
+          }
+
           String insertType = "INSERT INTO CardType(card_name,type) VALUES (?,?)";
           PreparedStatement preparedStatement = connection.prepareStatement(insertType);
           preparedStatement.setString(1, cardName);
@@ -354,20 +368,23 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
           if (uniqueManaCosts.containsKey(manaCost)) {
             uniqueManaCosts.replace(manaCost, uniqueManaCosts.get(manaCost) + 1);
           } else {
-            uniqueManaCosts.put(manaCost, 1);
+            String withOutBrackets = manaCost.substring(1, manaCost.length() - 1);
+            if (withOutBrackets.matches("\\d+")) {
+              uniqueManaCosts.put("{1}", Integer.parseInt(withOutBrackets));
+            }
+            else {
+              if (!getManaTypes().contains(manaCost)) {
+                throw new IllegalArgumentException(String.format("Given card contains unsupported "
+                    + "mana type %s!", manaCost));
+              }
+              uniqueManaCosts.put(manaCost, 1);
+            }
           }
         }
         for (String manaCost : uniqueManaCosts.keySet()) {
           String manaCostInsert = "INSERT INTO CardMana(card_name,mana_type,quantity) VALUES (?,?,?)";
 
           int quantity =  uniqueManaCosts.get(manaCost);
-
-          String withOutBrackets = manaCost.substring(1, manaCost.length() - 1);
-          if (withOutBrackets.matches("\\d+")) {
-            manaCost = "{1}";
-            quantity = Integer.parseInt(withOutBrackets);
-          }
-
           PreparedStatement preparedStatement = connection.prepareStatement(manaCostInsert);
           preparedStatement.setString(1, cardName);
           preparedStatement.setString(2, manaCost);
@@ -424,7 +441,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
   private void addMultifacedStats(JSONObject card) {
     if (card.has("layout")) {
       String layout = card.getString("layout");
-      if (layout.matches("flip|split|transform")) {
+      if (getTwoFacedTypes().contains(layout)) {
         String[] names = JSONArrayToStringArray(card.getJSONArray("names"));
         String cardA = names[0];
         String cardB = names[1];
@@ -474,7 +491,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
           }
         }
       }
-      else if (layout.matches("meld")) {
+      else if (getThreeFacedTypes().contains(layout)) {
         String[] names = JSONArrayToStringArray(card.getJSONArray("names"));
         String cardA = names[0];
         String cardB = names[1];
@@ -571,7 +588,14 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
         preparedStatement.setString(1, cardName);
         preparedStatement.setString(2, shorthandSetName);
         preparedStatement.setString(3, card.getString("number"));
-        preparedStatement.setString(4, card.getString("rarity"));
+
+        String rarity = card.getString("rarity");
+        if (!getRarityTypes().contains(rarity)) {
+          throw new IllegalArgumentException(String.format("Given card contains unsupported rarity "
+              + "type %s!", rarity));
+        }
+
+        preparedStatement.setString(4, rarity);
 
         String flavorText = "";
         if (card.has("flavorText")) {

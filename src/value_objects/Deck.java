@@ -27,8 +27,8 @@ public interface Deck {
   String getDescription();
 
   /**
-   * Returns a list of all {@link DeckInstance} that make up this {@link Deck}'s history, sorted by
-   * oldest to newest.
+   * Returns a unmodifiable list of all {@link DeckInstance} that make up this {@link Deck}'s
+   * history, sorted by oldest to newest.
    * @return sorted list of {@link DeckInstance} that make up this deck
    */
   List<DeckInstance> getHistory();

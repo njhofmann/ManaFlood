@@ -85,6 +85,24 @@ INSERT INTO Type(type) VALUES
 ("tribal"),
 ("vanguard");
 
+--Enum of all the types of two faced cards
+CREATE TABLE TwoCardsType (
+  type TEXT PRIMARY KEY
+);
+
+INSERT INTO TwoCardsType VALUES
+("split"),
+("flip"),
+("transform");
+
+--Enum of all the types of three faced cards
+CREATE TABLE ThreeCardsType (
+  type TEXT PRIMARY KEY
+);
+
+INSERT INTO ThreeCardsType VALUES
+("meld");
+
 --All the different expansions that have been released in MTG's history
 CREATE TABLE Expansion (
   abbrv TEXT PRIMARY KEY,
@@ -163,16 +181,6 @@ CREATE TABLE CardSubtype (
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
---Enum of all the types of two faced cards
-CREATE TABLE TwoCardsType (
-  type TEXT PRIMARY KEY
-);
-
-INSERT INTO TwoCardsType VALUES
-("split"),
-("flip"),
-("transform");
-
 CREATE TABLE TwoCards (
   card_a TEXT,
   card_b TEXT,
@@ -183,14 +191,6 @@ CREATE TABLE TwoCards (
   FOREIGN KEY(card_b) REFERENCES Card(name),
   FOREIGN KEY(type) REFERENCES TwoCardsType(type)
 );
-
---Enum of all the types of three faced cards
-CREATE TABLE ThreeCardsType (
-  type TEXT PRIMARY KEY
-);
-
-INSERT INTO ThreeCardsType VALUES
-("meld");
 
 CREATE TABLE ThreeCards (
   card_a TEXT,
