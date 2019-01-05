@@ -1,6 +1,8 @@
-package value_objects;
+package value_objects.deck;
 
 import java.util.List;
+import value_objects.Card;
+import value_objects.deck_instance.DeckInstance;
 
 /**
  * Represents the "history" of a specific deck of {@link Card}s as stored in the Card & Deck

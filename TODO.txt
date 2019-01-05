@@ -1,6 +1,10 @@
 -Deal with timeshifted cards
+-Compare to for deck instances
 -Deck instance builder
 -DefaultDeckInstance documentation
+-equals and hashmap for value objects
+-Documentation
+-Unmodifible sets
 -Script to blank database, full database
 -Update text on cards option (erreta)
 -Comprehensive readme explaining project structure and plan

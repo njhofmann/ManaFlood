@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Set;
 import value_objects.Card;
 import value_objects.CardQuery;
-import value_objects.Deck;
-import value_objects.DeckInstance;
+import value_objects.deck.Deck;
+import value_objects.deck_instance.DeckInstance;
 
 /**
  * Default class to use to access the Card and Deck Database (CDDB) for querying cards and reading,

@@ -1,7 +1,8 @@
-package value_objects;
+package value_objects.deck;
 
 import java.util.Collections;
 import java.util.List;
+import value_objects.deck_instance.DeckInstance;
 
 /**
  * Default implementation of {@link Deck}, contains all identifying info of a Deck and the list of

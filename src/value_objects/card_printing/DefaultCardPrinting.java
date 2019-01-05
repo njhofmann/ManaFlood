@@ -1,4 +1,4 @@
-package value_objects;
+package value_objects.card_printing;
 
 /**
  * Default implementation of {@link CardPrinting} interface, simply provides a container object
