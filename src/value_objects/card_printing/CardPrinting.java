@@ -6,10 +6,22 @@ package value_objects.card_printing;
  */
 public interface CardPrinting {
 
+  /**
+   * Returns immutable reference name of card this {@link CardPrinting} is a printing of.
+   * @return card name this printing represents
+   */
   String getCardName();
 
+  /**
+   * Returns expansion this {@link CardPrinting} is from.
+   * @return this printing's expansion
+   */
   String getCardExpansion();
 
+  /**
+   * Returns to the print number from the above expansion this {@link CardPrinting} represents.
+   * @return print number from linked expansion
+   */
   String getIdentifyingNumber();
 
 }

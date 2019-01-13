@@ -32,12 +32,11 @@ public interface DatabaseChannel extends DatabasePort {
   /**
    * Updates {@link Deck} in the CDDB with matching {@param deckID} by adding the given
    * {@link DeckInstance} to the matching {@link Deck}.
-   * @param deckID unique deck ID of {@link Deck} to update
    * @param deck deck instance to add to corresponding {@link Deck}
    * @throws IllegalArgumentException if CDDB doesn't contain a deck with given ID, or if given
    *        {@link DeckInstance} is null
    */
-  void updateDeck(int deckID, DeckInstance deck) throws IllegalArgumentException;
+  void updateDeck(DeckInstance deck) throws IllegalArgumentException;
 
   /**
    * Deletes the {@link Deck} in the CDDB with the given {@param deckID}.

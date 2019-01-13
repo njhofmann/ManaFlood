@@ -2,6 +2,7 @@ package value_objects.deck;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import value_objects.deck_instance.DeckInstance;
 
 /**
@@ -79,5 +80,18 @@ public class DefaultDeck implements Deck {
   @Override
   public List<DeckInstance> getHistory() {
     return history;
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (other instanceof Deck) {
+      return ((Deck) other).getDeckID() == this.getDeckID();
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(deckID, deckName, desp, history);
   }
 }

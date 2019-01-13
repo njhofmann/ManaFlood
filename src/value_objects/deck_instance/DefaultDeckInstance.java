@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import value_objects.deck.Deck;
 import value_objects.card_printing.CardPrinting;
@@ -150,5 +151,20 @@ public class DefaultDeckInstance implements DeckInstance {
       throw new IllegalArgumentException("Given deck instance can't be null!");
     }
     return this.getCreationInfo().compareTo(other.getCreationInfo());
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (other instanceof DeckInstance) {
+      DeckInstance casting = (DeckInstance)other;
+      return casting.getParentDeckID() == parentDeckID
+          && casting.getCreationInfo().equals(creation);
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(parentDeckID, creation);
   }
 }

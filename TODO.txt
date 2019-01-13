@@ -2,8 +2,14 @@
 -Compare to for deck instances
 -Deck instance builder
 -DefaultDeckInstance documentation
--equals and hashmap for value objects
+-Adding new deck
 -Documentation
+-Override hashcode and equals for value objects
+-Write down how time handling is done
+  -Storing time in DB as datetime
+  -Retrieve as string, convert to localdatetime with specific parser
+  -converting from text / integer to localdatetime
+  -
 -Unmodifible sets
 -Script to blank database, full database
 -Update text on cards option (erreta)

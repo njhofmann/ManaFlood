@@ -1,5 +1,7 @@
 package value_objects.card_printing;
 
+import java.util.Objects;
+
 /**
  * Default implementation of {@link CardPrinting} interface, simply provides a container object
  * with private fields and null checking for provided values.
@@ -56,5 +58,21 @@ public class DefaultCardPrinting implements CardPrinting {
   @Override
   public String getIdentifyingNumber() {
     return identifyingNumber;
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (other instanceof CardPrinting) {
+      CardPrinting casting = (CardPrinting)other;
+      return casting.getCardName().equals(cardName)
+          && casting.getCardExpansion().equals(cardExpansion)
+          && casting.getIdentifyingNumber().equals(identifyingNumber);
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(cardName, cardExpansion, identifyingNumber);
   }
 }

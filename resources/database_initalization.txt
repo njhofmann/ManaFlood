@@ -217,39 +217,39 @@ CREATE TABLE DeckInstance (
   deck_id INTEGER NOT NULL,
   creation DATETIME NOT NULL,
   PRIMARY KEY(deck_id, creation),
-  FOREIGN KEY(deck_id) REFERENCES DECK(id)
+  FOREIGN KEY(deck_id) REFERENCES DECK(id) ON DELETE CASCADE
 );
 
 --A category of cards in a deck instance
 CREATE TABLE DeckInstCategory (
   deck_id INTEGER,
-  deck_inst_creation DATETIME,
+  deck_inst_creation TIMESTAMP,
   category TEXT NOT NULL,
   PRIMARY KEY(deck_id, deck_inst_creation, category),
-  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation)
+  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation) ON DELETE CASCADE
 );
 
 --A card in a deck instance
 CREATE TABLE DeckInstCard (
   deck_id INTEGER,
-  deck_inst_creation DATETIME,
+  deck_inst_creation TIMESTAMP,
   card_name TEXT NOT NULL,
   PRIMARY KEY(deck_id, deck_inst_creation, card_name),
-  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation)
+  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation) ON DELETE CASCADE
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
 --A specific instance of a card (that is in a deck instance) with some quantity
 CREATE TABLE DeckInstCardExpansion (
   deck_id INTEGER,
-  deck_inst_creation DATETIME,
+  deck_inst_creation TIMESTAMP,
   card_name TEXT NOT NULL,
   expansion TEXT,
   card_number TEXT,
   quantity INTEGER NOT NULL CHECK(quantity > 0),
   PRIMARY KEY(deck_id, deck_inst_creation, card_name, expansion, card_number),
-  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation),
-  FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, creation, card_name),
+  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation) ON DELETE CASCADE,
+  FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, creation, card_name) ON DELETE CASCADE,
   FOREIGN KEY(card_name) REFERENCES Card(name),
   FOREIGN KEY(expansion) REFERENCES Expansion(abbrv),
   FOREIGN KEY(card_name, expansion, card_number) REFERENCES CardExpansion(card_name, expansion, number)
@@ -258,11 +258,11 @@ CREATE TABLE DeckInstCardExpansion (
 --Category of a card (that is in a deck instance) is in, category is one of categories of that deck instance
 CREATE TABLE DeckInstCardCategory (
   deck_id INTEGER,
-  deck_inst_creation DATETIME,
+  deck_inst_creation TIMESTAMP,
   card_name TEXT NOT NULL,
   category TEXT NOT NULL,
   PRIMARY KEY(deck_id, deck_inst_creation, card_name, category),
-  FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, creation, card_name),
-  FOREIGN KEY(deck_id, deck_inst_creation, category) REFERENCES DeckInstCategory(deck_id, creation, category),
+  FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, creation, card_name) ON DELETE CASCADE,
+  FOREIGN KEY(deck_id, deck_inst_creation, category) REFERENCES DeckInstCategory(deck_id, creation, category) ON DELETE CASCADE,
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
