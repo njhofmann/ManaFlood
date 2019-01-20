@@ -1,7 +1,5 @@
 -Deal with timeshifted cards
--Compare to for deck instances
 -Deck instance builder
--DefaultDeckInstance documentation
 -Adding new deck
 -Documentation
 -Override hashcode and equals for value objects
@@ -10,7 +8,7 @@
   -Retrieve as string, convert to localdatetime with specific parser
   -converting from text / integer to localdatetime
   -
--Unmodifible sets
 -Script to blank database, full database
 -Update text on cards option (erreta)
 -Comprehensive readme explaining project structure and plan
+  -Identifier vs Info Container for cards and card printings

@@ -59,7 +59,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
 
   @Override
   public Deck getDeck(int deckID) throws IllegalArgumentException, RuntimeException {
-    doesDeckExist(deckID);
+    hasDeckBeenAdded(deckID);
 
     // Query for info of all deck instances related to current deck
     ResultSet deckInstancesInfo;
@@ -208,17 +208,56 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
   }
 
   @Override
+  public void addDeck(Deck deck) throws IllegalArgumentException, RuntimeException {
+    if (deck == null) {
+      throw new IllegalArgumentException("Given deck can't be null!");
+    }
+    hasDeckNotBeenAdded(deck.getDeckID());
+
+    int deckID = deck.getDeckID();
+    String deckName = deck.getDeckName();
+    try {
+      String deckInsert = "INSERT INTO DECK(id,name,desp) VALUES (?,?,?)";
+      PreparedStatement prep = connection.prepareStatement(deckInsert);
+      prep.setInt(1, deckID);
+      prep.setString(2, deckName);
+      prep.setString(3, deck.getDescription());
+      prep.executeUpdate();
+    }
+    catch (SQLException e) {
+      e.printStackTrace();
+      throw new RuntimeException(String.format("Failed to add new deck with ID %d and name %s!",
+          deckID, deckName));
+    }
+
+    List<DeckInstance> history = deck.getHistory();
+    for (DeckInstance deckInstance : history) {
+      updateDeck(deckInstance);
+    }
+  }
+
+  @Override
   public void updateDeck(DeckInstance deck) throws IllegalArgumentException {
     if (deck == null) {
       throw new IllegalArgumentException("Given deck instance can't be null!");
     }
-    doesDeckExist(deck.getParentDeckID());
+    hasDeckBeenAdded(deck.getParentDeckID());
+
+    // Add deck instance info
+
+    // Add categories
+
+    // Add cards
+
+    // Add card expansions
+
+    // Add cards in categories
   }
 
   @Override
   public void deleteDeck(int deckID) throws IllegalArgumentException {
     // Check if deck exists
-    doesDeckExist(deckID);
+    hasDeckBeenAdded(deckID);
 
     try {
       String deletionRequest = "DELETE FROM Deck WHERE id=?";
@@ -238,7 +277,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
       throw new IllegalArgumentException("Given new name can't be null!");
     }
     // Check if deck exists
-    doesDeckExist(deckID);
+    hasDeckBeenAdded(deckID);
 
     try {
       String updateRequest = "UPDATE Deck SET name=? WHERE id=?";
@@ -260,7 +299,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
       throw new IllegalArgumentException("Given new description can't be null!");
     }
     // Check if deck exists
-    doesDeckExist(deckID);
+    hasDeckBeenAdded(deckID);
 
     try {
       String updateRequest = "UPDATE Deck SET desp=? WHERE id=?";
@@ -284,14 +323,28 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
   /**
    * Checks if the CDDB contains a deck with given ID, checks table Deck for row with entry under
    * "id" column, else throws an error.
-   * @param deckID
+   * @param deckID deck id to check for
    * @throws IllegalArgumentException if there is no deck in CDDB with matching ID
    */
-  private void doesDeckExist(int deckID) {
+  private void hasDeckBeenAdded(int deckID) {
     // Check if CDDB has deck with given ID
     Set<Integer> deckIDs = getDecks().keySet();
     if (!deckIDs.contains(deckID)) {
       throw new IllegalArgumentException("CDDB doesn't contain deck with given ID!");
+    }
+  }
+
+  /**
+   * Checks if the CDDB contains a deck with given ID, checks table Deck for row with entry under
+   * "id" column, if so throws an error.
+   * @param deckID deck id to check for
+   * @throws IllegalArgumentException if there is a deck in CDDB with a matching ID
+   */
+  private void hasDeckNotBeenAdded(int deckID) {
+    // Check if CDDB has deck with given ID
+    Set<Integer> deckIDs = getDecks().keySet();
+    if (deckIDs.contains(deckID)) {
+      throw new IllegalArgumentException("CDDB already contains deck with given ID!");
     }
   }
 }

@@ -21,7 +21,7 @@ public interface DatabaseChannel extends DatabasePort {
   HashMap<Integer, String> getDecks() throws RuntimeException;
 
   /**
-   * Returns deck in the CDDB with the corresponding unique ID.
+   * Returns {@link Deck} in the CDDB with the corresponding unique ID.
    * @param deckID unique integer ID of deck
    * @return deck with corresponding unique ID
    * @throws IllegalArgumentException if CDDB doesn't contain a deck with given ID
@@ -30,13 +30,23 @@ public interface DatabaseChannel extends DatabasePort {
   Deck getDeck(int deckID) throws IllegalArgumentException, RuntimeException;
 
   /**
+   * Adds this {@link Deck} and its {@link DeckInstance}s to the CDDB.
+   * @param deck deck to add
+   * @throws IllegalArgumentException if given deck is null, or if there is already a deck in the
+   *         CDDB that has the unique ID of the given deck
+   * @throws RuntimeException if there is a failure to add info to the CDDB
+   */
+  void addDeck(Deck deck) throws IllegalArgumentException, RuntimeException;
+
+  /**
    * Updates {@link Deck} in the CDDB with matching {@param deckID} by adding the given
    * {@link DeckInstance} to the matching {@link Deck}.
    * @param deck deck instance to add to corresponding {@link Deck}
    * @throws IllegalArgumentException if CDDB doesn't contain a deck with given ID, or if given
    *        {@link DeckInstance} is null
+   * @throws IllegalArgumentException if there is a failure to update the CDDB
    */
-  void updateDeck(DeckInstance deck) throws IllegalArgumentException;
+  void updateDeck(DeckInstance deck) throws IllegalArgumentException, RuntimeException;
 
   /**
    * Deletes the {@link Deck} in the CDDB with the given {@param deckID}.

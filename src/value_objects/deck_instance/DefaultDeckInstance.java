@@ -21,6 +21,9 @@ public class DefaultDeckInstance implements DeckInstance {
    */
   private final int parentDeckID;
 
+  /**
+   * Time and date this {@link DeckInstance} was created.
+   */
   private final LocalDateTime creation;
 
   /**
