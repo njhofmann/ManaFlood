@@ -215,7 +215,7 @@ CREATE TABLE Deck (
 --An instance of an individual deck
 CREATE TABLE DeckInstance (
   deck_id INTEGER NOT NULL,
-  creation DATETIME NOT NULL,
+  creation TIMESTMP NOT NULL,
   PRIMARY KEY(deck_id, creation),
   FOREIGN KEY(deck_id) REFERENCES DECK(id) ON DELETE CASCADE
 );

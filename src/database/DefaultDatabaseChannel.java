@@ -243,15 +243,112 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     hasDeckBeenAdded(deck.getParentDeckID());
 
+    String insertStatement;
+    PreparedStatement prep;
+
     // Add deck instance info
+    int deckID = deck.getParentDeckID();
+    LocalDateTime creationInfo = deck.getCreationInfo();
+    Timestamp creationTimestamp = Timestamp.valueOf(creationInfo);
+    try {
+      insertStatement = "INSERT INTO DeckInstance(deck_id, creation) VALUES (?,?)";
+      prep = connection.prepareStatement(insertStatement);
+      prep.setInt(1, deckID);
+      prep.setTimestamp(2, creationTimestamp);
+      prep.executeUpdate();
+    }
+    catch (SQLException e){
+      e.printStackTrace();
+      throw new RuntimeException(String.format("Failed to add deck instance %d, %s!", deck,
+          creationInfo.toString()));
+    }
 
     // Add categories
+    Set<String> categories = deck.getCategories();
+    for (String category : categories) {
+      try {
+        insertStatement = "INSERT INTO DeckInstCategory(deck_id, deck_inst_creation, category) "
+            + "VALUES (?,?,?)";
+        prep = connection.prepareStatement(insertStatement);
+        prep.setInt(1, deckID);
+        prep.setTimestamp(2, creationTimestamp);
+        prep.setString(3, category);
+        prep.executeUpdate();
+      }
+      catch (SQLException e){
+        e.printStackTrace();
+        throw new RuntimeException(String.format("Failed to add category %s for deck instance %d, "
+                + "%s!", category, deck, creationInfo.toString()));
+      }
+    }
 
     // Add cards
+    Set<String> cards = deck.getCards();
+    for (String card : cards) {
+      try {
+        insertStatement = "INSERT INTO DeckInstCard(deck_id, deck_inst_creation, card_name) VALUES (?,?,?)";
+        prep = connection.prepareStatement(insertStatement);
+        prep.setInt(1, deckID);
+        prep.setTimestamp(2, creationTimestamp);
+        prep.setString(3, card);
+        prep.executeUpdate();
+      }
+      catch (SQLException e){
+        e.printStackTrace();
+        throw new RuntimeException(String.format("Failed to add card %s for deck instance %d, "
+            + "%s!", card, deck, creationInfo.toString()));
+      }
+    }
 
     // Add card expansions
+    Map<CardPrinting, Integer> cardExpansion = deck.getCardPrintingQuantities();
+    for (CardPrinting cardPrinting : cardExpansion.keySet()) {
+      String cardName = cardPrinting.getCardName();
+      String expansion = cardPrinting.getCardExpansion();
+      String identifier = cardPrinting.getIdentifyingNumber();
+      int quantity = cardExpansion.get(cardPrinting);
+      try {
+        insertStatement = "INSERT INTO DeckInstCardExpansion(deck_id, deck_inst_creation, "
+            + "card_name, expansion, card_number, quantity) VALUES (?,?,?,?,?,?)";
+        prep = connection.prepareStatement(insertStatement);
+        prep.setInt(1, deckID);
+        prep.setTimestamp(2, creationTimestamp);
+        prep.setString(3, cardName);
+        prep.setString(4, expansion);
+        prep.setString(5, identifier);
+        prep.setInt(6, quantity);
+        prep.executeUpdate();
+      }
+      catch (SQLException e){
+        e.printStackTrace();
+        throw new RuntimeException(String.format("Failed to add card printing %s, %s, %s for deck "
+            + "instance %d, %s!", cardName, expansion, identifier, cardPrinting, deck,
+            creationInfo.toString()));
+      }
+    }
 
     // Add cards in categories
+    Map<String, Set<String>> cardCategories = deck.getCardsByCategory();
+    for (String category : cardCategories.keySet()) {
+      Set<String> categoryCards = cardCategories.get(category);
+      for (String card : categoryCards) {
+        try {
+          insertStatement = "INSERT INTO DeckInstCardCategory(deck_id, deck_inst_creation, "
+              + "card_name, cateogry) VALUES (?,?,?,?)";
+          prep = connection.prepareStatement(insertStatement);
+          prep.setInt(1, deckID);
+          prep.setTimestamp(2, creationTimestamp);
+          prep.setString(3, card);
+          prep.setString(4, category);
+          prep.executeUpdate();
+        }
+        catch (SQLException e){
+          e.printStackTrace();
+          throw new RuntimeException(String.format("Failed to add card %s, to category %s for deck "
+                  + "instance %d, %s!", card, category, deck, creationInfo.toString()));
+        }
+      }
+    }
   }
 
   @Override

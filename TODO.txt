@@ -1,14 +1,12 @@
+Minor:
 -Deal with timeshifted cards
--Deck instance builder
--Adding new deck
 -Documentation
--Override hashcode and equals for value objects
 -Write down how time handling is done
-  -Storing time in DB as datetime
-  -Retrieve as string, convert to localdatetime with specific parser
-  -converting from text / integer to localdatetime
-  -
--Script to blank database, full database
 -Update text on cards option (erreta)
 -Comprehensive readme explaining project structure and plan
-  -Identifier vs Info Container for cards and card printings
+  -Identifier vs Info Container for value objects
+
+Major:
+-DatebaseChannel tests on blank database
+-Script to build blank database into full database
+-How should cardQuerying work
