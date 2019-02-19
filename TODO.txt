@@ -3,6 +3,8 @@ Minor:
 -Documentation
 -Write down how time handling is done
 -Update text on cards option (erreta)
+-Checked vs unchecked exception handling
+-Custom exception for database errors?
 -Comprehensive readme explaining project structure and plan
   -Identifier vs Info Container for value objects
 

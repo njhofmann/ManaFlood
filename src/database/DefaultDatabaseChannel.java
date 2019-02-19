@@ -29,7 +29,8 @@ import value_objects.deck_instance.DefaultDeckInstance;
 public class DefaultDatabaseChannel extends DefaultDatabasePort implements DatabaseChannel {
 
   /**
-   * Takes in a {@link Path} referencing the Card and Deck Database (CDDB).
+   * Takes in a {@link Path} referencing the Card and Deck Database (CDDB) to establish a
+   * connection with the database.
    * @param pathToDatabase path to CDDB
    */
   public DefaultDatabaseChannel(Path pathToDatabase) {
@@ -37,7 +38,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
   }
 
   @Override
-  public HashMap<Integer, String> getDecks() throws RuntimeException {
+  public HashMap<Integer, String> getDecks() throws SQLException {
     try {
       String deckQuery = "SELECT id, name FROM Deck";
       PreparedStatement prep = connection.prepareStatement(deckQuery);
@@ -53,12 +54,12 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException("Failed to query CDDB for deck IDs and names!");
+      throw new SQLException("Failed to query CDDB for deck IDs and names!");
     }
   }
 
   @Override
-  public Deck getDeck(int deckID) throws IllegalArgumentException, RuntimeException {
+  public Deck getDeck(int deckID) throws IllegalArgumentException, SQLException {
     hasDeckBeenAdded(deckID);
 
     // Query for info of all deck instances related to current deck
@@ -71,7 +72,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException(String.format("Failed to query for info of deck instances"
+      throw new SQLException(String.format("Failed to query for info of deck instances"
           + " related to deck %d!", deckID));
     }
 
@@ -86,7 +87,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException("Failed to query for deck instance creations date & times!");
+      throw new SQLException("Failed to query for deck instance creations date & times!");
     }
 
     // Build deck instances,
@@ -107,7 +108,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
       }
       catch (SQLException e) {
         e.printStackTrace();
-        throw new RuntimeException(String.format("Failed to query for categories for deck with"
+        throw new SQLException(String.format("Failed to query for categories for deck with"
             + " ID %d!", deckID));
       }
 
@@ -128,7 +129,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
             while (cardsInCategory.next()) {
               String cardToAdd = cardsInCategory.getString("card_name");
               if (cardsToAdd.contains(cardToAdd)) {
-                throw new RuntimeException(String.format("Connected database is malformed for"
+                throw new SQLException(String.format("Connected database is malformed for"
                     + "allowing duplicate entries of card %d in category %d of deck instance"
                     + "%d %s!", cardToAdd, currentCategory, deckID, creation.toString()));
               }
@@ -138,14 +139,14 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
           }
           catch (SQLException e) {
             e.printStackTrace();
-            throw new RuntimeException(String.format("Failed to query for cards in category %s for"
+            throw new SQLException(String.format("Failed to query for cards in category %s for"
                 + " deck instance %d %s!", currentCategory, deckID, creation.toString()));
           }
         }
       }
       catch (SQLException e) {
         e.printStackTrace();
-        throw new RuntimeException(String.format("Failed to query for card categories for deck "
+        throw new SQLException(String.format("Failed to query for card categories for deck "
             + "instance %d %s!", deckID, creation.toString()));
       }
 
@@ -171,13 +172,13 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
         }
         catch (SQLException e) {
           e.printStackTrace();
-          throw new RuntimeException(String.format("Failed to get card printing info for deck "
+          throw new SQLException(String.format("Failed to get card printing info for deck "
               + "instance %d %s!", deckID, creation.toString()));
         }
       }
       catch (SQLException e) {
         e.printStackTrace();
-        throw new RuntimeException(String.format("Failed to query for card printings in deck"
+        throw new SQLException(String.format("Failed to query for card printings in deck"
             + "instance %d %s!", deckID, creation.toString()));
       }
       DeckInstance toAdd = new DefaultDeckInstance(deckID, creation, categoryContents, cardPrintingQuantities);
@@ -190,7 +191,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException(String.format("Failed to query for name of deck with id %d!", deckID));
+      throw new SQLException(String.format("Failed to query for name of deck with id %d!", deckID));
     }
 
     String deckDesp = "";
@@ -199,7 +200,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException(String.format("Failed to query for description of deck with id"
+      throw new SQLException(String.format("Failed to query for description of deck with id"
           + " %d!", deckID));
     }
 
@@ -208,7 +209,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
   }
 
   @Override
-  public void addDeck(Deck deck) throws IllegalArgumentException, RuntimeException {
+  public void addDeck(Deck deck) throws IllegalArgumentException, SQLException {
     if (deck == null) {
       throw new IllegalArgumentException("Given deck can't be null!");
     }
@@ -226,7 +227,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException(String.format("Failed to add new deck with ID %d and name %s!",
+      throw new SQLException(String.format("Failed to add new deck with ID %d and name %s!",
           deckID, deckName));
     }
 
@@ -237,7 +238,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
   }
 
   @Override
-  public void updateDeck(DeckInstance deck) throws IllegalArgumentException {
+  public void updateDeck(DeckInstance deck) throws IllegalArgumentException, SQLException {
     if (deck == null) {
       throw new IllegalArgumentException("Given deck instance can't be null!");
     }
@@ -259,7 +260,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     catch (SQLException e){
       e.printStackTrace();
-      throw new RuntimeException(String.format("Failed to add deck instance %d, %s!", deck,
+      throw new SQLException(String.format("Failed to add deck instance %d, %s!", deck,
           creationInfo.toString()));
     }
 
@@ -277,7 +278,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
       }
       catch (SQLException e){
         e.printStackTrace();
-        throw new RuntimeException(String.format("Failed to add category %s for deck instance %d, "
+        throw new SQLException(String.format("Failed to add category %s for deck instance %d, "
                 + "%s!", category, deck, creationInfo.toString()));
       }
     }
@@ -295,7 +296,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
       }
       catch (SQLException e){
         e.printStackTrace();
-        throw new RuntimeException(String.format("Failed to add card %s for deck instance %d, "
+        throw new SQLException(String.format("Failed to add card %s for deck instance %d, "
             + "%s!", card, deck, creationInfo.toString()));
       }
     }
@@ -321,7 +322,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
       }
       catch (SQLException e){
         e.printStackTrace();
-        throw new RuntimeException(String.format("Failed to add card printing %s, %s, %s for deck "
+        throw new SQLException(String.format("Failed to add card printing %s, %s, %s for deck "
             + "instance %d, %s!", cardName, expansion, identifier, cardPrinting, deck,
             creationInfo.toString()));
       }
@@ -344,7 +345,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
         }
         catch (SQLException e){
           e.printStackTrace();
-          throw new RuntimeException(String.format("Failed to add card %s, to category %s for deck "
+          throw new SQLException(String.format("Failed to add card %s, to category %s for deck "
                   + "instance %d, %s!", card, category, deck, creationInfo.toString()));
         }
       }
@@ -352,7 +353,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
   }
 
   @Override
-  public void deleteDeck(int deckID) throws IllegalArgumentException {
+  public void deleteDeck(int deckID) throws IllegalArgumentException, SQLException {
     // Check if deck exists
     hasDeckBeenAdded(deckID);
 
@@ -364,12 +365,12 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException(String.format("Failed to delete deck with ID %d!", deckID));
+      throw new SQLException(String.format("Failed to delete deck with ID %d!", deckID));
     }
   }
 
   @Override
-  public void updateDeckName(int deckID, String newName) throws IllegalArgumentException {
+  public void updateDeckName(int deckID, String newName) throws IllegalArgumentException, SQLException {
     if (newName == null) {
       throw new IllegalArgumentException("Given new name can't be null!");
     }
@@ -385,13 +386,13 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException(String.format("Failed to update deck with ID %d with new"
+      throw new SQLException(String.format("Failed to update deck with ID %d with new"
           + " name \"%s\"!", deckID, newName));
     }
   }
 
   @Override
-  public void updateDeckDesp(int deckID, String newDesp) throws IllegalArgumentException {
+  public void updateDeckDesp(int deckID, String newDesp) throws IllegalArgumentException, SQLException {
     if (newDesp == null) {
       throw new IllegalArgumentException("Given new description can't be null!");
     }
@@ -407,7 +408,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException(String.format("Failed to update deck with ID %d with new"
+      throw new SQLException(String.format("Failed to update deck with ID %d with new"
           + " description \"%s\"!", deckID, newDesp));
     }
   }
@@ -423,7 +424,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
    * @param deckID deck id to check for
    * @throws IllegalArgumentException if there is no deck in CDDB with matching ID
    */
-  private void hasDeckBeenAdded(int deckID) {
+  private void hasDeckBeenAdded(int deckID) throws IllegalArgumentException, SQLException {
     // Check if CDDB has deck with given ID
     Set<Integer> deckIDs = getDecks().keySet();
     if (!deckIDs.contains(deckID)) {
@@ -437,7 +438,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
    * @param deckID deck id to check for
    * @throws IllegalArgumentException if there is a deck in CDDB with a matching ID
    */
-  private void hasDeckNotBeenAdded(int deckID) {
+  private void hasDeckNotBeenAdded(int deckID) throws IllegalArgumentException, SQLException {
     // Check if CDDB has deck with given ID
     Set<Integer> deckIDs = getDecks().keySet();
     if (deckIDs.contains(deckID)) {

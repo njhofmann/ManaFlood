@@ -62,7 +62,7 @@ public abstract class DefaultDatabasePort implements DatabasePort {
   }
 
   @Override
-  public void connect() throws RuntimeException {
+  public void connect() throws SQLException {
     try {
       // Path to CDDB
       String url = "jdbc:sqlite:" + pathToDatabase.toString();
@@ -76,14 +76,14 @@ public abstract class DefaultDatabasePort implements DatabasePort {
       System.out.println("Connected to CDDB successfully!");
     } catch (SQLException e) {
       System.out.println(e.getMessage());
-      throw new RuntimeException("Failed to connect to CDDB!");
+      throw new SQLException("Failed to connect to CDDB!");
     }
 
     retrieveDatabaseEnumerations();
   }
 
   @Override
-  public void disconnect() throws RuntimeException {
+  public void disconnect() throws SQLException {
     try {
       if (connection != null) {
         System.out.println("Closed connection to CDDB successfully!");
@@ -91,7 +91,7 @@ public abstract class DefaultDatabasePort implements DatabasePort {
       }
     } catch (SQLException e) {
       System.out.println(e.getMessage());
-      throw new RuntimeException("Failed to close CDDB!");
+      throw new SQLException("Failed to close CDDB!");
     }
   }
 
@@ -144,9 +144,9 @@ public abstract class DefaultDatabasePort implements DatabasePort {
 
   /**
    * Once a connection to the CDDB has been established, retrieves enumeration info from the CDDB.
-   * @throws RuntimeException if there is a failure to retrieve any enumeration info
+   * @throws SQLException if there is a failure to retrieve any enumeration info
    */
-  private void retrieveDatabaseEnumerations() throws RuntimeException {
+  private void retrieveDatabaseEnumerations() throws SQLException {
     isConnected();
 
     PreparedStatement prep;
@@ -164,7 +164,7 @@ public abstract class DefaultDatabasePort implements DatabasePort {
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException("Failed to query for supertypes!");
+      throw new SQLException("Failed to query for supertypes!");
     }
 
     // Fill types
@@ -179,7 +179,7 @@ public abstract class DefaultDatabasePort implements DatabasePort {
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException("Failed to query for types!");
+      throw new SQLException("Failed to query for types!");
     }
 
     // Fill rarity types
@@ -194,7 +194,7 @@ public abstract class DefaultDatabasePort implements DatabasePort {
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException("Failed to query for rarity types!");
+      throw new SQLException("Failed to query for rarity types!");
     }
     // Fill mana types
     try {
@@ -208,7 +208,7 @@ public abstract class DefaultDatabasePort implements DatabasePort {
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException("Failed to query for mana types!");
+      throw new SQLException("Failed to query for mana types!");
     }
 
     // Fill two faced types
@@ -223,7 +223,7 @@ public abstract class DefaultDatabasePort implements DatabasePort {
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException("Failed to query for two card types!");
+      throw new SQLException("Failed to query for two card types!");
     }
 
     // Fill three faced types
@@ -238,7 +238,7 @@ public abstract class DefaultDatabasePort implements DatabasePort {
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new RuntimeException("Failed to query for three card types!");
+      throw new SQLException("Failed to query for three card types!");
     }
   }
 }
