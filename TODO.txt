@@ -3,12 +3,13 @@ Minor:
 -Documentation
 -Write down how time handling is done
 -Update text on cards option (erreta)
--Checked vs unchecked exception handling
+-Add release dates to expansions
 -Custom exception for database errors?
 -Comprehensive readme explaining project structure and plan
   -Identifier vs Info Container for value objects
 
 Major:
+-Enums for database types, subtypes, etc.
 -DatebaseChannel tests on blank database
 -Script to build blank database into full database
 -How should cardQuerying work

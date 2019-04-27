@@ -1,11 +1,11 @@
 package value_objects;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Represents all info of an individual card in the Card and Deck Database (CDDB).
+ * Represents all info of an individual card in the Card and Deck Database (CDDB). Uniqueness is
+ * determined by the name of this {@link Card}.
  */
 public interface Card {
 
@@ -16,7 +16,8 @@ public interface Card {
   String getName();
 
   /**
-   * Returns the mana symbols and their quantities that make up this {@link Card}'s mana cost.
+   * Returns the mana symbols and their quantities that make up this {@link Card}'s mana cost
+   * as an immutable map.
    * @return card's mana cost
    */
   Map<String, Integer> getManaCost();
@@ -28,13 +29,13 @@ public interface Card {
   String getText();
 
   /**
-   * Returns the supertypes of this {@link Card}.
+   * Returns the supertypes of this {@link Card} as an immutable set.
    * @return card's supertypes
    */
   Set<String> getSupertypes();
 
   /**
-   * Returns the types of this {@link Card}.
+   * Returns the types of this {@link Card} as an immutable set.
    * @return card's types
    */
   Set<String> getTypes();
@@ -46,12 +47,12 @@ public interface Card {
   Set<String> getSubtypes();
 
   /**
-   * If this {@link Card} has either power or toughness, or loyalty, returns that info in a int
-   * array.
-   * If card has p/t returns as array of length 2 in form of "[power, toughness]".
-   * If card has loyalty returns a array of length 1 in form of "[loyalty]".
-   * If card has no additional info returns only an empty array.
+   * If this {@link Card} has either power or toughness, or loyalty, returns that info in a
+   * immutable Map<String, Integer> map.
+   * If card has p/t returns as map with keys "power" and "toughness".
+   * If card has loyalty returns a map with key "loyalty".
+   * If card has no additional info returns only an empty map.
    * @return any extra stats this card may have
    */
-  int[] getExtraStats();
+  Map<String, Integer> getExtraStats();
 }
