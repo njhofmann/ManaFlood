@@ -5,11 +5,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import org.sqlite.SQLiteConfig;
 
 /**
@@ -27,17 +23,10 @@ public abstract class DefaultDatabasePort implements DatabasePort {
    */
   protected Connection connection;
 
-  private final List<String> rarities;
-
-  private final List<String> supertypes;
-
-  private final List<String> types;
-
-  private final List<String> twoFacedTypes;
-
-  private final List<String> threeFacedTypes;
-
-  private final List<String> manaTypes;
+  /**
+   * Prepared statement to use for accessing the database.
+   */
+  protected PreparedStatement preparedStatement;
 
   /**
    * Takes in a {@link Path} referencing the Card and Deck Database (CDDB).
@@ -51,14 +40,6 @@ public abstract class DefaultDatabasePort implements DatabasePort {
       throw new IllegalArgumentException("Give path doesn't reference an existing file!");
     }
     this.pathToDatabase = pathToDatabase;
-
-    // Initalize types
-    rarities = new ArrayList<>();
-    supertypes = new ArrayList<>();
-    types = new ArrayList<>();
-    twoFacedTypes = new ArrayList<>();
-    threeFacedTypes = new ArrayList<>();
-    manaTypes = new ArrayList<>();
   }
 
   @Override
@@ -76,10 +57,8 @@ public abstract class DefaultDatabasePort implements DatabasePort {
       System.out.println("Connected to CDDB successfully!");
     } catch (SQLException e) {
       System.out.println(e.getMessage());
-      throw new SQLException("Failed to connect to CDDB!");
+      throw new IllegalStateException("Failed to connect to CDDB!");
     }
-
-    retrieveDatabaseEnumerations();
   }
 
   @Override
@@ -95,150 +74,15 @@ public abstract class DefaultDatabasePort implements DatabasePort {
     }
   }
 
-  @Override
-  public List<String> getSupertypes() {
-    isConnected();
-    return Collections.unmodifiableList(supertypes);
-  }
-
-  @Override
-  public List<String> getTypes() {
-    isConnected();
-    return Collections.unmodifiableList(types);
-  }
-
-  @Override
-  public List<String> getManaTypes() {
-    isConnected();
-    return Collections.unmodifiableList(manaTypes);
-  }
-
-  @Override
-  public List<String> getRarityTypes() {
-    isConnected();
-    return Collections.unmodifiableList(rarities);
-  }
-
-  @Override
-  public List<String> getTwoFacedTypes() {
-    isConnected();
-    return Collections.unmodifiableList(twoFacedTypes);
-  }
-
-  @Override
-  public List<String> getThreeFacedTypes() {
-    isConnected();
-    return Collections.unmodifiableList(threeFacedTypes);
-  }
-
   /**
    * Checks if a connection to the CDDB has been established yet, throws an error if not. Used to
    * prevent calling methods that rely on a connection to the database.
    * @throws IllegalStateException if connection to CDDB hasn't been established yet
    */
-  private void isConnected() throws IllegalStateException {
+  protected void isConnected() throws IllegalStateException {
     if (connection == null) {
       throw new IllegalStateException("Connection to the CDDB has not yet been established!");
     }
   }
 
-  /**
-   * Once a connection to the CDDB has been established, retrieves enumeration info from the CDDB.
-   * @throws SQLException if there is a failure to retrieve any enumeration info
-   */
-  private void retrieveDatabaseEnumerations() throws SQLException {
-    isConnected();
-
-    PreparedStatement prep;
-    ResultSet queryResult;
-
-    // Fill supertypes
-    try {
-      String supertypeQuery = "SELECT type FROM Supertype";
-      prep = connection.prepareStatement(supertypeQuery);
-      queryResult = prep.executeQuery();
-
-      while (queryResult.next()) {
-        supertypes.add(queryResult.getString("type"));
-      }
-    }
-    catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException("Failed to query for supertypes!");
-    }
-
-    // Fill types
-    try {
-      String typeQuery = "SELECT type FROM Type";
-      prep = connection.prepareStatement(typeQuery);
-      queryResult = prep.executeQuery();
-
-      while (queryResult.next()) {
-        types.add(queryResult.getString("type"));
-      }
-    }
-    catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException("Failed to query for types!");
-    }
-
-    // Fill rarity types
-    try {
-      String rarityTypeQuery = "SELECT type FROM Rarity";
-      prep = connection.prepareStatement(rarityTypeQuery);
-      queryResult = prep.executeQuery();
-
-      while (queryResult.next()) {
-        rarities.add(queryResult.getString("type"));
-      }
-    }
-    catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException("Failed to query for rarity types!");
-    }
-    // Fill mana types
-    try {
-      String manaTypesQuery = "SELECT type FROM ManaType";
-      prep = connection.prepareStatement(manaTypesQuery);
-      queryResult = prep.executeQuery();
-
-      while (queryResult.next()) {
-        manaTypes.add(queryResult.getString("type"));
-      }
-    }
-    catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException("Failed to query for mana types!");
-    }
-
-    // Fill two faced types
-    try {
-      String twoFaceTypeQuery = "SELECT type FROM TwoCardsType";
-      prep = connection.prepareStatement(twoFaceTypeQuery);
-      queryResult = prep.executeQuery();
-
-      while (queryResult.next()) {
-        twoFacedTypes.add(queryResult.getString("type"));
-      }
-    }
-    catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException("Failed to query for two card types!");
-    }
-
-    // Fill three faced types
-    try {
-      String threeFaceTypeQuery = "SELECT type FROM ThreeCardsType";
-      prep = connection.prepareStatement(threeFaceTypeQuery);
-      queryResult = prep.executeQuery();
-
-      while (queryResult.next()) {
-        threeFacedTypes.add(queryResult.getString("type"));
-      }
-    }
-    catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException("Failed to query for three card types!");
-    }
-  }
 }

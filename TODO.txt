@@ -9,7 +9,8 @@ Minor:
   -Identifier vs Info Container for value objects
 
 Major:
--Enums for database types, subtypes, etc.
--DatebaseChannel tests on blank database
--Script to build blank database into full database
+-Update documentation on parser
+-Add color and color identity suppport for cards
+-Script to build blank database, full database
 -How should cardQuerying work
+-DatebaseChannel tests on blank database

@@ -2,17 +2,19 @@ package database;
 
 import database.access.DefaultDatabasePort;
 import java.nio.file.Path;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import value_objects.Card;
 import value_objects.CardQuery;
 import value_objects.card_printing.CardPrinting;
@@ -24,9 +26,10 @@ import value_objects.deck_instance.DefaultDeckInstance;
 
 /**
  * Default class to use to access the Card and Deck Database (CDDB) for querying cards and reading,
- * updating, and deleting decks.
+ * updating, and deleting decks. In addition to accessing enumerated info about card types.
  */
-public class DefaultDatabaseChannel extends DefaultDatabasePort implements DatabaseChannel {
+public class DefaultDatabaseChannel extends DefaultDatabasePort implements DatabaseChannel,
+    DatabaseInfoAccess {
 
   /**
    * Takes in a {@link Path} referencing the Card and Deck Database (CDDB) to establish a
@@ -41,8 +44,8 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
   public HashMap<Integer, String> getDecks() throws SQLException {
     try {
       String deckQuery = "SELECT id, name FROM Deck";
-      PreparedStatement prep = connection.prepareStatement(deckQuery);
-      ResultSet result = prep.executeQuery();
+      preparedStatement = connection.prepareStatement(deckQuery);
+      ResultSet result = preparedStatement.executeQuery();
 
       HashMap<Integer, String> decksInfo = new HashMap<>();
       while (result.next()) {
@@ -66,9 +69,9 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     ResultSet deckInstancesInfo;
     try {
       String deckInstanceInfoQuery = "SELECT * FROM DeckInstance WHERE deck_id=?";
-      PreparedStatement prep = connection.prepareStatement(deckInstanceInfoQuery);
-      prep.setInt(1, deckID);
-      deckInstancesInfo = prep.executeQuery();
+      preparedStatement = connection.prepareStatement(deckInstanceInfoQuery);
+      preparedStatement.setInt(1, deckID);
+      deckInstancesInfo = preparedStatement.executeQuery();
     }
     catch (SQLException e) {
       e.printStackTrace();
@@ -101,10 +104,10 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
       try {
         String categoriesQuery = "SELECT * FROM DeckInstCategory WHERE deck_id=? "
             + "AND deck_inst_creation=?";
-        PreparedStatement prep = connection.prepareStatement(categoriesQuery);
-        prep.setInt(1, deckID);
-        prep.setTimestamp(2, Timestamp.valueOf(creation));
-        categoriesResult = prep.executeQuery();
+        preparedStatement = connection.prepareStatement(categoriesQuery);
+        preparedStatement.setInt(1, deckID);
+        preparedStatement.setTimestamp(2, Timestamp.valueOf(creation));
+        categoriesResult = preparedStatement.executeQuery();
       }
       catch (SQLException e) {
         e.printStackTrace();
@@ -119,11 +122,11 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
           try {
             String categoryQuery = "SELECT * FROM DeckInstCardCategory WHERE deck_id=? "
                 + "AND deck_inst_creation=? AND category=?";
-            PreparedStatement prep = connection.prepareStatement(categoryQuery);
-            prep.setInt(1, deckID);
-            prep.setTimestamp(2, Timestamp.valueOf(creation));
-            prep.setString(3, currentCategory);
-            ResultSet cardsInCategory = prep.executeQuery();
+            preparedStatement = connection.prepareStatement(categoryQuery);
+            preparedStatement.setInt(1, deckID);
+            preparedStatement.setTimestamp(2, Timestamp.valueOf(creation));
+            preparedStatement.setString(3, currentCategory);
+            ResultSet cardsInCategory = preparedStatement.executeQuery();
 
             Set<String> cardsToAdd = new HashSet<>();
             while (cardsInCategory.next()) {
@@ -154,10 +157,10 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
       try {
         String cardPrintingsQuery = "SELECT * FROM DeckInstCardExpansion WHERE deck_id=? "
             + "AND deck_inst_creation=?";
-        PreparedStatement prep = connection.prepareStatement(cardPrintingsQuery);
-        prep.setInt(1, deckID);
-        prep.setTimestamp(2, Timestamp.valueOf(creation));
-        ResultSet cardPrintings = prep.executeQuery();
+        preparedStatement = connection.prepareStatement(cardPrintingsQuery);
+        preparedStatement.setInt(1, deckID);
+        preparedStatement.setTimestamp(2, Timestamp.valueOf(creation));
+        ResultSet cardPrintings = preparedStatement.executeQuery();
 
         try {
           while (cardPrintings.next()) {
@@ -219,11 +222,11 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     String deckName = deck.getDeckName();
     try {
       String deckInsert = "INSERT INTO DECK(id,name,desp) VALUES (?,?,?)";
-      PreparedStatement prep = connection.prepareStatement(deckInsert);
-      prep.setInt(1, deckID);
-      prep.setString(2, deckName);
-      prep.setString(3, deck.getDescription());
-      prep.executeUpdate();
+      preparedStatement = connection.prepareStatement(deckInsert);
+      preparedStatement.setInt(1, deckID);
+      preparedStatement.setString(2, deckName);
+      preparedStatement.setString(3, deck.getDescription());
+      preparedStatement.executeUpdate();
     }
     catch (SQLException e) {
       e.printStackTrace();
@@ -245,7 +248,6 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     hasDeckBeenAdded(deck.getParentDeckID());
 
     String insertStatement;
-    PreparedStatement prep;
 
     // Add deck instance info
     int deckID = deck.getParentDeckID();
@@ -253,10 +255,10 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     Timestamp creationTimestamp = Timestamp.valueOf(creationInfo);
     try {
       insertStatement = "INSERT INTO DeckInstance(deck_id, creation) VALUES (?,?)";
-      prep = connection.prepareStatement(insertStatement);
-      prep.setInt(1, deckID);
-      prep.setTimestamp(2, creationTimestamp);
-      prep.executeUpdate();
+      preparedStatement = connection.prepareStatement(insertStatement);
+      preparedStatement.setInt(1, deckID);
+      preparedStatement.setTimestamp(2, creationTimestamp);
+      preparedStatement.executeUpdate();
     }
     catch (SQLException e){
       e.printStackTrace();
@@ -270,11 +272,11 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
       try {
         insertStatement = "INSERT INTO DeckInstCategory(deck_id, deck_inst_creation, category) "
             + "VALUES (?,?,?)";
-        prep = connection.prepareStatement(insertStatement);
-        prep.setInt(1, deckID);
-        prep.setTimestamp(2, creationTimestamp);
-        prep.setString(3, category);
-        prep.executeUpdate();
+        preparedStatement = connection.prepareStatement(insertStatement);
+        preparedStatement.setInt(1, deckID);
+        preparedStatement.setTimestamp(2, creationTimestamp);
+        preparedStatement.setString(3, category);
+        preparedStatement.executeUpdate();
       }
       catch (SQLException e){
         e.printStackTrace();
@@ -288,11 +290,11 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     for (String card : cards) {
       try {
         insertStatement = "INSERT INTO DeckInstCard(deck_id, deck_inst_creation, card_name) VALUES (?,?,?)";
-        prep = connection.prepareStatement(insertStatement);
-        prep.setInt(1, deckID);
-        prep.setTimestamp(2, creationTimestamp);
-        prep.setString(3, card);
-        prep.executeUpdate();
+        preparedStatement = connection.prepareStatement(insertStatement);
+        preparedStatement.setInt(1, deckID);
+        preparedStatement.setTimestamp(2, creationTimestamp);
+        preparedStatement.setString(3, card);
+        preparedStatement.executeUpdate();
       }
       catch (SQLException e){
         e.printStackTrace();
@@ -311,14 +313,14 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
       try {
         insertStatement = "INSERT INTO DeckInstCardExpansion(deck_id, deck_inst_creation, "
             + "card_name, expansion, card_number, quantity) VALUES (?,?,?,?,?,?)";
-        prep = connection.prepareStatement(insertStatement);
-        prep.setInt(1, deckID);
-        prep.setTimestamp(2, creationTimestamp);
-        prep.setString(3, cardName);
-        prep.setString(4, expansion);
-        prep.setString(5, identifier);
-        prep.setInt(6, quantity);
-        prep.executeUpdate();
+        preparedStatement = connection.prepareStatement(insertStatement);
+        preparedStatement.setInt(1, deckID);
+        preparedStatement.setTimestamp(2, creationTimestamp);
+        preparedStatement.setString(3, cardName);
+        preparedStatement.setString(4, expansion);
+        preparedStatement.setString(5, identifier);
+        preparedStatement.setInt(6, quantity);
+        preparedStatement.executeUpdate();
       }
       catch (SQLException e){
         e.printStackTrace();
@@ -336,12 +338,12 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
         try {
           insertStatement = "INSERT INTO DeckInstCardCategory(deck_id, deck_inst_creation, "
               + "card_name, cateogry) VALUES (?,?,?,?)";
-          prep = connection.prepareStatement(insertStatement);
-          prep.setInt(1, deckID);
-          prep.setTimestamp(2, creationTimestamp);
-          prep.setString(3, card);
-          prep.setString(4, category);
-          prep.executeUpdate();
+          preparedStatement = connection.prepareStatement(insertStatement);
+          preparedStatement.setInt(1, deckID);
+          preparedStatement.setTimestamp(2, creationTimestamp);
+          preparedStatement.setString(3, card);
+          preparedStatement.setString(4, category);
+          preparedStatement.executeUpdate();
         }
         catch (SQLException e){
           e.printStackTrace();
@@ -359,9 +361,9 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
 
     try {
       String deletionRequest = "DELETE FROM Deck WHERE id=?";
-      PreparedStatement prep = connection.prepareStatement(deletionRequest);
-      prep.setInt(1, deckID);
-      prep.executeUpdate();
+      preparedStatement = connection.prepareStatement(deletionRequest);
+      preparedStatement.setInt(1, deckID);
+      preparedStatement.executeUpdate();
     }
     catch (SQLException e) {
       e.printStackTrace();
@@ -379,10 +381,10 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
 
     try {
       String updateRequest = "UPDATE Deck SET name=? WHERE id=?";
-      PreparedStatement prep = connection.prepareStatement(updateRequest);
-      prep.setString(1, newName);
-      prep.setInt(2, deckID);
-      prep.executeUpdate();
+      preparedStatement = connection.prepareStatement(updateRequest);
+      preparedStatement.setString(1, newName);
+      preparedStatement.setInt(2, deckID);
+      preparedStatement.executeUpdate();
     }
     catch (SQLException e) {
       e.printStackTrace();
@@ -401,10 +403,10 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
 
     try {
       String updateRequest = "UPDATE Deck SET desp=? WHERE id=?";
-      PreparedStatement prep = connection.prepareStatement(updateRequest);
-      prep.setString(1, newDesp);
-      prep.setInt(2, deckID);
-      prep.executeUpdate();
+      preparedStatement = connection.prepareStatement(updateRequest);
+      preparedStatement.setString(1, newDesp);
+      preparedStatement.setInt(2, deckID);
+      preparedStatement.executeUpdate();
     }
     catch (SQLException e) {
       e.printStackTrace();
@@ -444,5 +446,66 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     if (deckIDs.contains(deckID)) {
       throw new IllegalArgumentException("CDDB already contains deck with given ID!");
     }
+  }
+
+  @Override
+  public SortedSet<String> getSupertypes() throws SQLException {
+    return retrieveColumnInfo("CardSupertype", "supertype");
+  }
+
+  @Override
+  public SortedSet<String> getTypes() throws SQLException {
+    return retrieveColumnInfo("CardType", "type");
+  }
+
+  @Override
+  public SortedSet<String> getSubtypes() throws SQLException {
+    return retrieveColumnInfo("CardSubtype", "subtype");
+  }
+
+  @Override
+  public SortedSet<String> getManaTypes() throws SQLException {
+    return retrieveColumnInfo("CardMana", "mana_type");
+  }
+
+  @Override
+  public SortedSet<String> getRarityTypes() throws SQLException {
+    return retrieveColumnInfo("CardExpansion", "rarity");
+  }
+
+  @Override
+  public SortedSet<String> getColors() throws SQLException {
+    return retrieveColumnInfo("CardColor", "color");
+  }
+
+  @Override
+  public SortedSet<String> getTwoFacedTypes() throws SQLException {
+    return retrieveColumnInfo("TwoCards", "type");
+  }
+
+  @Override
+  public SortedSet<String> getThreeFacedTypes() throws SQLException {
+    return retrieveColumnInfo("ThreeCards", "type");
+  }
+
+  private SortedSet<String> retrieveColumnInfo(String tableName, String columnName) throws SQLException {
+    isConnected();
+    SortedSet<String> toReturn = new TreeSet<>();
+    try {
+      String query = "SELECT DISTINCT(%s) FROM %s";
+      query = String.format(query, columnName, tableName);
+      preparedStatement = connection.prepareStatement(query);
+      ResultSet queryResult = preparedStatement.executeQuery();
+
+      while (queryResult.next()) {
+        toReturn.add(queryResult.getString("type"));
+      }
+    }
+    catch (SQLException e) {
+      e.printStackTrace();
+      throw new SQLException(String.format("Failed to query for column %s from table %s!",
+          columnName, tableName));
+    }
+    return Collections.unmodifiableSortedSet(toReturn);
   }
 }
