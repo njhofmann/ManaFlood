@@ -26,11 +26,6 @@ import org.json.JSONObject;
 public class DefaultDatabaseParser extends DefaultDatabasePort implements DatabaseParser {
 
   /**
-   * Shorthand name of set currently being processed.
-   */
-  private String shorthandSetName;
-
-  /**
    * Shorthand names of sets not supported for processing.
    */
   private static final String[] unsupportedSets = {"UNH", "UGL", "UST", "PCEL"};
@@ -115,7 +110,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     }
 
     // Check for required keys
-    String[] requiredKeys = new String[]{"code", "totalSetSize", "name", "cards", "releaseDate"};
+    String[] requiredKeys = new String[]{"shorthandSetName", "totalSetSize", "name", "cards", "releaseDate"};
     for (String key : requiredKeys) {
       if (!set.has(key)) {
         throw new IllegalArgumentException(String.format("Given JSONObject isn't a set, "
@@ -123,8 +118,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       }
     }
 
-    String code = set.getString("code").toUpperCase();
-    shorthandSetName = code;
+    String shorthandSetName = set.getString("shorthandSetName").toUpperCase();
     PreparedStatement preparedStatement;
 
     // Check if set has been added
@@ -132,7 +126,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     try {
       String checkForSet = "SELECT abbrv FROM Expansion WHERE abbrv = ?";
       preparedStatement = connection.prepareStatement(checkForSet);
-      preparedStatement.setString(1, code);
+      preparedStatement.setString(1, shorthandSetName);
       ResultSet result = preparedStatement.executeQuery();
 
       if (!result.next()) {
@@ -141,7 +135,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     }
     catch (SQLException e) {
       e.printStackTrace();
-      throw new SQLException(String.format("Failed to query for set %s!", code));
+      throw new SQLException(String.format("Failed to query for set %s!", shorthandSetName));
     }
 
     if (!setAdded) {
@@ -155,7 +149,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       try {
         String insertStatement = "INSERT INTO Expansion(abbrv,expansion,size,release_date) VALUES (?,?,?,?)";
         preparedStatement = connection.prepareStatement(insertStatement);
-        preparedStatement.setString(1, code);
+        preparedStatement.setString(1, shorthandSetName);
         preparedStatement.setString(2, name);
         preparedStatement.setInt(3, size);
         preparedStatement.setTimestamp(4, releaseDateTimestamp);
@@ -167,11 +161,28 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       }
     }
 
+    // Add expansion's associated block if associated with one
+    if (set.has("block")) {
+      String block = set.getString("block");
+      try {
+        String insertStatement = "INSERT INTO Block(expansion,block) VALUES (?,?)";
+        preparedStatement = connection.prepareStatement(insertStatement);
+        preparedStatement.setString(1, shorthandSetName);
+        preparedStatement.setString(2, block);
+        preparedStatement.executeUpdate();
+      }
+      catch (SQLException e) {
+        e.printStackTrace();
+        throw new SQLException(String.format("Failed to insert block %s for associated expansion"
+            + " %s!", block, shorthandSetName));
+      }
+    }
+
     JSONArray cards = set.getJSONArray("cards");
     int length = cards.length();
     for (int i = 0; i < length; i += 1) {
       JSONObject card = cards.getJSONObject(i);
-      addCard(card);
+      addCard(card, shorthandSetName);
     }
   }
 
@@ -179,11 +190,12 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * Given the JSON object of a MTG card, from JSON file from MTGJSON, adds it to the CDDB as
    * appropriate.
    * @param card card to add
+   * @param shorthandSetName shorthand name of the expansion the given card is associated with
    * @throws IllegalArgumentException if given JSON object is null or doesn't have a required key
    *         as per MTGJSON's documentation
    * @throws SQLException if some part of card fails to be queried from or added to CDDB
    */
-  private void addCard(JSONObject card) throws IllegalArgumentException, SQLException {
+  private void addCard(JSONObject card, String shorthandSetName) throws IllegalArgumentException, SQLException {
     if (card == null) {
       throw new IllegalArgumentException("Give card can't be null!");
     }
@@ -231,7 +243,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     addMultifacedStats(card);
 
     // Card is for sure in database, add relevant set info
-    addSetCardInfo(card);
+    addSetCardInfo(card, shorthandSetName);
   }
 
   /**
@@ -659,10 +671,11 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * Given {@link JSONObject} of a MTG card from a MTGJSON JSON file, adds info about the
    * relationship between card and set currently being parsed (which card is apart of).
    * @param card JSONObject of card to add
+   * @param shorthandSetName name of the set the given card is associated with
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addSetCardInfo(JSONObject card) throws SQLException {
+  private void addSetCardInfo(JSONObject card, String shorthandSetName) throws SQLException {
     String cardName = card.getString("name");
 
     boolean cardSetAdded;

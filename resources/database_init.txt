@@ -9,6 +9,13 @@ CREATE TABLE Expansion (
   release_date TIMESTAMP NOT NULL
 );
 
+--If expansion is apart of a block, references it here
+CREATE TABLE Block (
+  expansion TEXT PRIMARY KEY,
+  block TEXT NOT NULL,
+  FOREIGN KEY(expansion) REFERENCES Expansion(abbrv)
+);
+
 --An individual card
 CREATE TABLE Card (
   name TEXT PRIMARY KEY,

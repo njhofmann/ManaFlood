@@ -1,7 +1,7 @@
 package value_objects.deck;
 
-import java.util.List;
-import value_objects.Card;
+import java.util.SortedSet;
+import value_objects.card.Card;
 import value_objects.deck_instance.DeckInstance;
 
 /**
@@ -31,7 +31,7 @@ public interface Deck {
   /**
    * Returns a unmodifiable list of all {@link DeckInstance} that make up this {@link Deck}'s
    * history, sorted by oldest to newest.
-   * @return sorted list of {@link DeckInstance} that make up this deck
+   * @return sorted set of {@link DeckInstance} that make up this deck
    */
-  List<DeckInstance> getHistory();
+  SortedSet<DeckInstance> getHistory();
 }

@@ -1,18 +1,19 @@
-package database;
+package database.directory;
 
 import database.access.DatabasePort;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
-import value_objects.Card;
-import value_objects.CardQuery;
+import value_objects.card.Card;
+import value_objects.query.CardQuery;
 import value_objects.deck.Deck;
 import value_objects.deck_instance.DeckInstance;
 
 /**
- * Represents the set of methods available for interacting with the Card & Deck Database (CDDB).
+ * Represents the set of methods available for interacting with the decks stored in the Card &
+ * Deck Database (CDDB).
  */
-public interface DatabaseChannel extends DatabasePort {
+public interface DeckChannel extends DatabasePort {
 
   /**
    * Returns a hashmap of decks in the CDDB, as represented by their unique integer IDs and names.
@@ -78,14 +79,4 @@ public interface DatabaseChannel extends DatabasePort {
    * @throws SQLException if there is a failure to query deck info or update deck desp with the CDDB
    */
   void updateDeckDesp(int deckID, String newDesp) throws IllegalArgumentException, SQLException;
-
-  /**
-   * Returns a list of {@link Card} s from the CDDB that match the parameters given by the inputted
-   * {@link CardQuery}.
-   * @param cardQuery desired query parameters to match cards against
-   * @return list of {@link Card}s that match given card parameters
-   * @throws IllegalArgumentException if given {@link CardQuery} is null.
-   * @throws SQLException if there is a failure to query card info from the CDDB
-   */
-  List<Card> queryCards(CardQuery cardQuery) throws IllegalArgumentException, SQLException;
 }

@@ -1,4 +1,4 @@
-package database;
+package database.directory;
 
 import database.access.DefaultDatabasePort;
 import java.nio.file.Path;
@@ -15,8 +15,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import value_objects.Card;
-import value_objects.CardQuery;
+import org.sqlite.SQLiteException;
+import value_objects.card.Card;
+import value_objects.query.CardQuery;
 import value_objects.card_printing.CardPrinting;
 import value_objects.card_printing.DefaultCardPrinting;
 import value_objects.deck.Deck;
@@ -28,8 +29,8 @@ import value_objects.deck_instance.DefaultDeckInstance;
  * Default class to use to access the Card and Deck Database (CDDB) for querying cards and reading,
  * updating, and deleting decks. In addition to accessing enumerated info about card types.
  */
-public class DefaultDatabaseChannel extends DefaultDatabasePort implements DatabaseChannel,
-    DatabaseInfoAccess {
+public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckChannel,
+    CardChannel {
 
   /**
    * Takes in a {@link Path} referencing the Card and Deck Database (CDDB) to establish a
@@ -94,7 +95,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
     }
 
     // Build deck instances,
-    List<DeckInstance> deckInstances = new ArrayList<>();
+    SortedSet<DeckInstance> deckInstances = new TreeSet<>();
     Map<String, Set<String>> categoryContents = new HashMap<>();
     Map<CardPrinting, Integer> cardPrintingQuantities = new HashMap<>();
     for (LocalDateTime creation : deckInstanceKeys) {
@@ -234,7 +235,7 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
           deckID, deckName));
     }
 
-    List<DeckInstance> history = deck.getHistory();
+    SortedSet<DeckInstance> history = deck.getHistory();
     for (DeckInstance deckInstance : history) {
       updateDeck(deckInstance);
     }
@@ -416,6 +417,12 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
   }
 
   @Override
+  public CardQuery getQuery() {
+    //TODO
+    return null;
+  }
+
+  @Override
   public List<Card> queryCards(CardQuery cardQuery) throws IllegalArgumentException {
     return null;
   }
@@ -479,15 +486,44 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements Datab
   }
 
   @Override
-  public SortedSet<String> getTwoFacedTypes() throws SQLException {
-    return retrieveColumnInfo("TwoCards", "type");
+  public SortedSet<String> getMultifacedTypes() throws SQLException {
+    SortedSet<String> twoTypes = retrieveColumnInfo("TwoCards", "type");
+    SortedSet<String> threeTypes = retrieveColumnInfo("ThreeCards", "type");
+
+    SortedSet<String> types = new TreeSet<>();
+    types.addAll(twoTypes);
+    types.addAll(threeTypes);
+
+    return Collections.unmodifiableSortedSet(types);
   }
 
   @Override
-  public SortedSet<String> getThreeFacedTypes() throws SQLException {
-    return retrieveColumnInfo("ThreeCards", "type");
+  public SortedSet<String> getBlocks() throws SQLiteException {
+    return null;
   }
 
+  @Override
+  public SortedSet<String> getArtists() throws SQLException {
+    return retrieveColumnInfo("CardExpansion", "artist");
+  }
+
+  @Override
+  public SortedSet<Pair<String, String>> getSets() throws SQLException {
+    return null;
+  }
+
+  @Override
+  public Card getCard(String name) throws SQLException {
+    return null;
+  }
+
+  /**
+   * Retrieves all information stored in the given column apart of the given table from the CDDB.
+   * @param tableName name of the table to query
+   * @param columnName name of the column that is apart of the given table to query from
+   * @return sorted set of the row info from the given column apart of the
+   * @throws SQLException failure to query information from the CDDB
+   */
   private SortedSet<String> retrieveColumnInfo(String tableName, String columnName) throws SQLException {
     isConnected();
     SortedSet<String> toReturn = new TreeSet<>();

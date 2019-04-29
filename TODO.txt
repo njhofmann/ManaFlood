@@ -8,9 +8,10 @@ Minor:
 -Comprehensive readme explaining project structure and plan
   -Identifier vs Info Container for value objects
 
-Major:
--Update documentation on parser
--Add color and color identity suppport for cards
+Major:git
+-Merging card and card expansions?
+-Add Pair and Triple generic containers
+-Add card querying support
 -Script to build blank database, full database
 -How should cardQuerying work
 -DatebaseChannel tests on blank database

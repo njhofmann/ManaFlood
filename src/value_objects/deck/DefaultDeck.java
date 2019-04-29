@@ -3,6 +3,7 @@ package value_objects.deck;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.SortedSet;
 import value_objects.deck_instance.DeckInstance;
 
 /**
@@ -29,7 +30,7 @@ public class DefaultDeck implements Deck {
   /**
    * {@link DeckInstance}s that make up the history of this deck.
    */
-  private final List<DeckInstance> history;
+  private final SortedSet<DeckInstance> history;
 
   /**
    * Creates a representation of a Deck in the CDDB with a ID, name, description, and history
@@ -41,7 +42,7 @@ public class DefaultDeck implements Deck {
    * @throws IllegalArgumentException if any of the given parameters are null, or if history is
    *         empty
    */
-  public DefaultDeck(int deckID, String deckName, String desp, List<DeckInstance> history) {
+  public DefaultDeck(int deckID, String deckName, String desp, SortedSet<DeckInstance> history) {
     if (deckName == null) {
       throw new IllegalArgumentException("Given deck name can't be null!");
     }
@@ -58,8 +59,7 @@ public class DefaultDeck implements Deck {
     this.deckID = deckID;
     this.deckName = deckName;
     this.desp = desp;
-    Collections.sort(history);
-    this.history = Collections.unmodifiableList(history);
+    this.history = Collections.unmodifiableSortedSet(history);
   }
 
   @Override
@@ -78,7 +78,7 @@ public class DefaultDeck implements Deck {
   }
 
   @Override
-  public List<DeckInstance> getHistory() {
+  public SortedSet<DeckInstance> getHistory() {
     return history;
   }
 

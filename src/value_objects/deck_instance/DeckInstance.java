@@ -3,7 +3,7 @@ package value_objects.deck_instance;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Set;
-import value_objects.Card;
+import value_objects.card.Card;
 import value_objects.card_printing.CardPrinting;
 import value_objects.deck.Deck;
 

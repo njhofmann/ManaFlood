@@ -1,8 +1,10 @@
-package value_objects;
+package value_objects.card;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import value_objects.card.Card;
+import value_objects.card.relationship.CardRelationship;
 
 /**
  * Default implementation of the {@link Card} interface, a simple container to hold all the
@@ -41,6 +43,21 @@ public class DefaultCard implements Card {
   private final Set<String> subtypes;
 
   /**
+   * Set of colors making up this Card's colors.
+   */
+  private final Set<String> colors;
+
+  /**
+   * Set of colors making up this Card's color identity.
+   */
+  private final Set<String> colorIdentity;
+
+  /**
+   * Relationship this Card has with other Cards, if any.
+   */
+  private final CardRelationship relationship;
+
+  /**
    * Any additional info of the Card as it appears in the CDDB.
    */
   private final Map<String, Integer> additionalinfo;
@@ -53,6 +70,9 @@ public class DefaultCard implements Card {
    * @param supertypes supertypes of the card
    * @param types types of the card
    * @param subtypes subtypes of the card
+   * @param colors colors making up this card's colors
+   * @param colorIdentity colors making up this card's color identity
+   * @param relationship the relationship this card has with other cards, if any
    * @param additionalInfo any extra info the card may have, depending on its types and subtypes
    * @throws IllegalArgumentException if any of the given parameters are null, if name contains no
    * content, if set of types is empty (must have at least one type), or if additionalInfo doesn't
@@ -60,6 +80,7 @@ public class DefaultCard implements Card {
    * --> loyalty)
    */
   public DefaultCard(String name, Map<String, Integer> manaCosts, String text,
+      Set<String> colors, Set<String> colorIdentity, CardRelationship relationship,
       Set<String> supertypes, Set<String> types, Set<String> subtypes,
       Map<String, Integer> additionalInfo) {
 
@@ -80,6 +101,16 @@ public class DefaultCard implements Card {
     }
     else if (subtypes == null) {
       throw new IllegalArgumentException("Given set of subtypes can't be null!");
+    }
+    else if (colors == null || colors.isEmpty()) {
+      throw new IllegalArgumentException("Given colors can't be null or have no associated colors!");
+    }
+    else if (colorIdentity == null || colorIdentity.isEmpty()) {
+      throw new IllegalArgumentException("Given color identity can't be null or have no associated"
+          + " colors!");
+    }
+    else if (relationship == null) {
+      throw new IllegalArgumentException("Give relationship of cards cant' be null!");
     }
     else if (additionalInfo == null) {
       throw new IllegalArgumentException("Given map of additional info can't be null!");
@@ -104,6 +135,9 @@ public class DefaultCard implements Card {
     this.supertypes = supertypes;
     this.types = types;
     this.subtypes = subtypes;
+    this.colors = colors;
+    this.colorIdentity = colorIdentity;
+    this.relationship = relationship;
     this.additionalinfo = additionalInfo;
   }
 
@@ -115,6 +149,16 @@ public class DefaultCard implements Card {
   @Override
   public Map<String, Integer> getManaCost() {
     return Collections.unmodifiableMap(manaCosts);
+  }
+
+  @Override
+  public Set<String> getColors() {
+    return Collections.unmodifiableSet(colors);
+  }
+
+  @Override
+  public Set<String> getColorIdentity() {
+    return Collections.unmodifiableSet(colorIdentity);
   }
 
   @Override
@@ -140,6 +184,19 @@ public class DefaultCard implements Card {
   @Override
   public Map<String, Integer> getExtraStats() {
     return Collections.unmodifiableMap(additionalinfo);
+  }
+
+  @Override
+  public CardRelationship getRelationships() {
+    return relationship;
+  }
+
+  @Override
+  public int compareTo(Card other) throws IllegalArgumentException {
+    if (other == null) {
+      throw new IllegalArgumentException("Given card can't be null!");
+    }
+    return getName().compareTo(other.getName());
   }
 
   @Override
