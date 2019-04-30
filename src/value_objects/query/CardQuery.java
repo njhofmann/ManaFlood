@@ -24,7 +24,7 @@ public interface CardQuery {
 
   void byArtist(String artist, boolean include);
 
-  void byStat(Stat stat, Comparison comparison, int quantity);
+  //void byStat(Stat stat, Comparison comparison, int quantity);
 
   void byRarity(String rarity, boolean include);
 

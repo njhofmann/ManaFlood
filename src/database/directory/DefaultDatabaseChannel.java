@@ -1,7 +1,9 @@
 package database.directory;
 
-import database.access.DefaultDatabasePort;
+import database.access.DatabasePort;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -15,7 +17,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.sqlite.SQLiteException;
 import value_objects.card.Card;
 import value_objects.query.CardQuery;
 import value_objects.card_printing.CardPrinting;
@@ -29,7 +30,7 @@ import value_objects.deck_instance.DefaultDeckInstance;
  * Default class to use to access the Card and Deck Database (CDDB) for querying cards and reading,
  * updating, and deleting decks. In addition to accessing enumerated info about card types.
  */
-public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckChannel,
+public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     CardChannel {
 
   /**
@@ -43,11 +44,10 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
 
   @Override
   public HashMap<Integer, String> getDecks() throws SQLException {
-    try {
-      String deckQuery = "SELECT id, name FROM Deck";
-      preparedStatement = connection.prepareStatement(deckQuery);
-      ResultSet result = preparedStatement.executeQuery();
-
+    String deckQuery = "SELECT id, name FROM Deck";
+    try (Connection connection = connect();
+        PreparedStatement preparedStatement = connection.prepareStatement(deckQuery);
+        ResultSet result = preparedStatement.executeQuery()){
       HashMap<Integer, String> decksInfo = new HashMap<>();
       while (result.next()) {
         int currentDeckID = result.getInt("id");
@@ -57,8 +57,8 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
       return decksInfo;
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException("Failed to query CDDB for deck IDs and names!");
+      throw new SQLException(e.getMessage() +
+          "\nFailed to query CDDB for deck IDs and names!");
     }
   }
 
@@ -66,17 +66,18 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
   public Deck getDeck(int deckID) throws IllegalArgumentException, SQLException {
     hasDeckBeenAdded(deckID);
 
+    Connection connection = connect();
+
     // Query for info of all deck instances related to current deck
     ResultSet deckInstancesInfo;
-    try {
-      String deckInstanceInfoQuery = "SELECT * FROM DeckInstance WHERE deck_id=?";
-      preparedStatement = connection.prepareStatement(deckInstanceInfoQuery);
+    String deckInstanceInfoQuery = "SELECT * FROM DeckInstance WHERE deck_id=?";
+    try (PreparedStatement preparedStatement = connection.prepareStatement(deckInstanceInfoQuery);) {
       preparedStatement.setInt(1, deckID);
       deckInstancesInfo = preparedStatement.executeQuery();
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to query for info of deck instances"
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to query for info of deck instances"
           + " related to deck %d!", deckID));
     }
 
@@ -90,8 +91,11 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
       }
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException("Failed to query for deck instance creations date & times!");
+      throw new SQLException(e.getMessage() +
+          "\nFailed to query for deck instance creations date & times!");
+    }
+    finally {
+      closeResultSet(deckInstancesInfo);
     }
 
     // Build deck instances,
@@ -101,33 +105,35 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
     for (LocalDateTime creation : deckInstanceKeys) {
       // Get categories
       List<String> categories = new ArrayList<>();
-      ResultSet categoriesResult;
-      try {
-        String categoriesQuery = "SELECT * FROM DeckInstCategory WHERE deck_id=? "
-            + "AND deck_inst_creation=?";
-        preparedStatement = connection.prepareStatement(categoriesQuery);
+      ResultSet categoriesResult= null;
+      String categoriesQuery = "SELECT * FROM DeckInstCategory WHERE deck_id=? "
+          + "AND deck_inst_creation=?";
+      try (PreparedStatement preparedStatement = connection.prepareStatement(categoriesQuery);) {
         preparedStatement.setInt(1, deckID);
         preparedStatement.setTimestamp(2, Timestamp.valueOf(creation));
         categoriesResult = preparedStatement.executeQuery();
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to query for categories for deck with"
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to query for categories for deck with"
             + " ID %d!", deckID));
+      }
+      finally {
+        closeResultSet(categoriesResult);
       }
 
       // Get category cards
       try {
         while (categoriesResult.next()) {
           String currentCategory = categoriesResult.getString("category");
-          try {
-            String categoryQuery = "SELECT * FROM DeckInstCardCategory WHERE deck_id=? "
-                + "AND deck_inst_creation=? AND category=?";
-            preparedStatement = connection.prepareStatement(categoryQuery);
+          String categoryQuery = "SELECT * FROM DeckInstCardCategory WHERE deck_id=? "
+              + "AND deck_inst_creation=? AND category=?";
+          ResultSet cardsInCategory = null;
+          try (PreparedStatement preparedStatement = connection.prepareStatement(categoryQuery);) {
             preparedStatement.setInt(1, deckID);
             preparedStatement.setTimestamp(2, Timestamp.valueOf(creation));
             preparedStatement.setString(3, currentCategory);
-            ResultSet cardsInCategory = preparedStatement.executeQuery();
+            cardsInCategory = preparedStatement.executeQuery();
 
             Set<String> cardsToAdd = new HashSet<>();
             while (cardsInCategory.next()) {
@@ -142,23 +148,25 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
             categoryContents.put(currentCategory, cardsToAdd);
           }
           catch (SQLException e) {
-            e.printStackTrace();
-            throw new SQLException(String.format("Failed to query for cards in category %s for"
+            throw new SQLException(e.getMessage() +
+                String.format("\nFailed to query for cards in category %s for"
                 + " deck instance %d %s!", currentCategory, deckID, creation.toString()));
+          }
+          finally {
+            closeResultSet(cardsInCategory);
           }
         }
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to query for card categories for deck "
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to query for card categories for deck "
             + "instance %d %s!", deckID, creation.toString()));
       }
 
       // Get card printings
-      try {
-        String cardPrintingsQuery = "SELECT * FROM DeckInstCardExpansion WHERE deck_id=? "
-            + "AND deck_inst_creation=?";
-        preparedStatement = connection.prepareStatement(cardPrintingsQuery);
+      String cardPrintingsQuery = "SELECT * FROM DeckInstCardExpansion WHERE deck_id=? "
+          + "AND deck_inst_creation=?";
+      try (PreparedStatement preparedStatement = connection.prepareStatement(cardPrintingsQuery);) {
         preparedStatement.setInt(1, deckID);
         preparedStatement.setTimestamp(2, Timestamp.valueOf(creation));
         ResultSet cardPrintings = preparedStatement.executeQuery();
@@ -175,16 +183,20 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
           }
         }
         catch (SQLException e) {
-          e.printStackTrace();
-          throw new SQLException(String.format("Failed to get card printing info for deck "
+          throw new SQLException(e.getMessage() +
+              String.format("\nFailed to get card printing info for deck "
               + "instance %d %s!", deckID, creation.toString()));
+        }
+        finally {
+          closeResultSet(cardPrintings);
         }
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to query for card printings in deck"
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to query for card printings in deck"
             + "instance %d %s!", deckID, creation.toString()));
       }
+
       DeckInstance toAdd = new DefaultDeckInstance(deckID, creation, categoryContents, cardPrintingQuantities);
       deckInstances.add(toAdd);
     }
@@ -194,8 +206,8 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
       deckName = deckInstancesInfo.getString("name");
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to query for name of deck with id %d!", deckID));
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to query for name of deck with id %d!", deckID));
     }
 
     String deckDesp = "";
@@ -203,10 +215,11 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
       deckDesp = deckInstancesInfo.getString("desp");
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to query for description of deck with id"
-          + " %d!", deckID));
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to query for description of deck with id %d!", deckID));
     }
+
+    disconnect(connection);
 
     Deck toReturn = new DefaultDeck(deckID, deckName, deckDesp, deckInstances);
     return toReturn;
@@ -221,18 +234,17 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
 
     int deckID = deck.getDeckID();
     String deckName = deck.getDeckName();
-    try {
-      String deckInsert = "INSERT INTO DECK(id,name,desp) VALUES (?,?,?)";
-      preparedStatement = connection.prepareStatement(deckInsert);
+    String deckInsert = "INSERT INTO DECK(id,name,desp) VALUES (?,?,?)";
+    try (Connection connection = connect();
+        PreparedStatement preparedStatement = connection.prepareStatement(deckInsert)) {
       preparedStatement.setInt(1, deckID);
       preparedStatement.setString(2, deckName);
       preparedStatement.setString(3, deck.getDescription());
       preparedStatement.executeUpdate();
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to add new deck with ID %d and name %s!",
-          deckID, deckName));
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to add new deck with ID %d and name %s!", deckID, deckName));
     }
 
     SortedSet<DeckInstance> history = deck.getHistory();
@@ -248,40 +260,39 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
     }
     hasDeckBeenAdded(deck.getParentDeckID());
 
+    Connection connection = connect();
     String insertStatement;
 
     // Add deck instance info
     int deckID = deck.getParentDeckID();
     LocalDateTime creationInfo = deck.getCreationInfo();
     Timestamp creationTimestamp = Timestamp.valueOf(creationInfo);
-    try {
-      insertStatement = "INSERT INTO DeckInstance(deck_id, creation) VALUES (?,?)";
-      preparedStatement = connection.prepareStatement(insertStatement);
+    insertStatement = "INSERT INTO DeckInstance(deck_id, creation) VALUES (?,?)";
+    try (PreparedStatement preparedStatement = connection.prepareStatement(insertStatement)) {
       preparedStatement.setInt(1, deckID);
       preparedStatement.setTimestamp(2, creationTimestamp);
       preparedStatement.executeUpdate();
     }
     catch (SQLException e){
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to add deck instance %d, %s!", deck,
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to add deck instance %d, %s!", deck,
           creationInfo.toString()));
     }
 
     // Add categories
     Set<String> categories = deck.getCategories();
     for (String category : categories) {
-      try {
-        insertStatement = "INSERT INTO DeckInstCategory(deck_id, deck_inst_creation, category) "
-            + "VALUES (?,?,?)";
-        preparedStatement = connection.prepareStatement(insertStatement);
+      insertStatement = "INSERT INTO DeckInstCategory(deck_id, deck_inst_creation, category) "
+          + "VALUES (?,?,?)";
+      try (PreparedStatement preparedStatement = connection.prepareStatement(insertStatement);) {
         preparedStatement.setInt(1, deckID);
         preparedStatement.setTimestamp(2, creationTimestamp);
         preparedStatement.setString(3, category);
         preparedStatement.executeUpdate();
       }
       catch (SQLException e){
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to add category %s for deck instance %d, "
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to add category %s for deck instance %d, "
                 + "%s!", category, deck, creationInfo.toString()));
       }
     }
@@ -289,17 +300,15 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
     // Add cards
     Set<String> cards = deck.getCards();
     for (String card : cards) {
-      try {
-        insertStatement = "INSERT INTO DeckInstCard(deck_id, deck_inst_creation, card_name) VALUES (?,?,?)";
-        preparedStatement = connection.prepareStatement(insertStatement);
+      insertStatement = "INSERT INTO DeckInstCard(deck_id, deck_inst_creation, card_name) VALUES (?,?,?)";
+      try (PreparedStatement preparedStatement = connection.prepareStatement(insertStatement);) {
         preparedStatement.setInt(1, deckID);
         preparedStatement.setTimestamp(2, creationTimestamp);
         preparedStatement.setString(3, card);
         preparedStatement.executeUpdate();
       }
       catch (SQLException e){
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to add card %s for deck instance %d, "
+        throw new SQLException(e.getMessage() + String.format("\nFailed to add card %s for deck instance %d, "
             + "%s!", card, deck, creationInfo.toString()));
       }
     }
@@ -311,10 +320,9 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
       String expansion = cardPrinting.getCardExpansion();
       String identifier = cardPrinting.getIdentifyingNumber();
       int quantity = cardExpansion.get(cardPrinting);
-      try {
-        insertStatement = "INSERT INTO DeckInstCardExpansion(deck_id, deck_inst_creation, "
-            + "card_name, expansion, card_number, quantity) VALUES (?,?,?,?,?,?)";
-        preparedStatement = connection.prepareStatement(insertStatement);
+      insertStatement = "INSERT INTO DeckInstCardExpansion(deck_id, deck_inst_creation, "
+          + "card_name, expansion, card_number, quantity) VALUES (?,?,?,?,?,?)";
+      try (PreparedStatement preparedStatement = connection.prepareStatement(insertStatement)) {
         preparedStatement.setInt(1, deckID);
         preparedStatement.setTimestamp(2, creationTimestamp);
         preparedStatement.setString(3, cardName);
@@ -324,8 +332,8 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
         preparedStatement.executeUpdate();
       }
       catch (SQLException e){
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to add card printing %s, %s, %s for deck "
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to add card printing %s, %s, %s for deck "
             + "instance %d, %s!", cardName, expansion, identifier, cardPrinting, deck,
             creationInfo.toString()));
       }
@@ -336,10 +344,9 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
     for (String category : cardCategories.keySet()) {
       Set<String> categoryCards = cardCategories.get(category);
       for (String card : categoryCards) {
-        try {
-          insertStatement = "INSERT INTO DeckInstCardCategory(deck_id, deck_inst_creation, "
-              + "card_name, cateogry) VALUES (?,?,?,?)";
-          preparedStatement = connection.prepareStatement(insertStatement);
+        insertStatement = "INSERT INTO DeckInstCardCategory(deck_id, deck_inst_creation, "
+            + "card_name, cateogry) VALUES (?,?,?,?)";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(insertStatement)){
           preparedStatement.setInt(1, deckID);
           preparedStatement.setTimestamp(2, creationTimestamp);
           preparedStatement.setString(3, card);
@@ -347,12 +354,13 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
           preparedStatement.executeUpdate();
         }
         catch (SQLException e){
-          e.printStackTrace();
-          throw new SQLException(String.format("Failed to add card %s, to category %s for deck "
+          throw new SQLException(e.getMessage() +
+              String.format("\nFailed to add card %s, to category %s for deck "
                   + "instance %d, %s!", card, category, deck, creationInfo.toString()));
         }
       }
     }
+    disconnect(connection);
   }
 
   @Override
@@ -360,15 +368,15 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
     // Check if deck exists
     hasDeckBeenAdded(deckID);
 
-    try {
-      String deletionRequest = "DELETE FROM Deck WHERE id=?";
-      preparedStatement = connection.prepareStatement(deletionRequest);
+    String deletionRequest = "DELETE FROM Deck WHERE id=?";
+    try (Connection connection = connect();
+    PreparedStatement preparedStatement = connection.prepareStatement(deletionRequest);) {
       preparedStatement.setInt(1, deckID);
       preparedStatement.executeUpdate();
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to delete deck with ID %d!", deckID));
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to delete deck with ID %d!", deckID));
     }
   }
 
@@ -380,17 +388,16 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
     // Check if deck exists
     hasDeckBeenAdded(deckID);
 
-    try {
-      String updateRequest = "UPDATE Deck SET name=? WHERE id=?";
-      preparedStatement = connection.prepareStatement(updateRequest);
+    String updateRequest = "UPDATE Deck SET name=? WHERE id=?";
+    try (Connection connection = connect();
+    PreparedStatement preparedStatement = connection.prepareStatement(updateRequest);) {
       preparedStatement.setString(1, newName);
       preparedStatement.setInt(2, deckID);
       preparedStatement.executeUpdate();
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to update deck with ID %d with new"
-          + " name \"%s\"!", deckID, newName));
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to update deck with ID %d with new name \"%s\"!", deckID, newName));
     }
   }
 
@@ -402,17 +409,17 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
     // Check if deck exists
     hasDeckBeenAdded(deckID);
 
-    try {
-      String updateRequest = "UPDATE Deck SET desp=? WHERE id=?";
-      preparedStatement = connection.prepareStatement(updateRequest);
+    String updateRequest = "UPDATE Deck SET desp=? WHERE id=?";
+    try (Connection connection = connect();
+        PreparedStatement preparedStatement = connection.prepareStatement(updateRequest);){
       preparedStatement.setString(1, newDesp);
       preparedStatement.setInt(2, deckID);
       preparedStatement.executeUpdate();
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to update deck with ID %d with new"
-          + " description \"%s\"!", deckID, newDesp));
+      throw new SQLException(e.getMessage() +
+          String.format("Failed to update deck with ID %d with new"
+              + " description \"%s\"!", deckID, newDesp));
     }
   }
 
@@ -498,8 +505,8 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
   }
 
   @Override
-  public SortedSet<String> getBlocks() throws SQLiteException {
-    return null;
+  public SortedSet<String> getBlocks() throws SQLException {
+    return retrieveColumnInfo("Block", "block");
   }
 
   @Override
@@ -508,13 +515,48 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
   }
 
   @Override
-  public SortedSet<Pair<String, String>> getSets() throws SQLException {
-    return null;
+  public SortedSet<String> getSets() throws SQLException {
+    return retrieveColumnInfo("Expansion", "expansion");
   }
 
   @Override
-  public Card getCard(String name) throws SQLException {
-    return null;
+  public Card getCard(String name) throws SQLException, IllegalArgumentException {
+    if (name == null) {
+      throw new IllegalArgumentException("Given card can't be null!");
+    }
+
+    // Check if card is in database
+
+    Connection connection = null;
+    PreparedStatement preparedStatement = null;
+    ResultSet resultSet = null;
+    try {
+      connection = connect();
+      String checkQuery = "SELECT name FROM Card WHERE name = ?";
+      preparedStatement = connection.prepareStatement(checkQuery);
+      preparedStatement.setString(1, name);
+      resultSet = preparedStatement.executeQuery();
+
+      if (!resultSet.next()) {
+        throw new IllegalArgumentException(String.format("Database doesn't contain card %s!", name));
+      }
+
+      close(resultSet, preparedStatement);
+
+      String cardQuery = "";
+
+
+      Card card = null;
+
+      return card;
+    }
+    catch (SQLException e) {
+      throw new SQLException("Failed to query for card");
+    }
+    finally {
+      close(resultSet, preparedStatement);
+      disconnect(connection);
+    }
   }
 
   /**
@@ -523,25 +565,73 @@ public class DefaultDatabaseChannel extends DefaultDatabasePort implements DeckC
    * @param columnName name of the column that is apart of the given table to query from
    * @return sorted set of the row info from the given column apart of the
    * @throws SQLException failure to query information from the CDDB
+   * @throws IllegalStateException if connection to the database is closed or not working
    */
   private SortedSet<String> retrieveColumnInfo(String tableName, String columnName) throws SQLException {
-    isConnected();
     SortedSet<String> toReturn = new TreeSet<>();
-    try {
-      String query = "SELECT DISTINCT(%s) FROM %s";
-      query = String.format(query, columnName, tableName);
-      preparedStatement = connection.prepareStatement(query);
-      ResultSet queryResult = preparedStatement.executeQuery();
+    String query = "SELECT DISTINCT(?) FROM ?";
+    ResultSet queryResult = null;
+    try (Connection connection = connect();
+        PreparedStatement preparedStatement = connection.prepareStatement(query);) {
+      preparedStatement.setString(1, columnName);
+      preparedStatement.setString(2, tableName);
+      queryResult = preparedStatement.executeQuery();
 
       while (queryResult.next()) {
         toReturn.add(queryResult.getString("type"));
       }
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to query for column %s from table %s!",
-          columnName, tableName));
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to query for column %s from table %s!", columnName, tableName));
+    }
+    finally {
+      closeResultSet(queryResult);
     }
     return Collections.unmodifiableSortedSet(toReturn);
+  }
+
+  /**
+   * Returns {@link ResultSet} of all the information stored under table of the given name from the
+   * CDDB.
+   * @param tableName name of table to retrieve
+   * @return ResultSet of all info is in the database
+   * @throws SQLException failure to query info from the database
+   * @throws IllegalStateException if connection to the database is closed or not working
+   */
+  private ResultSet retrieveTableInfo(String tableName) throws SQLException {
+    if (tableName == null) {
+      throw new IllegalArgumentException("Given table name can't be null!");
+    }
+
+    // Check if table exists, then retrieve info
+    String checkQuery = "SELECT name FROM sqlite_master WHERE name='?'";
+    try (Connection connection = connect();
+        PreparedStatement preparedStatement = connection.prepareStatement(checkQuery);) {
+      preparedStatement.setString(1, tableName);
+      ResultSet checkQueryResult = preparedStatement.executeQuery();
+
+      // Should only have one resulting row if table exists
+      if (!checkQueryResult.next()) {
+        throw new IllegalArgumentException("Table matching given table name doesn't exist in "
+            + "database!");
+      }
+      else if (!checkQueryResult.next()) { // Now should return false, passed first and only row
+        String query = "SELECT * FROM %s";
+        query = String.format(query, tableName);
+        PreparedStatement preparedStatementRetrieval = connection.prepareStatement(query);
+        ResultSet queryResult = preparedStatementRetrieval.executeQuery();
+        closeResultSet(queryResult);
+        return queryResult;
+      }
+      else {
+        throw new IllegalArgumentException("Database returned multiple tables matching given table"
+            + " name, should only return zero or one tables!");
+      }
+    }
+    catch (SQLException e) {
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to query for table %s!", tableName));
+    }
   }
 }

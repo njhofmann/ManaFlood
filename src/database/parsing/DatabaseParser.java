@@ -1,6 +1,5 @@
 package database.parsing;
 
-import database.access.DatabasePort;
 import java.nio.file.Path;
 import java.sql.SQLException;
 
@@ -8,7 +7,7 @@ import java.sql.SQLException;
  * Given the JSON file of a MTG set from MTGJSON, updates the Card & Deck Database (CDDB) with the
  * cards from the set, as appropriate.
  */
-public interface DatabaseParser extends DatabasePort {
+public interface DatabaseParser {
 
   /**
    * Given a file {@link Path} to a JSON file of a MTG set (from MTGJSON), updates the CDDB with
@@ -17,7 +16,7 @@ public interface DatabaseParser extends DatabasePort {
    * @throws IllegalArgumentException if given Path is null, given Path fails to be opened, or is
    *         otherwise invalid
    * @throws IllegalStateException if database hasn't been connected yet
-   * @throws SQLException if there is a failure in giving data to the CDDB
+   * @throws SQLException if there is a failure in inserting data to the CDDB
    */
   void parseSet(Path path) throws IllegalArgumentException, IllegalStateException, SQLException;
 
@@ -27,8 +26,7 @@ public interface DatabaseParser extends DatabasePort {
    * @param path file path to the JSON file
    * @throws IllegalArgumentException if given Path is null, given Path fails to be opened, or is
    *         otherwise invalid
-   * @throws IllegalStateException if database hasn't been connected yet
-   * @throws SQLException if there is a failure in giving data to the CDDB
+   * @throws SQLException if there is a failure in inserting data to the CDDB
    */
   void parseAllSets(Path path) throws IllegalArgumentException, IllegalStateException, SQLException;
 }

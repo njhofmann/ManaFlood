@@ -8,10 +8,15 @@ Minor:
 -Comprehensive readme explaining project structure and plan
   -Identifier vs Info Container for value objects
 
-Major:git
+Major:
+-P/t conditions for card?
+-Documentation
+-Redo connection, statement openings and closing (old style)
+-Card querying
+-Specify database creatsion
+-SQLexcpetion print stack trace to throw stack trace
 -Merging card and card expansions?
 -Add Pair and Triple generic containers
 -Add card querying support
--Script to build blank database, full database
 -How should cardQuerying work
 -DatebaseChannel tests on blank database

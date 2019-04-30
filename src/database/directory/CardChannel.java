@@ -1,6 +1,5 @@
 package database.directory;
 
-import database.access.DatabasePort;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.SortedSet;
@@ -12,7 +11,7 @@ import value_objects.query.CardQuery;
  * Provides methods for accessing enumerated info about cards, and querying specific cards stored in
  * the from the Card and Deck Database (CDDB), such as card supertypes, types, subtypes, colors, etc. 
  */
-public interface CardChannel extends DatabasePort {
+public interface CardChannel {
 
   /**
    * Returns a {@link CardQuery} object to use for querying specific cards from the CDDB.
@@ -92,7 +91,7 @@ public interface CardChannel extends DatabasePort {
    * @throws SQLException if connection to CDDB has not yet been established, or if there is a
    * failure to query from the database
    */
-  SortedSet<String> getBlocks() throws SQLiteException;
+  SortedSet<String> getBlocks() throws SQLException;
 
   /**
    * Returns a unmodifiable sorted set of all the artists held in the CDDB.
@@ -103,18 +102,19 @@ public interface CardChannel extends DatabasePort {
   SortedSet<String> getArtists() throws SQLException;
 
   /**
-   * Returns a unmodifiable sorted set of all expansions (full name and abbreviation held in the
-   * CDDB.
-   * @return all expansion info
+   * Returns a unmodifiable sorted set of all expansions (full name) that are held in the CDDB.
+   * @return unmodifiable sorted set of all expansion names
    * @throws SQLException if connection to CDDB has not yet been established, or if there is a
    * failure to query from the database
    */
-  SortedSet<Pair<String, String>> getSets() throws SQLException;
+  SortedSet<String> getSets() throws SQLException;
 
   /**
-   * Returns a {@link Card} representing all the information associated witha given card name, from
-   * the CDDB.
+   * Returns a {@link Card} representing all the information associated with a given card name, from
+   * the CDDB. Given string must match desired card name exactly
    * @return info related to a given card
+   * @throws IllegalArgumentException if given card name is null, or doesn't match with an
+   * associated card
    * @throws SQLException if connection to CDDB has not yet been established, or if there is a
    * failure to query from the database
    */

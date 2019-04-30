@@ -13,8 +13,6 @@ public class RunDatabaseParser {
     Path pathToDatabase = Paths.get("resources\\cddb.db").toAbsolutePath();
     DatabaseParser parser = new DefaultDatabaseParser(pathToDatabase);
 
-    parser.connect();
-
 
     Path pathToJSON = Paths.get("resources\\GRN.json").toAbsolutePath();
     parser.parseSet(pathToJSON);
@@ -25,6 +23,5 @@ public class RunDatabaseParser {
     parser.parseAllSets(pathToJSON);
 
      */
-    parser.disconnect();
   }
 }

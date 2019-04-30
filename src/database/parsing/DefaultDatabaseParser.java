@@ -1,12 +1,13 @@
 package database.parsing;
 
-import database.access.DefaultDatabasePort;
+import database.access.DatabasePort;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,7 +24,7 @@ import org.json.JSONObject;
  * Default implementation of the {@link DatabaseParser} interface. Parses one or more JSON files
  * from MTGJSON to add them to the Card and Deck Database.
  */
-public class DefaultDatabaseParser extends DefaultDatabasePort implements DatabaseParser {
+public class DefaultDatabaseParser extends DatabasePort implements DatabaseParser {
 
   /**
    * Shorthand names of sets not supported for processing.
@@ -53,10 +54,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    *         or if failed to create JSON object from given path
    */
   private JSONObject canParsePath(Path path) {
-    if (connection == null) {
-      throw new IllegalStateException("Database hasn't been connected yet!");
-    }
-    else if (path == null) {
+    if (path == null) {
       throw new IllegalArgumentException("Given path can't be null!");
     }
     else if (Files.notExists(path)) {
@@ -69,9 +67,9 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       JSONatPath = new JSONObject(fileAsString);
       return JSONatPath;
     }
-    catch (IOException e) {
-      System.out.println(e.getMessage());
-      throw new IllegalArgumentException("Failed to create JSON object from given path!");
+    catch (IOException e) { ;
+      throw new IllegalArgumentException(e.getMessage() +
+          "\nFailed to create JSON object from given path!");
     }
   }
 
@@ -79,7 +77,9 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
   public void parseSet(Path path)
       throws IllegalArgumentException, IllegalStateException, SQLException {
     JSONObject setBeingRead = canParsePath(path);
-    addSet(setBeingRead);
+    Connection cddbConnection = connect();
+    addSet(setBeingRead, cddbConnection);
+    disconnect(cddbConnection);
   }
 
   @Override
@@ -88,23 +88,26 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     JSONObject allSets = canParsePath(path);
     Iterator<String> iterator = allSets.keys();
 
+    Connection cddbConnection = connect();
     while (iterator.hasNext()) {
       String currentSetName = iterator.next();
       if (!Arrays.asList(unsupportedSets).contains(currentSetName)) {
-        addSet(allSets.getJSONObject(currentSetName));
+        addSet(allSets.getJSONObject(currentSetName), cddbConnection);
       }
     }
+    disconnect(cddbConnection);
   }
 
   /**
    * Given a JSONObject of a MTG set from MTGJSON, adds its info to the CDB. If set has already been
    * added, does nothing.
    * @param set JSON object of a MTG set to add to
+   * @param connection connection to the CDDB to use
    * @throws IllegalArgumentException if given set is null, doesn't have one of the required /
    *         documented fields
    * @throws SQLException if JSONObject fails to be queried from or added to the CDDB
    */
-  private void addSet(JSONObject set) throws IllegalArgumentException, SQLException {
+  private void addSet(JSONObject set, Connection connection) throws IllegalArgumentException, SQLException {
     if (set == null) {
       throw new IllegalArgumentException("Given set can't be null!");
     }
@@ -127,15 +130,15 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       String checkForSet = "SELECT abbrv FROM Expansion WHERE abbrv = ?";
       preparedStatement = connection.prepareStatement(checkForSet);
       preparedStatement.setString(1, shorthandSetName);
-      ResultSet result = preparedStatement.executeQuery();
+      ResultSet resultSet = preparedStatement.executeQuery();
 
-      if (!result.next()) {
+      if (!resultSet.next()) {
         setAdded = false;
       }
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to query for set %s!", shorthandSetName));
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to query for set %s!", shorthandSetName));
     }
 
     if (!setAdded) {
@@ -156,8 +159,11 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
         preparedStatement.executeUpdate();
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to add info for given set %s!", name));
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to add info for given set %s!", name));
+      }
+      finally {
+        closePreparedStatement(preparedStatement);
       }
     }
 
@@ -172,8 +178,8 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
         preparedStatement.executeUpdate();
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to insert block %s for associated expansion"
+        throw new SQLException(String.format(e.getMessage() +
+            "\nFailed to insert block %s for associated expansion"
             + " %s!", block, shorthandSetName));
       }
     }
@@ -182,7 +188,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     int length = cards.length();
     for (int i = 0; i < length; i += 1) {
       JSONObject card = cards.getJSONObject(i);
-      addCard(card, shorthandSetName);
+      addCard(card, shorthandSetName, connection);
     }
   }
 
@@ -191,11 +197,13 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * appropriate.
    * @param card card to add
    * @param shorthandSetName shorthand name of the expansion the given card is associated with
+   * @param connection connection to the CDDB to use
    * @throws IllegalArgumentException if given JSON object is null or doesn't have a required key
    *         as per MTGJSON's documentation
    * @throws SQLException if some part of card fails to be queried from or added to CDDB
    */
-  private void addCard(JSONObject card, String shorthandSetName) throws IllegalArgumentException, SQLException {
+  private void addCard(JSONObject card, String shorthandSetName, Connection connection) throws IllegalArgumentException,
+      SQLException {
     if (card == null) {
       throw new IllegalArgumentException("Give card can't be null!");
     }
@@ -213,37 +221,37 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
 
     // Card hasn't been added, add card, super types, types, and subtypes, mana types, color, and
     // color identity info
-    if (!cardAdded(cardName)) {
+    if (!cardAdded(cardName, connection)) {
       // Add basic info about card
-      addBaseCardInfo(card);
+      addBaseCardInfo(card, connection);
 
       // Add colors of the card
-      addCardColors(card);
+      addCardColors(card, connection);
 
       // Add colors making up the card's color identity
-      addCardColorIdentity(card);
+      addCardColorIdentity(card, connection);
 
       // Every card should have supertypes, add them
-      addCardSupertypes(card);
+      addCardSupertypes(card, connection);
 
       // If card has types, add them
-      addCardTypes(card);
+      addCardTypes(card, connection);
 
       // If card has subtypes, add them
-      addCardSubtypes(card);
+      addCardSubtypes(card, connection);
 
       // If card has mana cost, add them
-      addCardManaCosts(card);
+      addCardManaCosts(card, connection);
 
       // If card has power & toughness, or planeswalker loyalty, add those extra stats
-      addExtraStats(card);
+      addExtraStats(card, connection);
     }
 
     // If card is multifaced, and all its components have been added, add multifaced relation to set
-    addMultifacedStats(card);
+    addMultifacedStats(card, connection);
 
     // Card is for sure in database, add relevant set info
-    addSetCardInfo(card, shorthandSetName);
+    addSetCardInfo(card, connection, shorthandSetName);
   }
 
   /**
@@ -254,11 +262,12 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addBaseCardInfo(JSONObject card) throws SQLException {
+  private void addBaseCardInfo(JSONObject card, Connection connection) throws SQLException {
     String cardName = card.getString("name");
+    PreparedStatement preparedStatement = null;
     try {
       String insertCard = "INSERT INTO Card(name,card_text,cmc) VALUES (?,?,?)";
-      PreparedStatement preparedStatement = connection.prepareStatement(insertCard);
+      preparedStatement = connection.prepareStatement(insertCard);
 
       String cardText = "";
       if (card.has("text")) {
@@ -281,8 +290,11 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       preparedStatement.executeUpdate();
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to add base info for card %s!", cardName));
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to add base info for card %s!", cardName));
+    }
+    finally {
+      closePreparedStatement(preparedStatement);
     }
   }
 
@@ -292,8 +304,8 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @param card JSONObject of card to add
    * @throws SQLException there is a failure to add data to the CDDB about given card
    */
-  private void addCardColors(JSONObject card) throws SQLException {
-    addCardColorInfo(card, "colors", "CardColor");
+  private void addCardColors(JSONObject card, Connection connection) throws SQLException {
+    addCardColorInfo(card, connection, "colors", "CardColor");
   }
 
   /**
@@ -302,8 +314,8 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @param card JSONObject of card to add
    * @throws SQLException there is a failure to add data to the CDDB about given card
    */
-  private void addCardColorIdentity(JSONObject card) throws SQLException {
-    addCardColorInfo(card, "colorIdentity", "CardColorIdentity");
+  private void addCardColorIdentity(JSONObject card, Connection connection) throws SQLException {
+    addCardColorInfo(card, connection, "colorIdentity", "CardColorIdentity");
   }
 
   /**
@@ -312,7 +324,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @param card JSONObject of card to add
    * @throws SQLException there is a failure to add data to the CDDB about given card
    */
-  private void addCardColorInfo(JSONObject card, String attributeName, String tableName) throws SQLException {
+  private void addCardColorInfo(JSONObject card, Connection connection, String attributeName, String tableName) throws SQLException {
     String cardName = card.getString("name");
     String[] colors;
     if (card.has(attributeName)) {
@@ -325,21 +337,24 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       colors = new String[]{colorlessRepresentation};
     }
 
+    PreparedStatement preparedStatement = null;
     try {
       for (String color : colors) {
-
         String insertColor = "INSERT INTO %s(card_name,color) VALUES (?,?)";
         insertColor = String.format(insertColor, tableName);
-        PreparedStatement preparedStatement = connection.prepareStatement(insertColor);
+        preparedStatement = connection.prepareStatement(insertColor);
         preparedStatement.setString(1, cardName);
         preparedStatement.setString(2, color);
         preparedStatement.executeUpdate();
       }
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to add colors for card %s into table %s from"
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to add colors for card %s into table %s from"
           + " JSON attribute %s!", cardName, tableName, attributeName));
+    }
+    finally {
+      closePreparedStatement(preparedStatement);
     }
   }
 
@@ -352,22 +367,26 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addCardSupertypes(JSONObject card) throws SQLException {
+  private void addCardSupertypes(JSONObject card, Connection connection) throws SQLException {
     if (card.has("supertypes")) {
       String cardName = card.getString("name");
       String[] supertypes = JSONArrayToStringArray(card.getJSONArray("supertypes"));
+      PreparedStatement preparedStatement = null;
       try {
         for (String supertype : supertypes) {
           String insertSupertype = "INSERT INTO CardSupertype(card_name,supertype) VALUES (?,?)";
-          PreparedStatement preparedStatement = connection.prepareStatement(insertSupertype);
+          preparedStatement = connection.prepareStatement(insertSupertype);
           preparedStatement.setString(1, cardName);
           preparedStatement.setString(2, supertype.toLowerCase());
           preparedStatement.executeUpdate();
         }
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to add supertypes for card %s!", cardName));
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to add supertypes for card %s!", cardName));
+      }
+      finally {
+        closePreparedStatement(preparedStatement);
       }
     }
   }
@@ -381,23 +400,27 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addCardTypes(JSONObject card) throws SQLException {
+  private void addCardTypes(JSONObject card, Connection connection) throws SQLException {
     if (card.has("types")) {
       String cardName = card.getString("name");
       String[] types = JSONArrayToStringArray(card.getJSONArray("types"));
+      PreparedStatement preparedStatement = null;
       try {
         //Add types
         for (String type : types) {
           String insertType = "INSERT INTO CardType(card_name,type) VALUES (?,?)";
-          PreparedStatement preparedStatement = connection.prepareStatement(insertType);
+          preparedStatement = connection.prepareStatement(insertType);
           preparedStatement.setString(1, cardName);
           preparedStatement.setString(2, type.toLowerCase());
           preparedStatement.executeUpdate();
         }
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to add types for card %s!", cardName));
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to add types for card %s!", cardName));
+      }
+      finally {
+        closePreparedStatement(preparedStatement);
       }
     }
   }
@@ -410,23 +433,27 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addCardSubtypes(JSONObject card) throws SQLException {
+  private void addCardSubtypes(JSONObject card, Connection connection) throws SQLException {
     if (card.has("subtypes")) {
       String cardName = card.getString("name");
       String[] subtypes = JSONArrayToStringArray(card.getJSONArray("subtypes"));
+      PreparedStatement preparedStatement = null;
       try {
         // Add subtypes
         for (String subtype : subtypes) {
           String insertSubtype = "INSERT INTO CardSubtype(card_name,subtype) VALUES (?,?)";
-          PreparedStatement preparedStatement = connection.prepareStatement(insertSubtype);
+          preparedStatement = connection.prepareStatement(insertSubtype);
           preparedStatement.setString(1, cardName);
           preparedStatement.setString(2, subtype.toLowerCase());
           preparedStatement.executeUpdate();
         }
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to add subtypes for %s!", cardName));
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to add subtypes for %s!", cardName));
+      }
+      finally {
+        closePreparedStatement(preparedStatement);
       }
     }
   }
@@ -439,10 +466,11 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addCardManaCosts(JSONObject card) throws SQLException {
+  private void addCardManaCosts(JSONObject card, Connection connection) throws SQLException {
     if (card.has("manaCost")) {
       String cardName = card.getString("name");
       String[] manaCosts = card.getString("manaCost").split("(?=\\{)");
+      PreparedStatement preparedStatement = null;
       try {
         HashMap<String, Integer> uniqueManaCosts = new HashMap<>();
         for (String manaCost : manaCosts) {
@@ -462,7 +490,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
           String manaCostInsert = "INSERT INTO CardMana(card_name,mana_type,quantity) VALUES (?,?,?)";
 
           int quantity =  uniqueManaCosts.get(manaCost);
-          PreparedStatement preparedStatement = connection.prepareStatement(manaCostInsert);
+          preparedStatement = connection.prepareStatement(manaCostInsert);
           preparedStatement.setString(1, cardName);
           preparedStatement.setString(2, manaCost);
           preparedStatement.setInt(3, quantity);
@@ -470,8 +498,11 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
         }
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to add subtypes for %s!", cardName));
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to add subtypes for %s!", cardName));
+      }
+      finally {
+        closePreparedStatement(preparedStatement);
       }
     }
   }
@@ -483,10 +514,10 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addExtraStats(JSONObject card) throws SQLException {
+  private void addExtraStats(JSONObject card, Connection connection) throws SQLException {
     String cardName = card.getString("name");
+    PreparedStatement preparedStatement = null;
     try {
-      PreparedStatement preparedStatement;
       if (card.has("power") && card.has("toughness")) {
         String ptInsert = "INSERT INTO PTStats(card_name,power,toughness) VALUES (?,?,?)";
         preparedStatement = connection.prepareStatement(ptInsert);
@@ -503,8 +534,11 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       }
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to add extra stats for card %s!", cardName));
+      throw new SQLException(e.getMessage() +
+          String.format("Failed to add extra stats for card %s!", cardName));
+    }
+    finally {
+      closePreparedStatement(preparedStatement);
     }
   }
 
@@ -516,7 +550,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addTwoFacedStats(JSONObject card) throws SQLException {
+  private void addTwoFacedStats(JSONObject card, Connection connection) throws SQLException {
     String layout = card.getString("layout");
     String[] names = JSONArrayToStringArray(card.getJSONArray("names"));
     String cardA = names[0];
@@ -525,7 +559,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     // Check that each card has been added
     boolean cardsAdded = true;
     for (String name : names) {
-      if (!cardAdded(name)) {
+      if (!cardAdded(name, connection)) {
         cardsAdded = false;
       }
     }
@@ -534,25 +568,30 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     if (cardsAdded) {
       // Check that the query hasn't been added
       boolean relationshipAdded;
+      PreparedStatement preparedStatement = null;
+      ResultSet resultSet = null;
       try {
         String multifaceQuery = "SELECT * FROM TwoCards WHERE card_a=? AND card_b=?";
-        PreparedStatement preparedStatement = connection.prepareStatement(multifaceQuery);
+        preparedStatement = connection.prepareStatement(multifaceQuery);
         preparedStatement.setString(1, cardA);
         preparedStatement.setString(2, cardB);
-        ResultSet result = preparedStatement.executeQuery();
-        relationshipAdded = result.next();
+        resultSet = preparedStatement.executeQuery();
+        relationshipAdded = resultSet.next();
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to query relationship between"
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to query relationship between"
             + " cards %s and %s!", cardA, cardB));
+      }
+      finally {
+        close(resultSet, preparedStatement);
       }
 
       if (!relationshipAdded) {
         try {
           String multifaceUpdate = "INSERT INTO TwoCards(card_a,card_b,type,total_cmc) "
               + "VALUES (?,?,?,?)";
-          PreparedStatement preparedStatement = connection.prepareStatement(multifaceUpdate);
+          preparedStatement = connection.prepareStatement(multifaceUpdate);
           preparedStatement.setString(1, cardA);
           preparedStatement.setString(2, cardB);
           preparedStatement.setString(3, layout);
@@ -560,9 +599,11 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
           preparedStatement.executeUpdate();
         }
         catch (SQLException e) {
-          e.printStackTrace();
-          throw new SQLException(String.format("Failed to add relationship between"
+          throw new SQLException(e.getMessage() + String.format("\nFailed to add relationship between"
               + " cards %s and %s!", cardA, cardB));
+        }
+        finally {
+          closePreparedStatement(preparedStatement);
         }
       }
     }
@@ -576,7 +617,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addThreeFacedStats(JSONObject card) throws SQLException {
+  private void addThreeFacedStats(JSONObject card, Connection connection) throws SQLException {
     String layout = card.getString("layout");
     String[] names = JSONArrayToStringArray(card.getJSONArray("names"));
     String cardA = names[0];
@@ -586,7 +627,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     // Check that each card has been added
     boolean cardsAdded = true;
     for (String name : names) {
-      if (!cardAdded(name)) {
+      if (!cardAdded(name, connection)) {
         cardsAdded = false;
       }
     }
@@ -595,29 +636,34 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
     if (cardsAdded) {
       // Check that the query hasn't been added
       boolean relationshipAdded = true;
+      PreparedStatement preparedStatement = null;
+      ResultSet resultSet = null;
       try {
         String multifaceQuery = "SELECT * FROM ThreeCards WHERE card_a=? AND card_b=? AND card_c=?";
-        PreparedStatement preparedStatement = connection.prepareStatement(multifaceQuery);
+        preparedStatement = connection.prepareStatement(multifaceQuery);
         preparedStatement.setString(1, cardA);
         preparedStatement.setString(2, cardB);
         preparedStatement.setString(3, cardC);
-        ResultSet result = preparedStatement.executeQuery();
+        resultSet = preparedStatement.executeQuery();
 
-        if (!result.next()) {
+        if (!resultSet.next()) {
           relationshipAdded = false;
         }
       }
       catch (SQLException e) {
-        e.printStackTrace();
-        throw new SQLException(String.format("Failed to add relationship between cards "
+        throw new SQLException(e.getMessage() + String.format("\nFailed to add relationship between cards "
             + "%s, %s, and %s!", cardA, cardB, cardC));
       }
+      finally {
+        close(resultSet, preparedStatement);
+      }
+
 
       if (!relationshipAdded) {
         try {
           String multifaceUpdate = "INSERT INTO ThreeCards(card_a,card_b,card_c,type,total_cmc) "
               + "VALUES (?,?,?,?,?)";
-          PreparedStatement preparedStatement = connection.prepareStatement(multifaceUpdate);
+          preparedStatement = connection.prepareStatement(multifaceUpdate);
           preparedStatement.setString(1, cardA);
           preparedStatement.setString(2, cardB);
           preparedStatement.setString(3, cardC);
@@ -626,9 +672,11 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
           preparedStatement.executeUpdate();
         }
         catch (SQLException e) {
-          e.printStackTrace();
-          throw new SQLException(String.format("Failed to query relationship between cards "
+          throw new SQLException(e.getMessage() + String.format("\nFailed to query relationship between cards "
               + "%s, %s, and %s!", cardA, cardB, cardC));
+        }
+        finally {
+          closePreparedStatement(preparedStatement);
         }
       }
     }
@@ -642,7 +690,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addMultifacedStats(JSONObject card) throws SQLException {
+  private void addMultifacedStats(JSONObject card, Connection connection) throws SQLException {
     if (card.has("names")) {
       String cardName = card.getString("name");
       String[] cardNames = JSONArrayToStringArray(card.getJSONArray("names"));
@@ -653,10 +701,10 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
         }
 
         if (cardNames.length == 2) {
-          addTwoFacedStats(card);
+          addTwoFacedStats(card, connection);
         }
         else if (cardNames.length == 3) {
-          addThreeFacedStats(card);
+          addThreeFacedStats(card, connection);
         }
         else {
           // Should never reach
@@ -675,27 +723,31 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addSetCardInfo(JSONObject card, String shorthandSetName) throws SQLException {
+  private void addSetCardInfo(JSONObject card, Connection connection, String shorthandSetName) throws SQLException {
     String cardName = card.getString("name");
 
     boolean cardSetAdded;
+    PreparedStatement preparedStatement = null;
+    ResultSet resultSet = null;
     try {
       // See if card has already been added to the CDDB
       String selectStatement = "SELECT card_name, expansion, number FROM CardExpansion "
           + "WHERE card_name = ?"
           + "AND expansion = ?"
           + "AND number = ?";
-      PreparedStatement preparedStatement = connection.prepareStatement(selectStatement);
+      preparedStatement = connection.prepareStatement(selectStatement);
       preparedStatement.setString(1, cardName);
       preparedStatement.setString(2, shorthandSetName);
       preparedStatement.setString(3, card.getString("number"));
-      ResultSet result = preparedStatement.executeQuery();
-      cardSetAdded = result.next();
+      resultSet = preparedStatement.executeQuery();
+      cardSetAdded = resultSet.next();
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to query for card %s and set %s!",
+      throw new SQLException(e.getMessage() + String.format("\nFailed to query for card %s and set %s!",
           cardName, shorthandSetName));
+    }
+    finally {
+      close(resultSet, preparedStatement);
     }
 
     try {
@@ -703,7 +755,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
         String insertStatement
             = "INSERT INTO CardExpansion(card_name,expansion,number,rarity,flavor_text,artist) "
             + "VALUES (?,?,?,?,?,?)";
-        PreparedStatement preparedStatement = connection.prepareStatement(insertStatement);
+        preparedStatement = connection.prepareStatement(insertStatement);
         preparedStatement.setString(1, cardName);
         preparedStatement.setString(2, shorthandSetName);
         preparedStatement.setString(3, card.getString("number"));
@@ -723,9 +775,11 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       }
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to add set info for card %s for "
+      throw new SQLException(e.getMessage() + String.format("\nFailed to add set info for card %s for "
           + "set %s!", cardName, shorthandSetName));
+    }
+    finally {
+      closePreparedStatement(preparedStatement);
     }
   }
 
@@ -749,8 +803,7 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
       return toReturn;
     }
     catch (JSONException e) {
-      e.printStackTrace();
-      throw new SQLException("Given JSON array isn't entirely made of Strings!");
+      throw new SQLException(e.getMessage() + "\nGiven JSON array isn't entirely made of Strings!");
     }
   }
 
@@ -761,22 +814,29 @@ public class DefaultDatabaseParser extends DefaultDatabasePort implements Databa
    * @throws IllegalArgumentException if given string is null
    * @throws SQLException failure to query CDDB
    */
-  private boolean cardAdded(String toCheck) throws SQLException {
+  private boolean cardAdded(String toCheck, Connection connection) throws SQLException {
     if (toCheck == null) {
       throw new IllegalArgumentException("Given string can't be null!");
     }
 
+    boolean returned;
+    PreparedStatement preparedStatement = null;
+    ResultSet resultSet = null;
     try {
       String cardAddedQuery = "SELECT name FROM Card WHERE name=?";
-      PreparedStatement preparedStatement = connection.prepareStatement(cardAddedQuery);
+      preparedStatement = connection.prepareStatement(cardAddedQuery);
       preparedStatement.setString(1, toCheck);
-      ResultSet result = preparedStatement.executeQuery();
-      return result.next();
+      resultSet = preparedStatement.executeQuery();
+      returned = resultSet.next();
     }
     catch (SQLException e) {
-      e.printStackTrace();
-      throw new SQLException(String.format("Failed to is see if card %s is in CDDB!", toCheck));
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to is see if card %s is in CDDB!", toCheck));
     }
+    finally {
+      close(resultSet, preparedStatement);
+    }
+    return returned;
   }
 
   /**

@@ -1,11 +1,7 @@
 package database.directory;
 
-import database.access.DatabasePort;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
-import value_objects.card.Card;
-import value_objects.query.CardQuery;
 import value_objects.deck.Deck;
 import value_objects.deck_instance.DeckInstance;
 
@@ -13,7 +9,7 @@ import value_objects.deck_instance.DeckInstance;
  * Represents the set of methods available for interacting with the decks stored in the Card &
  * Deck Database (CDDB).
  */
-public interface DeckChannel extends DatabasePort {
+public interface DeckChannel {
 
   /**
    * Returns a hashmap of decks in the CDDB, as represented by their unique integer IDs and names.
