@@ -1,6 +1,6 @@
-package database.directory;
+package database.access;
 
-import database.access.DatabasePort;
+import database.DatabasePort;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,6 +25,8 @@ import value_objects.deck.Deck;
 import value_objects.deck.DefaultDeck;
 import value_objects.deck_instance.DeckInstance;
 import value_objects.deck_instance.DefaultDeckInstance;
+import value_objects.query.Comparison;
+import value_objects.query.Stat;
 
 /**
  * Default class to use to access the Card and Deck Database (CDDB) for querying cards and reading,
@@ -33,13 +35,43 @@ import value_objects.deck_instance.DefaultDeckInstance;
 public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     CardChannel {
 
+  private final SortedSet<String> superTypes;
+
+  private final SortedSet<String> types;
+
+  private final SortedSet<String> subtypes;
+
+  private final SortedSet<String> rarities;
+
+  private final SortedSet<String> colors;
+
+  private final SortedSet<String> manaTypes;
+
+  private final SortedSet<String> artists;
+
+  private final SortedSet<String> sets;
+
+  private final SortedSet<String> blocks;
+
   /**
    * Takes in a {@link Path} referencing the Card and Deck Database (CDDB) to establish a
    * connection with the database.
    * @param pathToDatabase path to CDDB
+   * @throws SQLException failure to retrieve constant data from database
    */
-  public DefaultDatabaseChannel(Path pathToDatabase) {
+  public DefaultDatabaseChannel(Path pathToDatabase) throws SQLException {
     super(pathToDatabase);
+    Connection connection = connect();
+    superTypes = retrieveColumnInfo("CardSupertype", "supertype", connection);
+    types = retrieveColumnInfo("CardType", "type", connection);
+    subtypes = retrieveColumnInfo("CardSubtype", "subtype", connection);
+    rarities = retrieveColumnInfo("CardExpansion", "rarity", connection);
+    colors = retrieveColumnInfo("CardColor", "color", connection);
+    manaTypes = retrieveColumnInfo("CardMana", "mana_type", connection);
+    blocks = retrieveColumnInfo("Block", "block", connection);
+    artists = retrieveColumnInfo("CardExpansion", "artist", connection);
+    sets = retrieveColumnInfo("Expansion", "expansion", connection);
+    disconnect(connection);
   }
 
   @Override
@@ -425,8 +457,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
   @Override
   public CardQuery getQuery() {
-    //TODO
-    return null;
+    return new DefaultCardQuery();
   }
 
   @Override
@@ -464,32 +495,32 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
   @Override
   public SortedSet<String> getSupertypes() throws SQLException {
-    return retrieveColumnInfo("CardSupertype", "supertype");
+    return superTypes;
   }
 
   @Override
   public SortedSet<String> getTypes() throws SQLException {
-    return retrieveColumnInfo("CardType", "type");
+    return types;
   }
 
   @Override
   public SortedSet<String> getSubtypes() throws SQLException {
-    return retrieveColumnInfo("CardSubtype", "subtype");
+    return subtypes;
   }
 
   @Override
   public SortedSet<String> getManaTypes() throws SQLException {
-    return retrieveColumnInfo("CardMana", "mana_type");
+    return manaTypes;
   }
 
   @Override
   public SortedSet<String> getRarityTypes() throws SQLException {
-    return retrieveColumnInfo("CardExpansion", "rarity");
+    return rarities;
   }
 
   @Override
   public SortedSet<String> getColors() throws SQLException {
-    return retrieveColumnInfo("CardColor", "color");
+    return colors;
   }
 
   @Override
@@ -506,17 +537,17 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
   @Override
   public SortedSet<String> getBlocks() throws SQLException {
-    return retrieveColumnInfo("Block", "block");
+    return blocks;
   }
 
   @Override
   public SortedSet<String> getArtists() throws SQLException {
-    return retrieveColumnInfo("CardExpansion", "artist");
+    return artists;
   }
 
   @Override
   public SortedSet<String> getSets() throws SQLException {
-    return retrieveColumnInfo("Expansion", "expansion");
+    return sets;
   }
 
   @Override
@@ -568,11 +599,22 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
    * @throws IllegalStateException if connection to the database is closed or not working
    */
   private SortedSet<String> retrieveColumnInfo(String tableName, String columnName) throws SQLException {
+    Connection connection = connect();
+    SortedSet<String> toReturn = retrieveColumnInfo(tableName, columnName, connection);
+    disconnect(connection);
+    return toReturn;
+  }
+
+  private SortedSet<String> retrieveColumnInfo(String tableName, String columnName,
+      Connection connection) throws SQLException {
+    if (connection == null || connection.isClosed()) {
+      throw new IllegalArgumentException("Given connection can't be null or closed!");
+    }
+
     SortedSet<String> toReturn = new TreeSet<>();
     String query = "SELECT DISTINCT(?) FROM ?";
     ResultSet queryResult = null;
-    try (Connection connection = connect();
-        PreparedStatement preparedStatement = connection.prepareStatement(query);) {
+    try (PreparedStatement preparedStatement = connection.prepareStatement(query);) {
       preparedStatement.setString(1, columnName);
       preparedStatement.setString(2, tableName);
       queryResult = preparedStatement.executeQuery();
@@ -632,6 +674,124 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     catch (SQLException e) {
       throw new SQLException(e.getMessage() +
           String.format("\nFailed to query for table %s!", tableName));
+    }
+  }
+
+  /**
+   * Default implementation of the {@link CardQuery} interface, listed inside
+   * {@link DefaultDatabaseChannel} due its tight coupling with it for purposes of determining
+   * what is and is not a valid parameter.
+   */
+  private class DefaultCardQuery implements CardQuery {
+
+    @Override
+    public void byName(String word, boolean searchFor) throws IllegalArgumentException {
+      if (word == null) {
+        throw new IllegalArgumentException("Given word can't be null!");
+      }
+    }
+
+    @Override
+    public void byText(String text, boolean searchFor) throws IllegalArgumentException {
+      if (text == null) {
+        throw new IllegalArgumentException("Given text can't be null!");
+      }
+    }
+
+    @Override
+    public void byColor(String color, boolean searchFor) throws IllegalArgumentException {
+      if (color == null) {
+        throw new IllegalArgumentException("Given color can't be null!");
+      }
+      else if (!colors.contains(color)) {
+        throw new IllegalArgumentException("Given color is not contained in the CDDB!");
+      }
+    }
+
+    @Override
+    public void byColorIdentity(String color, boolean searchFor) throws IllegalArgumentException {
+      if (color == null) {
+        throw new IllegalArgumentException("Given color can't be null!");
+      }
+      else if (!colors.contains(color)) {
+        throw new IllegalArgumentException("Given color is not contained in the CDDB!");
+      }
+    }
+
+    @Override
+    public void byType(String type, boolean searchFor) throws IllegalArgumentException {
+      if (type == null) {
+        throw new IllegalArgumentException("Given type can't be null!");
+      }
+      else if (!superTypes.contains(type) || !type.contains(type) || !subtypes.contains(type)) {
+        throw new IllegalArgumentException("Given type is not contained in the CDDB!");
+      }
+    }
+
+    @Override
+    public void byBlock(String block, boolean searchFor) throws IllegalArgumentException {
+      if (block == null) {
+        throw new IllegalArgumentException("Given block can't be null!");
+      }
+      else if (!blocks.contains(block)) {
+        throw new IllegalArgumentException("Given block is not contained in the CDDB!");
+      }
+    }
+
+    @Override
+    public void bySet(String set, boolean searchFor) throws IllegalArgumentException {
+      if (set == null) {
+        throw new IllegalArgumentException("Given set can't be null!");
+      }
+      else if (!sets.contains(set)) {
+        throw new IllegalArgumentException("Given set is not contained in the CDDB!");
+      }
+    }
+
+    @Override
+    public void byArtist(String artist, boolean searchFor) throws IllegalArgumentException {
+      if (artist == null) {
+        throw new IllegalArgumentException("Given type can't be null!");
+      }
+      else if (!artists.contains(artist)) {
+        throw new IllegalArgumentException("Given artist is not contained in the CDDB!");
+      }
+    }
+
+    @Override
+    public void byStat(Stat stat, Comparison comparison, int quantity)
+        throws IllegalArgumentException {
+      if (stat == null) {
+        throw new IllegalArgumentException("Given stat can't be null!");
+      }
+      else if (comparison == null) {
+        throw new IllegalArgumentException("Given comparison can't be null!");
+      }
+    }
+
+    @Override
+    public void byRarity(String rarity, boolean searchFor) throws IllegalArgumentException {
+      if (rarity == null) {
+        throw new IllegalArgumentException("Given rarity can't be null!");
+      }
+      else if (!rarities.contains(rarity)) {
+        throw new IllegalArgumentException("Given rarity is not contained in the CDDB!");
+      }
+    }
+
+    @Override
+    public void byManaType(String type, Integer quantity) throws IllegalArgumentException {
+      if (type == null) {
+        throw new IllegalArgumentException("Given mana type can't be null!");
+      }
+      else if (!manaTypes.contains(type)) {
+        throw new IllegalArgumentException("Given mana type is not contained in the CDDB!");
+      }
+    }
+
+    @Override
+    public String asQuery() {
+      return null;
     }
   }
 }

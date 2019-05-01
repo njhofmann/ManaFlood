@@ -1,9 +1,8 @@
-package database.directory;
+package database.access;
 
 import java.sql.SQLException;
 import java.util.List;
 import java.util.SortedSet;
-import org.sqlite.SQLiteException;
 import value_objects.card.Card;
 import value_objects.query.CardQuery;
 

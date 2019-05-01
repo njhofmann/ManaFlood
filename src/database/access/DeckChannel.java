@@ -1,4 +1,4 @@
-package database.directory;
+package database.access;
 
 import java.sql.SQLException;
 import java.util.HashMap;

@@ -1,6 +1,6 @@
 package database.parsing;
 
-import database.access.DatabasePort;
+import database.DatabasePort;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -39,8 +39,9 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
   /**
    * Takes in a {@link Path} referencing the Card and Deck Database (CDDB).
    * @param pathToDatabase path to CDDB
+   * @throws SQLException should never be thrown
    */
-  public DefaultDatabaseParser(Path pathToDatabase) {
+  public DefaultDatabaseParser(Path pathToDatabase) throws SQLException {
     super(pathToDatabase);
   }
 
@@ -113,7 +114,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
     }
 
     // Check for required keys
-    String[] requiredKeys = new String[]{"shorthandSetName", "totalSetSize", "name", "cards", "releaseDate"};
+    String[] requiredKeys = new String[]{"code", "totalSetSize", "name", "cards", "releaseDate"};
     for (String key : requiredKeys) {
       if (!set.has(key)) {
         throw new IllegalArgumentException(String.format("Given JSONObject isn't a set, "
@@ -121,7 +122,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
       }
     }
 
-    String shorthandSetName = set.getString("shorthandSetName").toUpperCase();
+    String shorthandSetName = set.getString("code").toUpperCase();
     PreparedStatement preparedStatement;
 
     // Check if set has been added
