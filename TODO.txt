@@ -1,24 +1,21 @@
 Minor:
--Deal with timeshifted cards
 -Documentation
 -Write down how time handling is done
 -Update text on cards option (erreta)
 -Add release dates to expansions
--Custom exception for database errors?
 -Comprehensive readme explaining project structure and plan
   -Identifier vs Info Container for value objects
--SortedSets to Sets?
+
+CardQuerying
+-First vs last insertions
+-Rejoining table
 
 Major:
--P/t conditions for card?
+-Card querying
+-Optional color / color indicator
+-Scryfall image url
 -Documentation
 -Redo connection, statement openings and closing (old style)
--Card querying
--Scryfall image url
--Specify database creatsion
--SQLexcpetion print stack trace to throw stack trace
+-Terminal thing
 -Merging card and card expansions?
--Add Pair and Triple generic containers
--Add card querying support
--How should cardQuerying work
 -DatebaseChannel tests on blank database

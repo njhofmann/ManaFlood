@@ -24,7 +24,7 @@ CREATE TABLE Card (
 );
 
 --All the colors associated with a card.
-CREATE TABLE CardColor(
+CREATE TABLE Color (
   card_name TEXT NOT NULL,
   color TEXT NOT NULL,
   PRIMARY KEY(card_name, color),
@@ -32,31 +32,24 @@ CREATE TABLE CardColor(
 );
 
 --All the colors associated with a card's color identity.
-CREATE TABLE CardColorIdentity (
+CREATE TABLE ColorIdentity (
   card_name TEXT NOT NULL,
   color TEXT NOT NULL,
   PRIMARY KEY(card_name, color),
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
---If cards has power and toughness, stores those values
---Not all p/t's are integers, some may be non-integer symbols like X or *
-CREATE TABLE PTStats (
-  card_name TEXT PRIMARY KEY,
-  power TEXT NOT NULL,
-  toughness TEXT NOT NULL,
+--Stores extra stats associated with a card - power, toughness, and loyalty - under category
+CREATE TABLE ExtraStat (
+  card_name TEXT,
+  category TEXT,
+  value TEXT NOT NULL,
+  base_value INTEGER NOT NULL,
+  PRIMARY KEY(card_name, category),
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
---If card has planeswalker loyalty, stores associated value - may not be an integer
-CREATE TABLE PlaneswalkerStats (
-  card_name TEXT PRIMARY KEY,
-  loyalty TEXT NOT NULL,
-  FOREIGN KEY(card_name) REFERENCES Card(name)
-);
-
---
-CREATE TABLE CardMana (
+CREATE TABLE Mana (
   card_name TEXT,
   mana_type TEXT,
   quantity INTEGER NOT NULL,
@@ -76,33 +69,19 @@ CREATE TABLE CardExpansion (
   FOREIGN KEY(expansion) REFERENCES Expansion(abbrv)
 );
 
-CREATE TABLE CardSupertype (
-  card_name TEXT,
-  supertype TEXT,
-  PRIMARY KEY(card_name, supertype),
-  FOREIGN KEY(card_name) REFERENCES Card(name)
-);
-
-CREATE TABLE CardType (
+--All the types associated with a card - category determines if type is supertype, type, or subtype
+CREATE TABLE Type (
   card_name TEXT,
   type TEXT,
+  category TEXT NOT NULL,
   PRIMARY KEY(card_name, type),
-  FOREIGN KEY(card_name) REFERENCES Card(name)
-);
-
---All the subtypes associated with a card, subtypes are not considered a enum as they are likely to
---be expanded
-CREATE TABLE CardSubtype (
-  card_name TEXT,
-  subtype TEXT,
-  PRIMARY KEY(card_name, subtype),
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
 CREATE TABLE TwoCards (
   card_a TEXT,
   card_b TEXT,
-  type TEXT,
+  type TEXT NOT NULL,
   total_cmc INTEGER NOT NULL,
   PRIMARY KEY (card_a, card_b),
   FOREIGN KEY(card_a) REFERENCES Card(name),
@@ -113,7 +92,7 @@ CREATE TABLE ThreeCards (
   card_a TEXT,
   card_b TEXT,
   card_c TEXT,
-  type TEXT,
+  type TEXT NOT NULL,
   total_cmc INTEGER NOT NULL,
   PRIMARY KEY (card_a, card_b, card_c),
   FOREIGN KEY(card_a) REFERENCES Card(name),

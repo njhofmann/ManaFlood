@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -166,22 +167,22 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
       finally {
         closePreparedStatement(preparedStatement);
       }
-    }
 
-    // Add expansion's associated block if associated with one
-    if (set.has("block")) {
-      String block = set.getString("block");
-      try {
-        String insertStatement = "INSERT INTO Block(expansion,block) VALUES (?,?)";
-        preparedStatement = connection.prepareStatement(insertStatement);
-        preparedStatement.setString(1, shorthandSetName);
-        preparedStatement.setString(2, block);
-        preparedStatement.executeUpdate();
-      }
-      catch (SQLException e) {
-        throw new SQLException(String.format(e.getMessage() +
-            "\nFailed to insert block %s for associated expansion"
-            + " %s!", block, shorthandSetName));
+      // Add expansion's associated block if associated with one
+      if (set.has("block")) {
+        String block = set.getString("block");
+        try {
+          String insertStatement = "INSERT INTO Block(expansion,block) VALUES (?,?)";
+          preparedStatement = connection.prepareStatement(insertStatement);
+          preparedStatement.setString(1, shorthandSetName);
+          preparedStatement.setString(2, block);
+          preparedStatement.executeUpdate();
+        }
+        catch (SQLException e) {
+          throw new SQLException(String.format(e.getMessage() +
+              "\nFailed to insert block %s for associated expansion"
+              + " %s!", block, shorthandSetName));
+        }
       }
     }
 
@@ -232,14 +233,10 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
       // Add colors making up the card's color identity
       addCardColorIdentity(card, connection);
 
-      // Every card should have supertypes, add them
-      addCardSupertypes(card, connection);
 
       // If card has types, add them
       addCardTypes(card, connection);
 
-      // If card has subtypes, add them
-      addCardSubtypes(card, connection);
 
       // If card has mana cost, add them
       addCardManaCosts(card, connection);
@@ -306,7 +303,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
    * @throws SQLException there is a failure to add data to the CDDB about given card
    */
   private void addCardColors(JSONObject card, Connection connection) throws SQLException {
-    addCardColorInfo(card, connection, "colors", "CardColor");
+    addCardColorInfo(card, connection, "colors", "Color");
   }
 
   /**
@@ -316,7 +313,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
    * @throws SQLException there is a failure to add data to the CDDB about given card
    */
   private void addCardColorIdentity(JSONObject card, Connection connection) throws SQLException {
-    addCardColorInfo(card, connection, "colorIdentity", "CardColorIdentity");
+    addCardColorInfo(card, connection, "colorIdentity", "ColorIdentity");
   }
 
   /**
@@ -360,101 +357,43 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
   }
 
   /**
-   * Given {@link JSONObject} of a MTG card from a MTGJSON JSON file, adds it supertypes to the
-   * CDDB, if it has any
-   * before.
-   * @param card JSONObject of card to add
-   * @throws IllegalArgumentException if card contains an unsupported supertype
-   * @throws SQLException there is a failure to query data from or add data to the CDDB about
-   *         given card
-   */
-  private void addCardSupertypes(JSONObject card, Connection connection) throws SQLException {
-    if (card.has("supertypes")) {
-      String cardName = card.getString("name");
-      String[] supertypes = JSONArrayToStringArray(card.getJSONArray("supertypes"));
-      PreparedStatement preparedStatement = null;
-      try {
-        for (String supertype : supertypes) {
-          String insertSupertype = "INSERT INTO CardSupertype(card_name,supertype) VALUES (?,?)";
-          preparedStatement = connection.prepareStatement(insertSupertype);
-          preparedStatement.setString(1, cardName);
-          preparedStatement.setString(2, supertype.toLowerCase());
-          preparedStatement.executeUpdate();
-        }
-      }
-      catch (SQLException e) {
-        throw new SQLException(e.getMessage() +
-            String.format("\nFailed to add supertypes for card %s!", cardName));
-      }
-      finally {
-        closePreparedStatement(preparedStatement);
-      }
-    }
-  }
-
-  /**
    * Given {@link JSONObject} of a MTG card from a MTGJSON JSON file, adds it types to the
-   * CDDB, if it has any.
+   * CDDB, if it has any. Types include supertypes, types, and subtypes.
    * before.
    * @param card JSONObject of card to add
-   * @throws IllegalArgumentException if given card contains an unsupported type
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
-   *         given card
+   *         given types
    */
   private void addCardTypes(JSONObject card, Connection connection) throws SQLException {
-    if (card.has("types")) {
-      String cardName = card.getString("name");
-      String[] types = JSONArrayToStringArray(card.getJSONArray("types"));
-      PreparedStatement preparedStatement = null;
-      try {
-        //Add types
-        for (String type : types) {
-          String insertType = "INSERT INTO CardType(card_name,type) VALUES (?,?)";
-          preparedStatement = connection.prepareStatement(insertType);
-          preparedStatement.setString(1, cardName);
-          preparedStatement.setString(2, type.toLowerCase());
-          preparedStatement.executeUpdate();
-        }
-      }
-      catch (SQLException e) {
-        throw new SQLException(e.getMessage() +
-            String.format("\nFailed to add types for card %s!", cardName));
-      }
-      finally {
-        closePreparedStatement(preparedStatement);
+    String cardName = card.getString("name");
+    Map<String, String[]> categoryToTypes = new HashMap<>();
+    String[] categories = new String[]{"supertypes", "types", "subtypes"};
+    for (String category : categories) {
+      if (card.has(category)) {
+        String[] values = JSONArrayToStringArray(card.getJSONArray(category));
+        categoryToTypes.put(category.substring(0, category.length() - 1), values);
       }
     }
-  }
 
-  /**
-   * Given {@link JSONObject} of a MTG card from a MTGJSON JSON file, adds it subtypes to the
-   * CDDB, if it has any.
-   * before.
-   * @param card JSONObject of card to add
-   * @throws SQLException there is a failure to query data from or add data to the CDDB about
-   *         given card
-   */
-  private void addCardSubtypes(JSONObject card, Connection connection) throws SQLException {
-    if (card.has("subtypes")) {
-      String cardName = card.getString("name");
-      String[] subtypes = JSONArrayToStringArray(card.getJSONArray("subtypes"));
+    for (String category : categoryToTypes.keySet()) {
+      String[] specificTypes = categoryToTypes.get(category);
       PreparedStatement preparedStatement = null;
-      try {
-        // Add subtypes
-        for (String subtype : subtypes) {
-          String insertSubtype = "INSERT INTO CardSubtype(card_name,subtype) VALUES (?,?)";
-          preparedStatement = connection.prepareStatement(insertSubtype);
+      for (String specificType : specificTypes) {
+        try {
+          String insertType = "INSERT INTO Type(card_name,type,category) VALUES (?,?,?)";
+          preparedStatement = connection.prepareStatement(insertType);
           preparedStatement.setString(1, cardName);
-          preparedStatement.setString(2, subtype.toLowerCase());
+          preparedStatement.setString(2, specificType.toLowerCase());
+          preparedStatement.setString(3, category);
           preparedStatement.executeUpdate();
         }
-      }
-      catch (SQLException e) {
-        throw new SQLException(e.getMessage() +
-            String.format("\nFailed to add subtypes for %s!", cardName));
-      }
-      finally {
-        closePreparedStatement(preparedStatement);
+        catch (SQLException e) {
+          throw new SQLException(e.getMessage() +
+              String.format("\nFailed to add %s %s for card %s!", category, specificType, cardName));
+        }
+        finally {
+          closePreparedStatement(preparedStatement);
+        }
       }
     }
   }
@@ -488,7 +427,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
           }
         }
         for (String manaCost : uniqueManaCosts.keySet()) {
-          String manaCostInsert = "INSERT INTO CardMana(card_name,mana_type,quantity) VALUES (?,?,?)";
+          String manaCostInsert = "INSERT INTO Mana(card_name,mana_type,quantity) VALUES (?,?,?)";
 
           int quantity =  uniqueManaCosts.get(manaCost);
           preparedStatement = connection.prepareStatement(manaCostInsert);
@@ -517,30 +456,68 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
    */
   private void addExtraStats(JSONObject card, Connection connection) throws SQLException {
     String cardName = card.getString("name");
-    PreparedStatement preparedStatement = null;
-    try {
-      if (card.has("power") && card.has("toughness")) {
-        String ptInsert = "INSERT INTO PTStats(card_name,power,toughness) VALUES (?,?,?)";
-        preparedStatement = connection.prepareStatement(ptInsert);
-        preparedStatement.setString(1, cardName);
-        preparedStatement.setString(2, card.getString("power"));
-        preparedStatement.setString(3, card.getString("toughness"));
-        preparedStatement.executeUpdate();
-      } else if (card.has("loyalty")) {
-        String planeswalkerInsert = "INSERT INTO PlaneswalkerStats(card_name,loyalty) VALUES (?,?)";
-        preparedStatement = connection.prepareStatement(planeswalkerInsert);
-        preparedStatement.setString(1, cardName);
-        preparedStatement.setString(2, card.getString("loyalty"));
-        preparedStatement.executeUpdate();
+    Map<String, String> extraStats = new HashMap<>();
+    String[] categories = new String[]{"power", "toughness", "loyalty"};
+    for (String category : categories) {
+      if (card.has(category)) {
+        String value = card.getString(category);
+        extraStats.put(category, value);
       }
     }
-    catch (SQLException e) {
-      throw new SQLException(e.getMessage() +
-          String.format("Failed to add extra stats for card %s!", cardName));
+
+    PreparedStatement preparedStatement = null;
+    for (String category : extraStats.keySet()) {
+      String value = extraStats.get(category);
+      try {
+        String ptInsert = "INSERT INTO ExtraStat(card_name,category,value,base_value) VALUES (?,?,?,?)";
+        preparedStatement = connection.prepareStatement(ptInsert);
+        preparedStatement.setString(1, cardName);
+        preparedStatement.setString(2, category);
+        preparedStatement.setString(3, value);
+        preparedStatement.setInt(4, stringToInteger(value));
+        preparedStatement.executeUpdate();
+      }
+      catch (SQLException e) {
+        throw new SQLException(e.getMessage() +
+            String.format("\nFailed to add extra stat %s of value %s for card %s!", category, value, cardName));
+      }
+      finally {
+        closePreparedStatement(preparedStatement);
+      }
     }
-    finally {
-      closePreparedStatement(preparedStatement);
+  }
+
+  /**
+   * Given a string, converts it to an integer based on the first k numbers (0 to 9) present in the
+   * string(or hyphen "-" in the first position of the given string to indicate a negative value).
+   * If no number or starting "-" are present, returns 0.
+   * @param value string value to convert
+   * @return integer version of given string value
+   * @throws IllegalArgumentException if given string is null
+   */
+  private int stringToInteger(String value) {
+    if (value == null) {
+      throw new IllegalArgumentException(String.format("Given value %s can't be null!", value));
     }
+
+    StringBuilder toReturn = new StringBuilder();
+    char[] chars = value.toCharArray();
+    for (int i = 0; i < chars.length; i++) {
+      char curChar = chars[i];
+      if ((i == 0 && curChar == '-') || ('0' <= curChar && curChar <= '9')) {
+        toReturn.append(curChar);
+      }
+      else {
+        break;
+      }
+    }
+
+    String toReturnString = toReturn.toString();
+    // Empty or only a hyphen
+    if (toReturnString.isEmpty() || (toReturnString.length() == 1 && toReturnString.equals("-"))) {
+      return 0;
+    }
+    return Integer.parseInt(toReturnString);
   }
 
   /**

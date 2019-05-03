@@ -16,7 +16,7 @@ import org.sqlite.SQLiteConfig;
  * Provides methods for opening and closing a connection to the Card & Deck Database (CDDB),
  * creating a new CDDB, and utility methods for querying and inserting info into the CDDB.
  */
-public abstract class DatabasePort {
+public class DatabasePort {
 
   /**
    * Path to the CDDB.
@@ -35,7 +35,7 @@ public abstract class DatabasePort {
    * @throws SQLException if there is a failure to insert info from the given initalization path,
    * should only occur if trying to create a new database
    */
-  protected DatabasePort(Path pathToDatabase, Path initalizationPath)
+  public DatabasePort(Path pathToDatabase, Path initalizationPath)
       throws IllegalArgumentException, SQLException {
     boolean createNew = initalizationPath != null;
     if (pathToDatabase == null) {
@@ -71,7 +71,7 @@ public abstract class DatabasePort {
    * @param pathToDatabase path to existing CDDB
    * @throws SQLException should never occur as no information is being inserted
    */
-  protected DatabasePort(Path pathToDatabase) throws SQLException {
+  public DatabasePort(Path pathToDatabase) throws SQLException {
     this(pathToDatabase, null);
   }
 

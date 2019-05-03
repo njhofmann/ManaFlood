@@ -21,4 +21,8 @@ public enum Comparison {
   private Comparison(String value) {
     this.value = value;
   }
+
+  public String getValue() {
+    return value;
+  }
 }
