@@ -123,6 +123,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
       }
     }
 
+    String setName = set.getString("name");
     String shorthandSetName = set.getString("code").toUpperCase();
     PreparedStatement preparedStatement;
 
@@ -144,7 +145,6 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
     }
 
     if (!setAdded) {
-      String name = set.getString("name");
       int size = set.getInt("totalSetSize");
 
       String releaseDateString = set.getString("releaseDate");
@@ -152,17 +152,17 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
       Timestamp releaseDateTimestamp = Timestamp.valueOf(releaseDate.atStartOfDay());
 
       try {
-        String insertStatement = "INSERT INTO Expansion(abbrv,expansion,size,release_date) VALUES (?,?,?,?)";
+        String insertStatement = "INSERT INTO Expansion(expansion,abbrv,size,release_date) VALUES (?,?,?,?)";
         preparedStatement = connection.prepareStatement(insertStatement);
-        preparedStatement.setString(1, shorthandSetName);
-        preparedStatement.setString(2, name);
+        preparedStatement.setString(1, setName);
+        preparedStatement.setString(2, shorthandSetName);
         preparedStatement.setInt(3, size);
         preparedStatement.setTimestamp(4, releaseDateTimestamp);
         preparedStatement.executeUpdate();
       }
       catch (SQLException e) {
         throw new SQLException(e.getMessage() +
-            String.format("\nFailed to add info for given set %s!", name));
+            String.format("\nFailed to add info for given set %s!", setName));
       }
       finally {
         closePreparedStatement(preparedStatement);
@@ -174,14 +174,14 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
         try {
           String insertStatement = "INSERT INTO Block(expansion,block) VALUES (?,?)";
           preparedStatement = connection.prepareStatement(insertStatement);
-          preparedStatement.setString(1, shorthandSetName);
+          preparedStatement.setString(1, setName);
           preparedStatement.setString(2, block);
           preparedStatement.executeUpdate();
         }
         catch (SQLException e) {
           throw new SQLException(String.format(e.getMessage() +
               "\nFailed to insert block %s for associated expansion"
-              + " %s!", block, shorthandSetName));
+              + " %s!", block, setName));
         }
       }
     }
@@ -190,7 +190,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
     int length = cards.length();
     for (int i = 0; i < length; i += 1) {
       JSONObject card = cards.getJSONObject(i);
-      addCard(card, shorthandSetName, connection);
+      addCard(card, setName, connection);
     }
   }
 
@@ -198,13 +198,13 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
    * Given the JSON object of a MTG card, from JSON file from MTGJSON, adds it to the CDDB as
    * appropriate.
    * @param card card to add
-   * @param shorthandSetName shorthand name of the expansion the given card is associated with
+   * @param setName shorthand name of the expansion the given card is associated with
    * @param connection connection to the CDDB to use
    * @throws IllegalArgumentException if given JSON object is null or doesn't have a required key
    *         as per MTGJSON's documentation
    * @throws SQLException if some part of card fails to be queried from or added to CDDB
    */
-  private void addCard(JSONObject card, String shorthandSetName, Connection connection) throws IllegalArgumentException,
+  private void addCard(JSONObject card, String setName, Connection connection) throws IllegalArgumentException,
       SQLException {
     if (card == null) {
       throw new IllegalArgumentException("Give card can't be null!");
@@ -233,28 +233,26 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
       // Add colors making up the card's color identity
       addCardColorIdentity(card, connection);
 
-
       // If card has types, add them
       addCardTypes(card, connection);
-
 
       // If card has mana cost, add them
       addCardManaCosts(card, connection);
 
-      // If card has power & toughness, or planeswalker loyalty, add those extra stats
-      addExtraStats(card, connection);
+      // If card has cmc, power & toughness, and / or planeswalker loyalty, add those extra stats
+      addStats(card, connection);
     }
 
     // If card is multifaced, and all its components have been added, add multifaced relation to set
     addMultifacedStats(card, connection);
 
     // Card is for sure in database, add relevant set info
-    addSetCardInfo(card, connection, shorthandSetName);
+    addSetCardInfo(card, connection, setName);
   }
 
   /**
    * Given {@link JSONObject} of a MTG card from a MTGJSON JSON file, adds it base stats like its
-   * name, card text, and converted mana costs to the CDDB given info for that card hasn't been added
+   * name and card text to the CDDB given info for that card hasn't been added
    * before.
    * @param card JSONObject of card to add
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
@@ -264,7 +262,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
     String cardName = card.getString("name");
     PreparedStatement preparedStatement = null;
     try {
-      String insertCard = "INSERT INTO Card(name,card_text,cmc) VALUES (?,?,?)";
+      String insertCard = "INSERT INTO Card(name,card_text) VALUES (?,?)";
       preparedStatement = connection.prepareStatement(insertCard);
 
       String cardText = "";
@@ -272,19 +270,8 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
         cardText = card.getString("text");
       }
 
-      String cardCMCQuery;
-      if (card.has("faceConvertedManaCost")) {
-        cardCMCQuery = "faceConvertedManaCost";
-      }
-      else {
-        cardCMCQuery = "convertedManaCost";
-      }
-
-      int cardCMC = (int) card.getFloat(cardCMCQuery);
-
       preparedStatement.setString(1, cardName);
       preparedStatement.setString(2, cardText);
-      preparedStatement.setInt(3, cardCMC);
       preparedStatement.executeUpdate();
     }
     catch (SQLException e) {
@@ -454,9 +441,20 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addExtraStats(JSONObject card, Connection connection) throws SQLException {
+  private void addStats(JSONObject card, Connection connection) throws SQLException {
     String cardName = card.getString("name");
     Map<String, String> extraStats = new HashMap<>();
+
+    String cardCMCQuery;
+    if (card.has("faceConvertedManaCost")) {
+      cardCMCQuery = "faceConvertedManaCost";
+    }
+    else {
+      cardCMCQuery = "convertedManaCost";
+    }
+    int cardCMC = (int) card.getFloat(cardCMCQuery);
+    extraStats.put("cmc", Integer.toString(cardCMC));
+
     String[] categories = new String[]{"power", "toughness", "loyalty"};
     for (String category : categories) {
       if (card.has(category)) {
@@ -469,7 +467,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
     for (String category : extraStats.keySet()) {
       String value = extraStats.get(category);
       try {
-        String ptInsert = "INSERT INTO ExtraStat(card_name,category,value,base_value) VALUES (?,?,?,?)";
+        String ptInsert = "INSERT INTO Stat(card_name,category,value,base_value) VALUES (?,?,?,?)";
         preparedStatement = connection.prepareStatement(ptInsert);
         preparedStatement.setString(1, cardName);
         preparedStatement.setString(2, category);
@@ -697,11 +695,11 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
    * Given {@link JSONObject} of a MTG card from a MTGJSON JSON file, adds info about the
    * relationship between card and set currently being parsed (which card is apart of).
    * @param card JSONObject of card to add
-   * @param shorthandSetName name of the set the given card is associated with
+   * @param setName name of the set the given card is associated with
    * @throws SQLException there is a failure to query data from or add data to the CDDB about
    *         given card
    */
-  private void addSetCardInfo(JSONObject card, Connection connection, String shorthandSetName) throws SQLException {
+  private void addSetCardInfo(JSONObject card, Connection connection, String setName) throws SQLException {
     String cardName = card.getString("name");
 
     boolean cardSetAdded;
@@ -715,14 +713,14 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
           + "AND number = ?";
       preparedStatement = connection.prepareStatement(selectStatement);
       preparedStatement.setString(1, cardName);
-      preparedStatement.setString(2, shorthandSetName);
+      preparedStatement.setString(2, setName);
       preparedStatement.setString(3, card.getString("number"));
       resultSet = preparedStatement.executeQuery();
       cardSetAdded = resultSet.next();
     }
     catch (SQLException e) {
       throw new SQLException(e.getMessage() + String.format("\nFailed to query for card %s and set %s!",
-          cardName, shorthandSetName));
+          cardName, setName));
     }
     finally {
       close(resultSet, preparedStatement);
@@ -735,7 +733,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
             + "VALUES (?,?,?,?,?,?)";
         preparedStatement = connection.prepareStatement(insertStatement);
         preparedStatement.setString(1, cardName);
-        preparedStatement.setString(2, shorthandSetName);
+        preparedStatement.setString(2, setName);
         preparedStatement.setString(3, card.getString("number"));
 
         String rarity = card.getString("rarity");
@@ -754,7 +752,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
     }
     catch (SQLException e) {
       throw new SQLException(e.getMessage() + String.format("\nFailed to add set info for card %s for "
-          + "set %s!", cardName, shorthandSetName));
+          + "set %s!", cardName, setName));
     }
     finally {
       closePreparedStatement(preparedStatement);
@@ -806,6 +804,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
       preparedStatement.setString(1, toCheck);
       resultSet = preparedStatement.executeQuery();
       returned = resultSet.next();
+      return returned;
     }
     catch (SQLException e) {
       throw new SQLException(e.getMessage() +
@@ -814,7 +813,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
     finally {
       close(resultSet, preparedStatement);
     }
-    return returned;
+    //return returned;
   }
 
   /**

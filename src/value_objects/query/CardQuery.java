@@ -11,19 +11,19 @@ public interface CardQuery {
 
   /**
    * Add parameter to search for cards with given word in their name, or not in their name.
-   * No spaces in included word
+   * No spaces in included word, nor non empty word.
    * @param word word to search by
    * @param searchFor to search for cards with given word in their name, or not in their name
-   * @throws IllegalArgumentException if the given word is null, or if given word has a space
+   * @throws IllegalArgumentException if the given word is null, has a space, or is empty
    */
   void byName(String word, boolean searchFor) throws IllegalArgumentException;
 
   /**
    * Add parameter to search for cards with given word in their text, or not in their text.
-   * No spaces in included word.
+   * No spaces in included word, nor non empty word.
    * @param text text to search by
    * @param searchFor to search for cards with given word in their text, or not in their text
-   * @throws IllegalArgumentException if the given text is null, if given word has a space
+   * @throws IllegalArgumentException if the given word is null, has a space, or is empty
    */
   void byText(String text, boolean searchFor) throws IllegalArgumentException;
 
@@ -85,11 +85,21 @@ public interface CardQuery {
 
   /**
    * Add parameter to search for cards with given flavor text, or with not the given flavor text.
+   * No spaces in included word, nor non empty word.
    * @param word word to search by
    * @param searchFor to search for cards by the given flavor text or not the given flavor text
-   * @throws IllegalArgumentException if given word is null or contains spaces
+   * @throws IllegalArgumentException if given word is null, contains spaces, or is empty
    */
   void byFlavorText(String word, boolean searchFor) throws IllegalArgumentException;
+
+  /**
+   * Add parameter to search for cards with given rarity, or not in their name.
+   * @param rarity rarity to search by
+   * @param searchFor to search for cards with given rarity type, or not the given rarity type
+   * @throws IllegalArgumentException if the given rarity isn't a supported rarity by the CDDB,
+   * or is null
+   */
+  void byRarity(String rarity, boolean searchFor) throws IllegalArgumentException;
 
   /**
    * Adds parameter to search for cards by the given stat, compared to given quantity, where
@@ -111,15 +121,6 @@ public interface CardQuery {
   void byStatVersusStat(Stat thisStat, Comparison comparison, Stat otherStat) throws IllegalArgumentException;
 
   /**
-   * Add parameter to search for cards with given rarity, or not in their name.
-   * @param rarity rarity to search by
-   * @param searchFor to search for cards with given rarity type, or not the given rarity type
-   * @throws IllegalArgumentException if the given rarity isn't a supported rarity by the CDDB,
-   * or is null
-   */
-  void byRarity(String rarity, boolean searchFor) throws IllegalArgumentException;
-
-  /**
    * Add parameter to search for cards with given quantity of the given mana type in their casting
    * cost.
    * @param type mana type to search by
@@ -128,7 +129,7 @@ public interface CardQuery {
    * @throws IllegalArgumentException if the given mana type isn't a supported mana type in the CDDB,
    * or is null
    */
-  void byManaType(String type, Comparison comparison, Integer quantity) throws IllegalArgumentException;
+  void byManaType(String type, Comparison comparison, int quantity) throws IllegalArgumentException;
 
   /**
    * Returns this {@link CardQuery} as a string for for actual seaching in the CDDB, as
@@ -137,4 +138,9 @@ public interface CardQuery {
    * @return this query as a string query
    */
   String asQuery();
+
+  /**
+   * Reset the CardQuery of all entered parameters.
+   */
+  void clear();
 }

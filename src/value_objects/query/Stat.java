@@ -34,13 +34,17 @@ public enum Stat {
    */
   MANA_TYPE_COUNT("mana_type_count");
 
-  private String string;
+  private String value;
 
   /**
    * String form of a given stat
-   * @param string string form for a stat
+   * @param string value form for a stat
    */
   private Stat(String string) {
-    this.string = string;
+    this.value = string;
+  }
+
+  public String getValue() {
+    return value;
   }
 }

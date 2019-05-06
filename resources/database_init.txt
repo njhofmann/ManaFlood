@@ -3,8 +3,8 @@ PRAGMA foreign_keys = ON;
 
 --All the different expansions that have been released in MTG's history
 CREATE TABLE Expansion (
-  abbrv TEXT PRIMARY KEY,
-  expansion TEXT NOT NULL,
+  expansion TEXT PRIMARY KEY,
+  abbrv TEXT NOT NULL,
   size INTEGER NOT NULL,
   release_date TIMESTAMP NOT NULL
 );
@@ -13,14 +13,13 @@ CREATE TABLE Expansion (
 CREATE TABLE Block (
   expansion TEXT PRIMARY KEY,
   block TEXT NOT NULL,
-  FOREIGN KEY(expansion) REFERENCES Expansion(abbrv)
+  FOREIGN KEY(expansion) REFERENCES Expansion(expansion)
 );
 
 --An individual card
 CREATE TABLE Card (
   name TEXT PRIMARY KEY,
-  card_text TEXT NOT NULL,
-  cmc INTEGER NOT NULL
+  card_text TEXT NOT NULL
 );
 
 --All the colors associated with a card.
@@ -39,8 +38,8 @@ CREATE TABLE ColorIdentity (
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
---Stores extra stats associated with a card - power, toughness, and loyalty - under category
-CREATE TABLE ExtraStat (
+--Stores extra stats associated with a card - cmc, power, toughness, and loyalty - under category
+CREATE TABLE Stat (
   card_name TEXT,
   category TEXT,
   value TEXT NOT NULL,
@@ -66,7 +65,7 @@ CREATE TABLE CardExpansion (
   artist TEXT NOT NULL,
   PRIMARY KEY(card_name, expansion, number),
   FOREIGN KEY(card_name) REFERENCES Card(name),
-  FOREIGN KEY(expansion) REFERENCES Expansion(abbrv)
+  FOREIGN KEY(expansion) REFERENCES Expansion(expansion)
 );
 
 --All the types associated with a card - category determines if type is supertype, type, or subtype
@@ -146,7 +145,7 @@ CREATE TABLE DeckInstCardExpansion (
   FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation) ON DELETE CASCADE,
   FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, creation, card_name) ON DELETE CASCADE,
   FOREIGN KEY(card_name) REFERENCES Card(name),
-  FOREIGN KEY(expansion) REFERENCES Expansion(abbrv),
+  FOREIGN KEY(expansion) REFERENCES Expansion(expansion),
   FOREIGN KEY(card_name, expansion, card_number) REFERENCES CardExpansion(card_name, expansion, number)
 );
 
