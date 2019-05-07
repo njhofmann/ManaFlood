@@ -700,62 +700,65 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
    *         given card
    */
   private void addSetCardInfo(JSONObject card, Connection connection, String setName) throws SQLException {
-    String cardName = card.getString("name");
+    if (card.has("artist") && card.has("rarity") &&
+        card.has("flavorText") && card.has("expansion")) {
+      String cardName = card.getString("name");
 
-    boolean cardSetAdded;
-    PreparedStatement preparedStatement = null;
-    ResultSet resultSet = null;
-    try {
-      // See if card has already been added to the CDDB
-      String selectStatement = "SELECT card_name, expansion, number FROM CardExpansion "
-          + "WHERE card_name = ?"
-          + "AND expansion = ?"
-          + "AND number = ?";
-      preparedStatement = connection.prepareStatement(selectStatement);
-      preparedStatement.setString(1, cardName);
-      preparedStatement.setString(2, setName);
-      preparedStatement.setString(3, card.getString("number"));
-      resultSet = preparedStatement.executeQuery();
-      cardSetAdded = resultSet.next();
-    }
-    catch (SQLException e) {
-      throw new SQLException(e.getMessage() + String.format("\nFailed to query for card %s and set %s!",
-          cardName, setName));
-    }
-    finally {
-      close(resultSet, preparedStatement);
-    }
-
-    try {
-      if (!cardSetAdded) {
-        String insertStatement
-            = "INSERT INTO CardExpansion(card_name,expansion,number,rarity,flavor_text,artist) "
-            + "VALUES (?,?,?,?,?,?)";
-        preparedStatement = connection.prepareStatement(insertStatement);
+      boolean cardSetAdded;
+      PreparedStatement preparedStatement = null;
+      ResultSet resultSet = null;
+      try {
+        // See if card has already been added to the CDDB
+        String selectStatement = "SELECT card_name, expansion, number FROM CardExpansion "
+            + "WHERE card_name = ?"
+            + "AND expansion = ?"
+            + "AND number = ?";
+        preparedStatement = connection.prepareStatement(selectStatement);
         preparedStatement.setString(1, cardName);
         preparedStatement.setString(2, setName);
         preparedStatement.setString(3, card.getString("number"));
-
-        String rarity = card.getString("rarity");
-
-        preparedStatement.setString(4, rarity);
-
-        String flavorText = "";
-        if (card.has("flavorText")) {
-          flavorText = card.getString("flavorText");
-        }
-
-        preparedStatement.setString(5, flavorText);
-        preparedStatement.setString(6, card.getString("artist"));
-        preparedStatement.executeUpdate();
+        resultSet = preparedStatement.executeQuery();
+        cardSetAdded = resultSet.next();
       }
-    }
-    catch (SQLException e) {
-      throw new SQLException(e.getMessage() + String.format("\nFailed to add set info for card %s for "
-          + "set %s!", cardName, setName));
-    }
-    finally {
-      closePreparedStatement(preparedStatement);
+      catch (SQLException e) {
+        throw new SQLException(e.getMessage() + String.format("\nFailed to query for card %s and set %s!",
+            cardName, setName));
+      }
+      finally {
+        close(resultSet, preparedStatement);
+      }
+
+      try {
+        if (!cardSetAdded) {
+          String insertStatement
+              = "INSERT INTO CardExpansion(card_name,expansion,number,rarity,flavor_text,artist) "
+              + "VALUES (?,?,?,?,?,?)";
+          preparedStatement = connection.prepareStatement(insertStatement);
+          preparedStatement.setString(1, cardName);
+          preparedStatement.setString(2, setName);
+          preparedStatement.setString(3, card.getString("number"));
+
+          String rarity = card.getString("rarity");
+
+          preparedStatement.setString(4, rarity);
+
+          String flavorText = "";
+          if (card.has("flavorText")) {
+            flavorText = card.getString("flavorText");
+          }
+
+          preparedStatement.setString(5, flavorText);
+          preparedStatement.setString(6, card.getString("artist"));
+          preparedStatement.executeUpdate();
+        }
+      }
+      catch (SQLException e) {
+        throw new SQLException(e.getMessage() + String.format("\nFailed to add set info for card %s for "
+            + "set %s!", cardName, setName));
+      }
+      finally {
+        closePreparedStatement(preparedStatement);
+      }
     }
   }
 

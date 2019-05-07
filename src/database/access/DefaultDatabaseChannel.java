@@ -783,10 +783,11 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     private StringBuilder buildColorQuery() {
-      return buildGenericCardQuery(colorParams, "Color", "color");
+      return buildGenericCardQuery(colorParams, "Color", "card_name", "color");
     }
 
-    private StringBuilder buildGenericCardQuery(List<Pair<String, Boolean>> params, String table, String column) {
+    private StringBuilder buildGenericCardQuery(List<Pair<String, Boolean>> params, String table,
+        String returnJoinColumn, String connectColumn) {
       if (params.isEmpty()) {
         return new StringBuilder();
       }
@@ -794,21 +795,24 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       StringBuilder query = new StringBuilder();
       StringBuilder conditions = new StringBuilder();
       int i = 0;
+      String startingTable = "t" + i;
       for (Pair<String, Boolean> pair : params) {
-        String include = new BooleanToLike().apply(pair.getB());
+        String include = new BooleanToEqual().apply(pair.getB());
         String curTable = "t" + i;
         String tableSelect;
         String cond;
         if (i == 0) {
-          tableSelect = String.format("SELECT %s.%s FROM %s %s", curTable, column, table, curTable);
+          tableSelect = String.format("SELECT %s.%s FROM %s %s",
+              curTable, returnJoinColumn, table, curTable);
           cond = "WHERE";
         }
         else {
-          tableSelect = String.format(" JOIN %s %s ON c0.%s = %s.%s",
-              table, curTable, column, curTable, column);
+          tableSelect = String.format(" JOIN %s %s ON %s.%s = %s.%s",
+              table, curTable, startingTable, returnJoinColumn, curTable, returnJoinColumn);
           cond = "AND";
         }
-        String condToAdd = String.format(" %s %s.%s %s %s", cond, curTable, column, include, pair.getA());
+        String condToAdd = String.format(" %s %s.%s %s '%s'",
+            cond, curTable, connectColumn, include, pair.getA());
         query.append(tableSelect);
         conditions.append(condToAdd);
         i++;
@@ -843,9 +847,9 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         List<Pair<String, Boolean>> params = paramType.getB();
         Function<Boolean, String> toInclude = paramType.getC();
 
-        StringBuilder tableSelect = new StringBuilder();
 
         for (Pair<String, Boolean> param : params) {
+          StringBuilder tableSelect = new StringBuilder();
           curTable = "t" + i;
           if (i == 0) {
             cond = "WHERE";
@@ -860,20 +864,23 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
               else {
                 joinParams.append(" AND");
               }
-              joinParams.append(String.format("%s.%s = %s.%s",
+              joinParams.append(String.format(" %s.%s = %s.%s",
                   startingTable, joinParam, curTable, joinParam));
               k++;
             }
-            tableSelect.append(" JOIN %s %s" );
+            tableSelect.append(String.format(" JOIN %s %s", table, curTable) );
             tableSelect.append(joinParams);
             cond = "AND";
           }
           String paramValue = param.getA();
           String booleanToString = toInclude.apply(param.getB());
-          String condToAdd = String.format(" %s %s.%s %s %s",
+          String condToAdd = String.format(" %s %s.%s %s '%s'",
               cond, curTable, column, booleanToString, paramValue);
           query.append(tableSelect);
           conditions.append(condToAdd);
+          System.out.println(query.toString());
+          System.out.println(conditions.toString());
+          System.out.println("\n");
           i++;
         }
       }
@@ -904,7 +911,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     private StringBuilder buildColorIdentityQuery() {
-      return buildGenericCardQuery(colorIdentityParams, "ColorIdentity", "color");
+      return buildGenericCardQuery(colorIdentityParams, "ColorIdentity", "card_name", "color");
     }
 
     @Override
@@ -919,7 +926,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     private StringBuilder buildTypeQuery() {
-      return buildGenericCardQuery(typeParams, "Type", "type");
+      return buildGenericCardQuery(typeParams, "Type", "card_name", "type");
     }
 
     @Override
