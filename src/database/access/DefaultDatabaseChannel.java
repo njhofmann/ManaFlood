@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import value_objects.card.Card;
 import value_objects.query.CardQuery;
 import value_objects.card_printing.CardPrinting;
@@ -706,19 +706,21 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       manaTypeParams = new ArrayList<>();
     }
 
-    class BooleanToLike implements Function<Boolean, String> {
+    class BooleanToLike implements BiFunction<Boolean, String, String> {
 
       @Override
-      public String apply(Boolean searchFor) {
-        return searchFor ? "" : " NOT";
+      public String apply(Boolean include, String parameter) {
+        String includeString = include ? "LIKE" : "NOT LIKE";
+        return String.format("%s '%%%s%%'", includeString, parameter);
       }
     }
 
-    class BooleanToEqual implements Function<Boolean, String> {
+    class BooleanToEqual implements BiFunction<Boolean, String, String> {
 
       @Override
-      public String apply(Boolean searchFor) {
-        return searchFor ? "=" : "!=";
+      public String apply(Boolean include, String parameter) {
+        String includeString = include ? "=" : "!=";
+        return String.format("%s '%s'", includeString, parameter);
       }
     }
 
@@ -750,9 +752,9 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         for (Pair<String, Boolean> param : params) {
           String cond = !first ? "WHERE" : "AND";
           first = true;
-          String include = new BooleanToLike().apply(param.getB());
-          String toAdd = String.format(" %s %s%s LIKE '%%%s%%'",
-              cond, category, include, param.getA());
+          String include = new BooleanToLike().apply(param.getB(), param.getA());
+          String toAdd = String.format(" %s %s %s",
+              cond, category, include);
           query.append(toAdd);
         }
       }
@@ -792,7 +794,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       String curTable = "t" + i;
       String startingTable = curTable;
       for (Pair<String, Boolean> pair : params) {
-        String include = new BooleanToEqual().apply(pair.getB());
         curTable = "t" + i;
         String cond;
         if (i == 0) {
@@ -805,15 +806,16 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
               table, curTable, startingTable, returnJoinColumn, curTable, returnJoinColumn));
           cond = "AND";
         }
-        conditions.append(String.format(" %s %s.%s %s '%s'",
-            cond, curTable, connectColumn, include, pair.getA()));
+        String include = new BooleanToEqual().apply(pair.getB(), pair.getA());
+        conditions.append(String.format(" %s %s.%s %s",
+            cond, curTable, connectColumn, include));
         i++;
       }
       return query.append(conditions);
     }
 
-    private Pair<StringBuilder, StringBuilder> buildEvenMoreGenericCardQuery(String table, String[] tableMatchColumns,
-        List<Triple<String, List<Pair<String, Boolean>>, Function<Boolean, String>>> conditionals) {
+    private Triple<StringBuilder, Boolean, String> buildEvenMoreGenericCardQuery(String table, String[] tableMatchColumns,
+        List<Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>>> conditionals) {
 
       StringBuilder query = new StringBuilder("SELECT ");
       StringBuilder conditions = new StringBuilder();
@@ -833,10 +835,10 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       query.append(String.format(" FROM %s %s", table, curTable));
 
       String cond = "";
-      for (Triple<String, List<Pair<String, Boolean>>, Function<Boolean, String>> paramType : conditionals ) {
+      for (Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>> paramType : conditionals ) {
         String column = paramType.getA();
         List<Pair<String, Boolean>> params = paramType.getB();
-        Function<Boolean, String> toInclude = paramType.getC();
+        BiFunction<Boolean, String, String> toInclude = paramType.getC();
 
         for (Pair<String, Boolean> param : params) {
           curTable = "t" + i;
@@ -859,21 +861,17 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
             }
             cond = "AND";
           }
-          String paramValue = param.getA();
-          String booleanToString = toInclude.apply(param.getB());
-          String condToAdd = String.format(" %s %s.%s %s '%s'",
-              cond, curTable, column, booleanToString, paramValue);
+          String booleanToString = toInclude.apply(param.getB(), param.getA());
+          String condToAdd = String.format(" %s %s.%s %s",
+              cond, curTable, column, booleanToString);
           conditions.append(condToAdd);
           i++;
         }
       }
 
-      String mergeCond = cond.isEmpty() ? "WHERE" : "AND";
-
-      StringBuilder mergeQuery = new StringBuilder(String.format(" %s %s.card_name IN (",
-          mergeCond, startingTable));
       query.append(conditions);
-      return new Pair<>(query, mergeQuery);
+      boolean conditionsAdded = !cond.isEmpty();
+      return new Triple<>(query, conditionsAdded, startingTable);
     }
 
     @Override
@@ -918,7 +916,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     private StringBuilder buildBlockQuery() {
-      return null;
+      return buildGenericCardQuery(blockParams, "Block", "expansion", "block");
     }
 
     @Override
@@ -960,10 +958,10 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       rarityParams.add(new Pair<>(rarity, searchFor));
     }
 
-    private Pair<StringBuilder, StringBuilder> buildCardExpansionQuery() {
+    private Triple<StringBuilder, Boolean, String> buildCardExpansionQuery() {
       String[] returnAndMatchColumns = new String[]{"card_name", "expansion"};
 
-      List<Triple<String, List<Pair<String, Boolean>>, Function<Boolean, String>>> params =
+      List<Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>>> params =
           new ArrayList<>(4);
       params.add(new Triple<>("expansion", setParams, new BooleanToEqual()));
       params.add(new Triple<>("rarity", rarityParams, new BooleanToEqual()));
@@ -1076,50 +1074,38 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       int i = 0;
       String startingTable = "";
       for (Triple<Stat, Comparison, Stat> conditional : conditionals ) {
-        StringBuilder tableSelect = new StringBuilder();
         String cond = "";
         String firstTable = "t" + i;
         String secondTable = "t" + (i + 1);
+        String firstCategoryType = conditional.getA().getValue();
+        String comparison = conditional.getB().getValue();
+        String secondCategoryType = conditional.getC().getValue();
         for (int j = 0; j < 2; j++) {
-
+          String curTable = j == 0 ? firstTable : secondTable;
+          String categoryType = j == 0 ? firstCategoryType : secondCategoryType;
           if (i == 0) {
             startingTable = firstTable;
-            tableSelect.append(String.format("SELECT %s.%s FROM %s %s",
+            query.append(String.format("SELECT %s.%s FROM %s %s",
                 startingTable, tableMatchColumn, table, startingTable));
             cond = "WHERE";
           }
           else {
-            String curTable;
-            if (j == 0) {
-              curTable = firstTable;
-            }
-            else {
-              curTable = secondTable;
-            }
-              tableSelect.append(String.format(" JOIN %s %s ON %s.%s = %s.%s",
+              query.append(String.format(" JOIN %s %s ON %s.%s = %s.%s",
                   table, curTable, startingTable, tableMatchColumn, curTable, tableMatchColumn));
 
             if (i > 0) {
               cond = "AND";
             }
           }
+
+          conditions.append(String.format(" %s %s.%s = '%s'",
+              cond, curTable, categoryColumn, categoryType));
+          i++;
         }
 
-        String firstCategoryType = conditional.getA().getValue();
-        String comparison = conditional.getB().getValue();
-        String secondCategoryType = conditional.getC().getValue();
-
-        query.append(tableSelect);
-        // First table
-        conditions.append(String.format(" %s %s.%s = '%s'",
-            cond, firstTable, categoryColumn, firstCategoryType));
-        //Second table
-        conditions.append(String.format(" AND %s.%s = '%s'",
-            secondTable, categoryColumn, secondCategoryType));
         // Compare
-        conditions.append(String.format(" AND %s.%s %s '%s'",
+        conditions.append(String.format(" AND %s.%s %s %s.%s",
             firstTable, comparisonColumn, comparison, secondTable, comparisonColumn));
-        i += 2;
       }
       return query.append(conditions);
     }
@@ -1145,12 +1131,24 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         }
       }
 
-      Pair<StringBuilder, StringBuilder> cardExpansionResults = buildCardExpansionQuery();
+      Triple<StringBuilder, Boolean, String> cardExpansionResults = buildCardExpansionQuery();
       StringBuilder completeQuery = cardExpansionResults.getA();
+      boolean cardExpansionConditionsAdded = cardExpansionResults.getB();
+      String cardExpansionQueryStartingTable = cardExpansionResults.getC();
 
+      String mergeCond = cardExpansionConditionsAdded ? "WHERE" : "AND";
       if (!isStringBuilderEmpty(completeCardQuery)) {
-        completeQuery.append(cardExpansionResults.getB());
+        completeQuery.append(String.format(" %s %s.card_name IN (",
+            mergeCond, cardExpansionQueryStartingTable));
         completeQuery.append(completeCardQuery);
+        completeQuery.append(")");
+      }
+
+      StringBuilder blockQuery = buildBlockQuery();
+      if (!isStringBuilderEmpty(blockQuery)) {
+        completeQuery.append(String.format(" %s %s.expansion IN (",
+            mergeCond, cardExpansionQueryStartingTable));
+        completeQuery.append(blockQuery);
         completeQuery.append(")");
       }
 
@@ -1166,12 +1164,12 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       typeParams.clear();
       blockParams.clear();
       setParams.clear();
-      artistParams .clear();
+      artistParams.clear();
       flavorTextParams .clear();
-      statParams .clear();
-      statVersusStatParams .clear();
-      rarityParams .clear();
-      manaTypeParams .clear();
+      statParams.clear();
+      statVersusStatParams.clear();
+      rarityParams.clear();
+      manaTypeParams.clear();
     }
 
     /**

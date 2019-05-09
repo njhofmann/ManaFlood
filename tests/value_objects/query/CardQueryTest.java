@@ -46,18 +46,24 @@ class CardQueryTest {
     @DisplayName("Throws if empty name parameter")
     @Test
     public void emptyName() {
-      String name = "";
       assertThrows(IllegalArgumentException.class, () -> {
-        cardQuery.byName(name, true);
+        cardQuery.byName("", true);
+      });
+    }
+
+    @DisplayName("Throws if name parameter with space")
+    @Test
+    public void nameWithSpace() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byName(" ", true);
       });
     }
 
     @DisplayName("Throws if null name parameter")
     @Test
     public void nullName() {
-      String name = null;
       assertThrows(IllegalArgumentException.class, () -> {
-        cardQuery.byName(name, true);
+        cardQuery.byName(null, true);
       });
     }
 
@@ -159,6 +165,14 @@ class CardQueryTest {
     public void emptyText() {
       assertThrows(IllegalArgumentException.class, () -> {
         cardQuery.byText("", true);
+      });
+    }
+
+    @DisplayName("Throws if text parameter with space")
+    @Test
+    public void textWithSpace() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byText(" ", true);
       });
     }
 
@@ -864,52 +878,103 @@ class CardQueryTest {
   @DisplayName("FlavorText Parameter tests")
   class FlavorTextParameterTests {
 
-    @DisplayName("Throws if unsupported flavor text parameter")
+    @DisplayName("Throws if flavor text parameter is empty")
     @Test
-    public void unsupportedFlavorText() {
+    public void emptyFlavorText() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byFlavorText("", true);
+      });
+    }
 
+    @DisplayName("Throws if flavor text parameter has a space")
+    @Test
+    public void flavorTextWithSpace() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byFlavorText(" ", true);
+      });
     }
 
     @DisplayName("Throws if null flavor text parameter")
     @Test
     public void nullFlavorText() {
-
-    }
-
-    @DisplayName("No parameters")
-    @Test
-    public void noParameters() {
-
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byFlavorText(null, true);
+      });
     }
 
     @DisplayName("Include single flavor text parameter")
     @Test
     public void includeSingleFlavorText() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.flavor_text LIKE '%foo%'";
+      cardQuery.byFlavorText("foo", true);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Include multiple flavor text parameters")
     @Test
     public void includeMultipleFlavorText() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "JOIN CardExpansion t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "AND t0.expansion = t1.expansion "
+          + "WHERE t0.flavor_text LIKE '%foo%' "
+          + "AND t1.flavor_text LIKE '%pies%'";
+      cardQuery.byFlavorText("foo", true);
+      cardQuery.byFlavorText("pies", true);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow single flavor text parameter")
     @Test
     public void disallowSingleFlavorText() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.flavor_text NOT LIKE '%kop%'";
+      cardQuery.byFlavorText("kop", false);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow multiple flavor text parameters")
     @Test
     public void disallowMultipleFlavorText() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "JOIN CardExpansion t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "AND t0.expansion = t1.expansion "
+          + "WHERE t0.flavor_text NOT LIKE '%jfk%' "
+          + "AND t1.flavor_text NOT LIKE '%aoun%'";
+      cardQuery.byFlavorText("jfk", false);
+      cardQuery.byFlavorText("aoun", false);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Mixed multiple flavor text parameters")
     @Test
     public void mixedMultipleFlavorText() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "JOIN CardExpansion t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "AND t0.expansion = t1.expansion "
+          + "JOIN CardExpansion t2 "
+          + "ON t0.card_name = t2.card_name "
+          + "AND t0.expansion = t2.expansion "
+          + "JOIN CardExpansion t3 "
+          + "ON t0.card_name = t3.card_name "
+          + "AND t0.expansion = t3.expansion "
+          + "WHERE t0.flavor_text NOT LIKE '%jfk%' "
+          + "AND t1.flavor_text NOT LIKE '%aoun%' "
+          + "AND t2.flavor_text LIKE '%asd%' "
+          + "AND t3.flavor_text LIKE '%man%'";
+      cardQuery.byFlavorText("jfk", false);
+      cardQuery.byFlavorText("aoun", false);
+      cardQuery.byFlavorText("asd", true);
+      cardQuery.byFlavorText("man", true);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
@@ -920,49 +985,87 @@ class CardQueryTest {
     @DisplayName("Throws if unsupported rarity parameter")
     @Test
     public void unsupportedRarity() {
-
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byRarity("supercommon", true);
+      });
     }
 
     @DisplayName("Throws if null rarity parameter")
     @Test
     public void nullRarity() {
-
-    }
-
-    @DisplayName("No parameters")
-    @Test
-    public void noParameters() {
-
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byRarity(null, true);
+      });
     }
 
     @DisplayName("Include single rarity parameter")
     @Test
     public void includeSingleRarity() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.rarity = 'common'";
+      cardQuery.byRarity("common", true);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Include multiple rarity parameters")
     @Test
     public void includeMultipleRarity() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "JOIN CardExpansion t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "AND t0.expansion = t1.expansion "
+          + "WHERE t0.rarity = 'rare' "
+          + "AND t1.rarity = 'mythic'";
+      cardQuery.byRarity("rare", true);
+      cardQuery.byRarity("mythic", true);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow single rarity parameter")
     @Test
     public void disallowSingleRarity() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.rarity != 'rare'";
+      cardQuery.byRarity("rare", false);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow multiple rarity parameters")
     @Test
     public void disallowMultipleRarity() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "JOIN CardExpansion t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "AND t0.expansion = t1.expansion "
+          + "WHERE t0.rarity != 'common' "
+          + "AND t1.rarity != 'mythic'";
+      cardQuery.byRarity("common", false);
+      cardQuery.byRarity("mythic", false);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Mixed multiple rarity parameters")
     @Test
     public void mixedMultipleRarity() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "JOIN CardExpansion t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "AND t0.expansion = t1.expansion "
+          + "JOIN CardExpansion t2 "
+          + "ON t0.card_name = t2.card_name "
+          + "AND t0.expansion = t2.expansion "
+          + "WHERE t0.rarity = 'uncommon' "
+          + "AND t1.rarity != 'mythic' "
+          + "AND t2.rarity != 'rare'";
+      cardQuery.byRarity("uncommon", true);
+      cardQuery.byRarity("mythic", false);
+      cardQuery.byRarity("rare", false);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
@@ -970,46 +1073,43 @@ class CardQueryTest {
   @DisplayName("Stat Parameter tests")
   class StatParameterTests {
 
-    @DisplayName("Throws if unsupported stat parameter")
+    @DisplayName("Throws if null comparison stat parameter")
     @Test
-    public void unsupportedStat() {
-
+    public void nullComparison() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStat(Stat.CMC, null, 3);
+      });
     }
 
     @DisplayName("Throws if null stat parameter")
     @Test
     public void nullStat() {
-
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStat(null, Comparison.EQUAL, 5);
+      });
     }
 
-    @DisplayName("No parameters")
+    @DisplayName("Single stat parameter for each stat and comparison combination")
     @Test
-    public void noParameters() {
+    public void singleStatCombo() {
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN "
+          + "("
+          + "SELECT t0.card_name "
+          + "FROM Stat t0 "
+          + "WHERE t0.category = '%s' "
+          + "AND t0.base_value %s 3"
+          + ")";
 
-    }
-
-    @DisplayName("Include single stat parameter")
-    @Test
-    public void includeSingleStat() {
-
-    }
-
-    @DisplayName("Include multiple stat parameters")
-    @Test
-    public void includeMultipleStat() {
-
-    }
-
-    @DisplayName("Disallow single stat parameter")
-    @Test
-    public void disallowSingleStat() {
-
-    }
-
-    @DisplayName("Disallow multiple stat parameters")
-    @Test
-    public void disallowMultipleStat() {
-
+      for (Stat stat : Stat.values()) {
+        for (Comparison comparison : Comparison.values()) {
+          cardQuery.byStat(stat, comparison, 3);
+          String resultFormatted = String.format(result, stat.getValue(), comparison.getValue());
+          assertEquals(resultFormatted, cardQuery.asQuery());
+          cardQuery.clear();
+        }
+      }
     }
 
     @DisplayName("Mixed multiple stat parameters")
@@ -1023,47 +1123,65 @@ class CardQueryTest {
   @DisplayName("StatVersusStat Parameter tests")
   class StatVersusStatParameterTests {
 
-    @DisplayName("Throws if unsupported stat versus stat parameter")
+    @DisplayName("Throws if null stat")
     @Test
-    public void unsupportedStatVersusStat() {
-
+    public void nullStat() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStatVersusStat(null, Comparison.GREATER, Stat.LOYALTY);
+      });
     }
 
-    @DisplayName("Throws if null stat versus stat parameter")
+    @DisplayName("Throws if null comparison")
     @Test
-    public void nullStatVersusStat() {
-
+    public void nullComparison() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStatVersusStat(Stat.POWER, null, Stat.TOUGHNESS);
+      });
     }
 
-    @DisplayName("No parameters")
+    @DisplayName("Throws if null stat")
     @Test
-    public void noParameters() {
-
+    public void nullOtherStat() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStatVersusStat(Stat.CMC, Comparison.UNEQUAL, null);
+      });
     }
 
-    @DisplayName("Include single stat versus stat parameter")
+    @DisplayName("Single stat parameter for each stat, comparison, and stat combination")
     @Test
-    public void includeSingleStatVersusStat() {
+    public void singleStatComparisonStat() {
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN ("
+          + ""
+          + "SELECT t0.card_name "
+          + "FROM Stat t0 "
+          + "JOIN Stat t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "WHERE t0.category = '%s' "
+          + "AND t1.category = '%s' "
+          + "AND t0.base_value %s t1.base_value"
+          + ")";
 
+      for (Stat stat : Stat.values()) {
+        for (Comparison comparison : Comparison.values()) {
+          for (Stat otherStat : Stat.values()) {
+            if (otherStat.equals(stat)) {
+              assertThrows(IllegalArgumentException.class, () -> {
+                cardQuery.byStatVersusStat(stat, comparison, otherStat);
+              });
+            }
+            else {
+              cardQuery.byStatVersusStat(stat, comparison, otherStat);
+              String resultFormatted = String.format(result, stat.getValue(), otherStat.getValue(), comparison.getValue());
+              assertEquals(resultFormatted, cardQuery.asQuery());
+              cardQuery.clear();
+            }
+          }
+        }
+      }
     }
 
-    @DisplayName("Include multiple stat versus stat parameters")
-    @Test
-    public void includeMultipleStatVersusStat() {
-
-    }
-
-    @DisplayName("Disallow single stat versus stat parameter")
-    @Test
-    public void disallowSingleStatVersusStat() {
-
-    }
-
-    @DisplayName("Disallow multiple stat versus stat parameters")
-    @Test
-    public void disallowMultipleStatVersusStat() {
-
-    }
 
     @DisplayName("Mixed multiple stat versus stat parameters")
     @Test
@@ -1085,12 +1203,6 @@ class CardQueryTest {
     @DisplayName("Throws if null mana type parameter")
     @Test
     public void nullManaType() {
-
-    }
-
-    @DisplayName("No parameters")
-    @Test
-    public void noParameters() {
 
     }
 

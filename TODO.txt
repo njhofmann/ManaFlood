@@ -9,7 +9,6 @@ Minor:
   -Identifier vs Info Container for value objects
 
 Major:
--Block query for cardquery
 -Finish cardquery tests
 -CardQuery refactoring
 -Card retrieval implementation
