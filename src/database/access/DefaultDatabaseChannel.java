@@ -748,16 +748,11 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         List<Pair<String, Boolean>> params = nameAndText.get(category);
         boolean first = false;
         for (Pair<String, Boolean> param : params) {
-          String cond;
-          if (!first) {
-            first = true;
-            cond = "WHERE";
-          }
-          else {
-            cond = "AND";
-          }
+          String cond = !first ? "WHERE" : "AND";
+          first = true;
           String include = new BooleanToLike().apply(param.getB());
-          String toAdd = String.format(" %s %s%s LIKE '%%%s%%'", cond, category, include, param.getA());
+          String toAdd = String.format(" %s %s%s LIKE '%%%s%%'",
+              cond, category, include, param.getA());
           query.append(toAdd);
         }
       }
@@ -778,7 +773,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       else if (!colors.contains(color)) {
         throw new IllegalArgumentException("Given color is not contained in the CDDB!");
       }
-
       colorParams.add(new Pair<>(color, searchFor));
     }
 
@@ -795,26 +789,24 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       StringBuilder query = new StringBuilder();
       StringBuilder conditions = new StringBuilder();
       int i = 0;
-      String startingTable = "t" + i;
+      String curTable = "t" + i;
+      String startingTable = curTable;
       for (Pair<String, Boolean> pair : params) {
         String include = new BooleanToEqual().apply(pair.getB());
-        String curTable = "t" + i;
-        String tableSelect;
+        curTable = "t" + i;
         String cond;
         if (i == 0) {
-          tableSelect = String.format("SELECT %s.%s FROM %s %s",
-              curTable, returnJoinColumn, table, curTable);
+          query.append(String.format("SELECT %s.%s FROM %s %s",
+              curTable, returnJoinColumn, table, curTable));
           cond = "WHERE";
         }
         else {
-          tableSelect = String.format(" JOIN %s %s ON %s.%s = %s.%s",
-              table, curTable, startingTable, returnJoinColumn, curTable, returnJoinColumn);
+          query.append(String.format(" JOIN %s %s ON %s.%s = %s.%s",
+              table, curTable, startingTable, returnJoinColumn, curTable, returnJoinColumn));
           cond = "AND";
         }
-        String condToAdd = String.format(" %s %s.%s %s '%s'",
-            cond, curTable, connectColumn, include, pair.getA());
-        query.append(tableSelect);
-        conditions.append(condToAdd);
+        conditions.append(String.format(" %s %s.%s %s '%s'",
+            cond, curTable, connectColumn, include, pair.getA()));
         i++;
       }
       return query.append(conditions);
@@ -823,22 +815,21 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private Pair<StringBuilder, StringBuilder> buildEvenMoreGenericCardQuery(String table, String[] tableMatchColumns,
         List<Triple<String, List<Pair<String, Boolean>>, Function<Boolean, String>>> conditionals) {
 
-      StringBuilder query = new StringBuilder();
+      StringBuilder query = new StringBuilder("SELECT ");
       StringBuilder conditions = new StringBuilder();
+
       int i = 0;
       String curTable = "t" + i;
       String startingTable = curTable;
-      StringBuilder returnParams = new StringBuilder();
+
       int j = 0;
       for (String returnParam : tableMatchColumns) {
         if (j != 0) {
-          returnParams.append(", ");
+          query.append(", ");
         }
-        returnParams.append(String.format("%s.%s", curTable, returnParam));
+        query.append(String.format("%s.%s", curTable, returnParam));
         j++;
       }
-      query.append("SELECT ");
-      query.append(returnParams);
       query.append(String.format(" FROM %s %s", table, curTable));
 
       String cond = "";
@@ -847,51 +838,37 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         List<Pair<String, Boolean>> params = paramType.getB();
         Function<Boolean, String> toInclude = paramType.getC();
 
-
         for (Pair<String, Boolean> param : params) {
-          StringBuilder tableSelect = new StringBuilder();
           curTable = "t" + i;
           if (i == 0) {
             cond = "WHERE";
           }
           else {
-            StringBuilder joinParams = new StringBuilder();
+            query.append(String.format(" JOIN %s %s", table, curTable));
             int k = 0;
             for (String joinParam : tableMatchColumns) {
               if (k == 0) {
-                joinParams.append(" ON");
+                query.append(" ON");
               }
               else {
-                joinParams.append(" AND");
+                query.append(" AND");
               }
-              joinParams.append(String.format(" %s.%s = %s.%s",
+              query.append(String.format(" %s.%s = %s.%s",
                   startingTable, joinParam, curTable, joinParam));
               k++;
             }
-            tableSelect.append(String.format(" JOIN %s %s", table, curTable) );
-            tableSelect.append(joinParams);
             cond = "AND";
           }
           String paramValue = param.getA();
           String booleanToString = toInclude.apply(param.getB());
           String condToAdd = String.format(" %s %s.%s %s '%s'",
               cond, curTable, column, booleanToString, paramValue);
-          query.append(tableSelect);
           conditions.append(condToAdd);
-          System.out.println(query.toString());
-          System.out.println(conditions.toString());
-          System.out.println("\n");
           i++;
         }
       }
 
-      String mergeCond;
-      if (cond.isEmpty()) {
-        mergeCond = "WHERE";
-      }
-      else {
-        mergeCond = "AND";
-      }
+      String mergeCond = cond.isEmpty() ? "WHERE" : "AND";
 
       StringBuilder mergeQuery = new StringBuilder(String.format(" %s %s.card_name IN (",
           mergeCond, startingTable));

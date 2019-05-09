@@ -1,5 +1,6 @@
 Minor:
 -Documentation
+-Add Scryfall image url
 -Split multiple artists
 -Write down how time handling is done (timestamp in database)
 -Update text on cards option (erreta)
@@ -7,17 +8,13 @@ Minor:
 -Comprehensive readme explaining project structure and plan
   -Identifier vs Info Container for value objects
 
-CardQuerying
--Block Query
--Testing
--Refactoring
--More testing
-
 Major:
+-Block query for cardquery
+-Finish cardquery tests
+-CardQuery refactoring
+-Card retrieval implementation
+-Card retrieval tests
+-Deck database interactions tests
 -Optional color / color indicator
--Scryfall image url
--Documentation
 -Redo connection, statement openings and closing (old style)
 -Terminal thing
--Merging card and card expansions?
--DatebaseChannel tests on blank database

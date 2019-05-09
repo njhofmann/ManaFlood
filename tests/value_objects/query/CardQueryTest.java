@@ -761,49 +761,102 @@ class CardQueryTest {
     @DisplayName("Throws if unsupported artist parameter")
     @Test
     public void unsupportedArtist() {
-
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byArtist("ghor", true);
+      });
     }
 
     @DisplayName("Throws if null artist parameter")
     @Test
     public void nullArtist() {
-
-    }
-
-    @DisplayName("No parameters")
-    @Test
-    public void noParameters() {
-
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byArtist(null, true);
+      });
     }
 
     @DisplayName("Include single artist parameter")
     @Test
     public void includeSingleArtist() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.artist = 'John Avon'";
+      cardQuery.byArtist("John Avon", true);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Include multiple artist parameters")
     @Test
     public void includeMultipleArtist() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "JOIN CardExpansion t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "AND t0.expansion = t1.expansion "
+          + "JOIN CardExpansion t2 "
+          + "ON t0.card_name = t2.card_name "
+          + "AND t0.expansion = t2.expansion "
+          + "WHERE t0.artist = 'Kev Walker' "
+          + "AND t1.artist = 'Mark Zug' "
+          + "AND t2.artist = 'Nils Hamm'";
+      cardQuery.byArtist("Kev Walker", true);
+      cardQuery.byArtist("Mark Zug", true);
+      cardQuery.byArtist("Nils Hamm", true);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow single artist parameter")
     @Test
     public void disallowSingleArtist() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.artist != 'Izzy'";
+      cardQuery.byArtist("Izzy", false);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow multiple artist parameters")
     @Test
     public void disallowMultipleArtist() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "JOIN CardExpansion t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "AND t0.expansion = t1.expansion "
+          + "WHERE t0.artist != 'Adam Rex' "
+          + "AND t1.artist != 'Chippy'";
+      cardQuery.byArtist("Adam Rex", false);
+      cardQuery.byArtist("Chippy", false);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Mixed multiple artist parameters")
     @Test
     public void mixedMultipleArtist() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "JOIN CardExpansion t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "AND t0.expansion = t1.expansion "
+          + "JOIN CardExpansion t2 "
+          + "ON t0.card_name = t2.card_name "
+          + "AND t0.expansion = t2.expansion "
+          + "JOIN CardExpansion t3 "
+          + "ON t0.card_name = t3.card_name "
+          + "AND t0.expansion = t3.expansion "
+          + "JOIN CardExpansion t4 "
+          + "ON t0.card_name = t4.card_name "
+          + "AND t0.expansion = t4.expansion "
+          + "WHERE t0.artist != 'Winona Nelson' "
+          + "AND t1.artist = 'Titus Lunter' "
+          + "AND t2.artist = 'Nils Hamm' "
+          + "AND t3.artist != 'Jung Park' "
+          + "AND t4.artist != 'Jeff Miracola'";
+      cardQuery.byArtist("Winona Nelson", false);
+      cardQuery.byArtist("Titus Lunter", true);
+      cardQuery.byArtist("Nils Hamm", true);
+      cardQuery.byArtist("Jung Park", false);
+      cardQuery.byArtist("Jeff Miracola", false);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
