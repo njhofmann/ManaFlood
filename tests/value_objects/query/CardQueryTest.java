@@ -2,16 +2,19 @@ package value_objects.query;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import database.access.CardChannel;
 import database.access.DefaultDatabaseChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Random;
+import java.util.SortedSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestReporter;
 
 /**
  * Tests to verify that the queries produced by {@link CardQuery} and its main implementation
@@ -20,11 +23,14 @@ import org.junit.jupiter.api.Test;
 class CardQueryTest {
 
   public static CardQuery cardQuery;
+  public static CardChannel cardChannel;
 
   @BeforeAll
   public static void init() throws SQLException {
     Path pathToDatabase = Paths.get("resources\\test.db").toAbsolutePath();
-    cardQuery = new DefaultDatabaseChannel(pathToDatabase).getQuery();
+    DefaultDatabaseChannel defaultChannel = new DefaultDatabaseChannel(pathToDatabase);
+    cardChannel = defaultChannel;
+    cardQuery = defaultChannel.getQuery();
   }
 
   @AfterEach
@@ -625,49 +631,112 @@ class CardQueryTest {
     @DisplayName("Throws if unsupported block parameter")
     @Test
     public void unsupportedBlock() {
-
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byBlock("Kahns of Fartkir", true);
+      });
     }
 
     @DisplayName("Throws if null block parameter")
     @Test
     public void nullBlock() {
-
-    }
-
-    @DisplayName("No parameters")
-    @Test
-    public void noParameters() {
-
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byBlock(null, true);
+      });
     }
 
     @DisplayName("Include single block parameter")
     @Test
     public void includeSingleBlock() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.expansion IN "
+          + "("
+          + "SELECT t0.expansion "
+          + "FROM Block t0 "
+          + "WHERE t0.block = 'Theros'"
+          + ")";
+      cardQuery.byBlock("Theros", true);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Include multiple block parameters")
     @Test
     public void includeMultipleBlock() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.expansion IN "
+          + "("
+          + "SELECT t0.expansion "
+          + "FROM Block t0 "
+          + "JOIN Block t1 "
+          + "ON t0.expansion = t1.expansion "
+          + "WHERE t0.block = 'Zendikar' "
+          + "AND t1.block = 'Innistrad'"
+          + ")";
+      cardQuery.byBlock("Zendikar", true);
+      cardQuery.byBlock("Innistrad", true);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow single block parameter")
     @Test
     public void disallowSingleBlock() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.expansion IN "
+          + "("
+          + "SELECT t0.expansion "
+          + "FROM Block t0 "
+          + "WHERE t0.block != 'Commander'"
+          + ")";
+      cardQuery.byBlock("Commander", false);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow multiple block parameters")
     @Test
     public void disallowMultipleBlock() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.expansion IN "
+          + "("
+          + "SELECT t0.expansion "
+          + "FROM Block t0 "
+          + "JOIN Block t1 "
+          + "ON t0.expansion = t1.expansion "
+          + "WHERE t0.block != 'Ixalan' "
+          + "AND t1.block != 'Alara'"
+          + ")";
+      cardQuery.byBlock("Ixalan", false);
+      cardQuery.byBlock("Alara", false);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Mixed multiple block parameters")
     @Test
     public void mixedMultipleBlock() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.expansion IN "
+          + "("
+          + "SELECT t0.expansion "
+          + "FROM Block t0 "
+          + "JOIN Block t1 "
+          + "ON t0.expansion = t1.expansion "
+          + "JOIN Block t2 "
+          + "ON t0.expansion = t2.expansion "
+          + "JOIN Block t3 "
+          + "ON t0.expansion = t3.expansion "
+          + "WHERE t0.block = 'Masques' "
+          + "AND t1.block != 'Onslaught' "
+          + "AND t2.block != 'Kaladesh' "
+          + "AND t3.block = 'Mirage'"
+          + ")";
+      cardQuery.byBlock("Masques", true);
+      cardQuery.byBlock("Onslaught", false);
+      cardQuery.byBlock("Kaladesh", false);
+      cardQuery.byBlock("Mirage", true);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
@@ -1115,7 +1184,27 @@ class CardQueryTest {
     @DisplayName("Mixed multiple stat parameters")
     @Test
     public void mixedMultipleStat() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN "
+          + "("
+          + "SELECT t0.card_name "
+          + "FROM Stat t0 "
+          + "JOIN Stat t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "JOIN Stat t2 "
+          + "ON t0.card_name = t2.card_name "
+          + "WHERE t0.category = 'power' "
+          + "AND t0.quantity < 4 "
+          + "AND t1.category = 'power' "
+          + "AND t1.quantity >= 1 "
+          + "AND t2.category = 'cmc' "
+          + "AND t2.quantity > 2"
+          + ")";
+      cardQuery.byStat(Stat.POWER, Comparison.LESS, 4);
+      cardQuery.byStat(Stat.POWER, Comparison.GREATER_EQUAL, 1);
+      cardQuery.byStat(Stat.CMC, Comparison.GREATER, 2);
+      assertEquals(result, result);
     }
   }
 
@@ -1153,7 +1242,6 @@ class CardQueryTest {
       String result = "SELECT t0.card_name, t0.expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN ("
-          + ""
           + "SELECT t0.card_name "
           + "FROM Stat t0 "
           + "JOIN Stat t1 "
@@ -1186,7 +1274,27 @@ class CardQueryTest {
     @DisplayName("Mixed multiple stat versus stat parameters")
     @Test
     public void mixedMultipleStatVersusStat() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN ("
+          + "SELECT t0.card_name "
+          + "FROM Stat t0 "
+          + "JOIN Stat t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "JOIN Stat t2 "
+          + "ON t0.card_name = t2.card_name "
+          + "JOIN Stat t3 "
+          + "ON t0.card_name = t3.card_name "
+          + "WHERE t0.category = 'power' "
+          + "AND t1.category = 'toughness' "
+          + "AND t0.base_value > t1.base_value "
+          + "AND t2.category = 'power' "
+          + "AND t3.category = 'cmc' "
+          + "AND t2.base_value != t3.base_value"
+          + ")";
+      cardQuery.byStatVersusStat(Stat.POWER, Comparison.GREATER, Stat.TOUGHNESS);
+      cardQuery.byStatVersusStat(Stat.POWER, Comparison.UNEQUAL, Stat.CMC);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
@@ -1197,43 +1305,70 @@ class CardQueryTest {
     @DisplayName("Throws if unsupported mana type parameter")
     @Test
     public void unsupportedManaType() {
-
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byManaType("{O}", Comparison.LESS_EQUAL, 5);
+      });
     }
 
     @DisplayName("Throws if null mana type parameter")
     @Test
     public void nullManaType() {
-
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byManaType(null, Comparison.LESS_EQUAL, 5);
+      });
     }
 
-    @DisplayName("Include single mana type parameter")
+    @DisplayName("Single mana type parameter for each type of mana type and comparison")
     @Test
-    public void includeSingleManaType() {
+    public void includeSingleManaType() throws SQLException {
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN "
+          + "("
+          + "SELECT t0.card_name "
+          + "FROM Mana t0 "
+          + "WHERE t0.mana_type = '%s' "
+          + "AND t0.quantity %s %s"
+          + ")";
 
-    }
-
-    @DisplayName("Include multiple mana type parameters")
-    @Test
-    public void includeMultipleManaType() {
-
-    }
-
-    @DisplayName("Disallow single mana type parameter")
-    @Test
-    public void disallowSingleManaType() {
-
-    }
-
-    @DisplayName("Disallow multiple mana type parameters")
-    @Test
-    public void disallowMultipleManaType() {
-
+      SortedSet<String> manaTypes = cardChannel.getManaTypes();
+      Random random = new Random();
+      for (String manaType : manaTypes) {
+        for (Comparison comparison : Comparison.values()) {
+          int compareValue = random.nextInt(6);
+          cardQuery.byManaType(manaType, comparison, compareValue);
+          String resultFormatted = String.format(result, manaType, comparison.getValue(),
+              Integer.toString(compareValue));
+          assertEquals(resultFormatted, cardQuery.asQuery());
+          cardQuery.clear();
+        }
+      }
     }
 
     @DisplayName("Mixed multiple mana type parameters")
     @Test
     public void mixedMultipleManaType() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN "
+          + "("
+          + "SELECT t0.card_name "
+          + "FROM Mana t0 "
+          + "JOIN Mana t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "JOIN Mana t2 "
+          + "ON t0.card_name = t2.card_name "
+          + "WHERE t0.mana_type = '{B}' "
+          + "AND t0.quantity = 2 "
+          + "AND t1.mana_type = '{R}' "
+          + "AND t1.quantity >= 1 "
+          + "AND t2.mana_type = '{W}' "
+          + "AND t2.quantity != 3"
+          + ")";
+      cardQuery.byManaType("{B}", Comparison.EQUAL, 2);
+      cardQuery.byManaType("{R}", Comparison.GREATER_EQUAL, 1);
+      cardQuery.byManaType("{W}", Comparison.UNEQUAL, 3);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 

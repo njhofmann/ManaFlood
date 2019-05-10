@@ -6,10 +6,11 @@ Minor:
 -Update text on cards option (erreta)
 -Add release dates to expansions
 -Comprehensive readme explaining project structure and plan
+-Retrieval tests
   -Identifier vs Info Container for value objects
 
 Major:
--Finish cardquery tests
+-Finish mixed cardquery tests
 -CardQuery refactoring
 -Card retrieval implementation
 -Card retrieval tests

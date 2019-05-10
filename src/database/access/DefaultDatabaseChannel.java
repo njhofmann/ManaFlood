@@ -1053,6 +1053,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
               table, curTable, startingTable, tableMatchColumn, curTable, tableMatchColumn));
           cond = "AND";
         }
+
         String categoryType = conditional.getA();
         String comparison = conditional.getB().getValue();
         String comparisonQuantity = conditional.getC().toString();
@@ -1136,7 +1137,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       boolean cardExpansionConditionsAdded = cardExpansionResults.getB();
       String cardExpansionQueryStartingTable = cardExpansionResults.getC();
 
-      String mergeCond = cardExpansionConditionsAdded ? "WHERE" : "AND";
+      String mergeCond = cardExpansionConditionsAdded ? "AND" : "WHERE";
       if (!isStringBuilderEmpty(completeCardQuery)) {
         completeQuery.append(String.format(" %s %s.card_name IN (",
             mergeCond, cardExpansionQueryStartingTable));
