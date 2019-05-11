@@ -744,11 +744,11 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
       Map<String, List<Pair<String, Boolean>>> nameAndText = new HashMap<>();
       nameAndText.put("name", nameParams);
-      nameAndText.put("text", textParams);
+      nameAndText.put("card_text", textParams);
 
+      boolean first = false;
       for (String category : nameAndText.keySet()) {
         List<Pair<String, Boolean>> params = nameAndText.get(category);
-        boolean first = false;
         for (Pair<String, Boolean> param : params) {
           String cond = !first ? "WHERE" : "AND";
           first = true;
@@ -916,7 +916,58 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     private StringBuilder buildBlockQuery() {
-      return buildGenericCardQuery(blockParams, "Block", "expansion", "block");
+      if (blockParams.isEmpty()) {
+        return new StringBuilder();
+      }
+
+      StringBuilder query = new StringBuilder("SELECT expansion FROM Block");
+
+      List<String> blockInclude = new ArrayList<>();
+      List<String> blockDisallow = new ArrayList<>();
+
+      for (Pair<String, Boolean> param : blockParams) {
+        String value = param.getA();
+        boolean include = param.getB();
+        if (include) {
+          blockInclude.add(value);
+        }
+        else {
+          blockDisallow.add(value);
+        }
+      }
+
+      Map<Boolean, List<String>> lists = new HashMap<>();
+      lists.put(true, blockInclude);
+      lists.put(false, blockDisallow);
+
+      boolean first = true;
+
+      for (boolean key : lists.keySet()) {
+        List<String> list = lists.get(key);
+        if (!list.isEmpty()) {
+          String addCond;
+          String include = key ? "" : " NOT";
+          if (first) {
+            first = false;
+            addCond = "WHERE";
+          }
+          else {
+            addCond = "AND";
+          }
+
+          query.append(String.format(" %s block%s IN (",
+              addCond, include));
+          for (int i = 0; i < list.size(); i++) {
+            if (i != 0) {
+              query.append(", ");
+            }
+            query.append(String.format("'%s'", list.get(i)));
+          }
+          query.append(")");
+        }
+      }
+
+      return query;
     }
 
     @Override
@@ -1143,6 +1194,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
             mergeCond, cardExpansionQueryStartingTable));
         completeQuery.append(completeCardQuery);
         completeQuery.append(")");
+        mergeCond = "AND";
       }
 
       StringBuilder blockQuery = buildBlockQuery();

@@ -199,7 +199,7 @@ class CardQueryTest {
           + "("
           + "SELECT name "
           + "FROM Card "
-          + "WHERE text LIKE '%ro%'"
+          + "WHERE card_text LIKE '%ro%'"
           + ")";
       cardQuery.byText("ro", true);
       assertEquals(result, cardQuery.asQuery());
@@ -214,8 +214,8 @@ class CardQueryTest {
           + "("
           + "SELECT name "
           + "FROM Card "
-          + "WHERE text LIKE '%io%' "
-          + "AND text LIKE '%hj%'"
+          + "WHERE card_text LIKE '%io%' "
+          + "AND card_text LIKE '%hj%'"
           + ")";
       cardQuery.byText("io", true);
       cardQuery.byText("hj", true);
@@ -231,7 +231,7 @@ class CardQueryTest {
           + "("
           + "SELECT name "
           + "FROM Card "
-          + "WHERE text NOT LIKE '%wkj%'"
+          + "WHERE card_text NOT LIKE '%wkj%'"
           + ")";
       cardQuery.byText("wkj", false);
       assertEquals(result, cardQuery.asQuery());
@@ -246,8 +246,8 @@ class CardQueryTest {
           + "("
           + "SELECT name "
           + "FROM Card "
-          + "WHERE text NOT LIKE '%fol%' "
-          + "AND text NOT LIKE '%nv%'"
+          + "WHERE card_text NOT LIKE '%fol%' "
+          + "AND card_text NOT LIKE '%nv%'"
           + ")";
       cardQuery.byText("fol", false);
       cardQuery.byText("nv", false);
@@ -263,10 +263,10 @@ class CardQueryTest {
           + "("
           + "SELECT name "
           + "FROM Card "
-          + "WHERE text NOT LIKE '%lk%' "
-          + "AND text NOT LIKE '%ds%' "
-          + "AND text LIKE '%y%' "
-          + "AND text NOT LIKE '%ou%'"
+          + "WHERE card_text NOT LIKE '%lk%' "
+          + "AND card_text NOT LIKE '%ds%' "
+          + "AND card_text LIKE '%y%' "
+          + "AND card_text NOT LIKE '%ou%'"
           + ")";
       cardQuery.byText("lk", false);
       cardQuery.byText("ds", false);
@@ -651,9 +651,8 @@ class CardQueryTest {
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion IN "
           + "("
-          + "SELECT t0.expansion "
-          + "FROM Block t0 "
-          + "WHERE t0.block = 'Theros'"
+          + "SELECT expansion FROM Block "
+          + "WHERE block IN ('Theros')"
           + ")";
       cardQuery.byBlock("Theros", true);
       assertEquals(result, cardQuery.asQuery());
@@ -666,12 +665,8 @@ class CardQueryTest {
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion IN "
           + "("
-          + "SELECT t0.expansion "
-          + "FROM Block t0 "
-          + "JOIN Block t1 "
-          + "ON t0.expansion = t1.expansion "
-          + "WHERE t0.block = 'Zendikar' "
-          + "AND t1.block = 'Innistrad'"
+          + "SELECT expansion FROM Block "
+          + "WHERE block IN ('Zendikar', 'Innistrad')"
           + ")";
       cardQuery.byBlock("Zendikar", true);
       cardQuery.byBlock("Innistrad", true);
@@ -685,9 +680,8 @@ class CardQueryTest {
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion IN "
           + "("
-          + "SELECT t0.expansion "
-          + "FROM Block t0 "
-          + "WHERE t0.block != 'Commander'"
+          + "SELECT expansion FROM Block "
+          + "WHERE block NOT IN ('Commander')"
           + ")";
       cardQuery.byBlock("Commander", false);
       assertEquals(result, cardQuery.asQuery());
@@ -700,12 +694,8 @@ class CardQueryTest {
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion IN "
           + "("
-          + "SELECT t0.expansion "
-          + "FROM Block t0 "
-          + "JOIN Block t1 "
-          + "ON t0.expansion = t1.expansion "
-          + "WHERE t0.block != 'Ixalan' "
-          + "AND t1.block != 'Alara'"
+          + "SELECT expansion FROM Block "
+          + "WHERE block NOT IN ('Ixalan', 'Alara')"
           + ")";
       cardQuery.byBlock("Ixalan", false);
       cardQuery.byBlock("Alara", false);
@@ -719,18 +709,9 @@ class CardQueryTest {
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion IN "
           + "("
-          + "SELECT t0.expansion "
-          + "FROM Block t0 "
-          + "JOIN Block t1 "
-          + "ON t0.expansion = t1.expansion "
-          + "JOIN Block t2 "
-          + "ON t0.expansion = t2.expansion "
-          + "JOIN Block t3 "
-          + "ON t0.expansion = t3.expansion "
-          + "WHERE t0.block = 'Masques' "
-          + "AND t1.block != 'Onslaught' "
-          + "AND t2.block != 'Kaladesh' "
-          + "AND t3.block = 'Mirage'"
+          + "SELECT expansion FROM Block "
+          + "WHERE block NOT IN ('Onslaught', 'Kaladesh') "
+          + "AND block IN ('Masques', 'Mirage')"
           + ")";
       cardQuery.byBlock("Masques", true);
       cardQuery.byBlock("Onslaught", false);
@@ -1379,25 +1360,170 @@ class CardQueryTest {
     @DisplayName("Multiple card expansion parameters")
     @Test
     public void multipleCardExpansionParameters() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "JOIN CardExpansion t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "AND t0.expansion = t1.expansion "
+          + "JOIN CardExpansion t2 "
+          + "ON t0.card_name = t2.card_name "
+          + "AND t0.expansion = t2.expansion "
+          + "JOIN CardExpansion t3 "
+          + "ON t0.card_name = t3.card_name "
+          + "AND t0.expansion = t3.expansion "
+          + "WHERE t0.expansion = 'Born of the Gods' "
+          + "AND t1.rarity = 'rare' "
+          + "AND t2.flavor_text LIKE '%evil%' "
+          + "AND t3.artist = 'Kev Walker'";
+      cardQuery.byArtist("Kev Walker", true);
+      cardQuery.byFlavorText("evil", true);
+      cardQuery.bySet("Born of the Gods", true);
+      cardQuery.byRarity("rare", true);
+      assertEquals(result, cardQuery.asQuery());
     }
 
-    @DisplayName("Empty card expansion parameter with multiple card parameters")
+    @DisplayName("Name and text parameters")
     @Test
-    public void emptyCardExpansionMultipleCard() {
+    public void nameAndText() {
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN "
+          + "("
+          + "SELECT name "
+          + "FROM Card "
+          + "WHERE name LIKE '%fo%' "
+          + "AND card_text LIKE '%haste%' "
+          + "AND card_text LIKE '%cast%'"
+          + ")";
+      cardQuery.byName("fo", true);
+      cardQuery.byText("haste", true);
+      cardQuery.byText("cast", true);
+      assertEquals(result, cardQuery.asQuery());
+    }
 
+    @DisplayName("Color and color identity parameters")
+    @Test
+    public void colorAndColorIdentity() {
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN "
+          + "("
+          + "SELECT t0.card_name "
+          + "FROM Color t0 "
+          + "WHERE t0.color = 'R' "
+          + "INTERSECT "
+          + "SELECT t0.card_name "
+          + "FROM ColorIdentity t0 "
+          + "WHERE t0.color = 'B'"
+          + ")";
+      cardQuery.byColor("R", true);
+      cardQuery.byColorIdentity("B", true);
+      assertEquals(result, cardQuery.asQuery());
+    }
+
+    @DisplayName("Stat and stat vs stat parameters")
+    @Test
+    public void statAndStatVsStat() {
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN "
+          + "("
+          + "SELECT t0.card_name "
+          + "FROM Stat t0 "
+          + "WHERE t0.category = 'power' "
+          + "AND t0.base_value > 2 "
+          + "INTERSECT "
+          + "SELECT t0.card_name "
+          + "FROM Stat t0 "
+          + "JOIN Stat t1 "
+          + "ON t0.card_name = t1.card_name "
+          + "WHERE t0.category = 'cmc' "
+          + "AND t1.category = 'toughness' "
+          + "AND t0.base_value < t1.base_value"
+          + ")";
+      cardQuery.byStat(Stat.POWER, Comparison.GREATER, 2);
+      cardQuery.byStatVersusStat(Stat.CMC, Comparison.LESS, Stat.TOUGHNESS);
+      assertEquals(result, cardQuery.asQuery());
+    }
+
+    @DisplayName("Single card and block parameters")
+    @Test
+    public void singleCardAndBlock() {
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN "
+          + "("
+          + "SELECT name "
+          + "FROM Card "
+          + "WHERE name NOT LIKE '%man%' "
+          + "AND card_text LIKE '%fly%'"
+          + ") "
+          + "AND t0.expansion IN "
+          + "("
+          + "SELECT expansion "
+          + "FROM Block "
+          + "WHERE block IN ('Theros')"
+          + ")";
+      cardQuery.byName("man", false);
+      cardQuery.byText("fly", true);
+      cardQuery.byBlock("Theros", true);
+      assertEquals(result, cardQuery.asQuery());
+    }
+
+    @DisplayName("Multiple card and block parameters")
+    @Test
+    public void multipleCardAndBlock() {
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.card_name IN "
+          + "("
+          + "SELECT name "
+          + "FROM Card "
+          + "WHERE name LIKE '%zom%' "
+          + "AND card_text LIKE '%strike%'"
+          + ") "
+          + "AND t0.expansion IN "
+          + "("
+          + "SELECT expansion "
+          + "FROM Block "
+          + "WHERE block IN ('Lorwyn')"
+          + ")";
+      cardQuery.byBlock("Lorwyn", true);
+      cardQuery.byText("strike", true);
+      cardQuery.byName("zom", true);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("One of each type of parameter")
     @Test
     public void singleEverything() {
-
-    }
-
-    @DisplayName("Multiple of each type of parameter")
-    @Test
-    public void multipleEverything() {
-
+      String result = "SELECT t0.card_name, t0.expansion "
+          + "FROM CardExpansion t0 "
+          + "WHERE t0.flavor_text LIKE '%h%' "
+          + "AND t0.card_name IN "
+          + "("
+          + "SELECT name FROM Card "
+          + "WHERE name LIKE '%n%' "
+          + "INTERSECT SELECT t0.card_name "
+          + "FROM Color t0 "
+          + "WHERE t0.color != 'B' "
+          + "INTERSECT "
+          + "SELECT t0.card_name "
+          + "FROM Mana t0 "
+          + "WHERE t0.mana_type = '{B}' "
+          + "AND t0.quantity > 1) "
+          + "AND t0.expansion IN "
+          + "("
+          + "SELECT expansion "
+          + "FROM Block "
+          + "WHERE block IN ('Theros')"
+          + ")";
+      cardQuery.byColor("B", false);
+      cardQuery.byManaType("{B}", Comparison.GREATER, 1);
+      cardQuery.byBlock("Theros", true);
+      cardQuery.byName("n", true);
+      cardQuery.byFlavorText("h", true);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 }
