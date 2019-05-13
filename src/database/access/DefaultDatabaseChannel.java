@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -465,11 +466,24 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       throw new IllegalArgumentException("Given cardQuery can't be null!");
     }
 
+    Map<String, Set<String>> cardNameToExpansions = new HashMap<>();
     String query = cardQuery.asQuery();
-    ResultSet cardQueryResults = null;
     try (Connection connection = connect();
-    PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-      cardQueryResults = preparedStatement.executeQuery();
+    PreparedStatement preparedStatement = connection.prepareStatement(query);
+        ResultSet cardQueryResults = preparedStatement.executeQuery();) {
+
+      while (cardQueryResults.next()) {
+        String cardName = cardQueryResults.getString("card_name");
+        String expansion = cardQueryResults.getString("expansion");
+        if (cardNameToExpansions.containsKey(cardName)) {
+          cardNameToExpansions.get(cardName).add(expansion);
+        }
+        else {
+          Set<String> value = new TreeSet<>();
+          value.add(expansion);
+          cardNameToExpansions.put(cardName, value);
+        }
+      }
     }
     catch (SQLException e) {
       throw new SQLException(e.getMessage() +
@@ -477,6 +491,11 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     List<Card> cards = new ArrayList<>();
+    for (String cardName : cardNameToExpansions.keySet()) {
+      Set<String> expansions = cardNameToExpansions.get(cardName);
+      Card toAdd = new DefaultCard(cardName, expansions);
+      cards.add(toAdd);
+    }
 
     return cards;
   }
@@ -621,7 +640,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      */
     private final Map<String, Integer> additionalInfo;
     
-    public DefaultCard(String name, Set<String> expansions) {
+    public DefaultCard(String name, Set<String> expansions) throws SQLException {
       this.name = setName(name);
       this.cmc = setCMC();
       this.text = setText();
@@ -632,48 +651,123 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       this.colors = setColors();
       this.colorIdentity = setColorIdentity();
       this.relationship = setCardRelationship();
-      this.additionalInfo = setAdditionalInfo();
+      this.additionalInfo = setAdditionalInfo(expansions);
       this.cardPrintings = setCardPrintings();
     }
 
-    private String setName(String name) {
-      
+    private String setName(String name) throws SQLException {
+      return getCardInfo("name", "name");
     }
     
-    private String setText() {
-      
-    }
-    
-    private Map<String, Integer> setManaCosts() {
-      
+    private String setText() throws SQLException{
+      return getCardInfo("card_text", "card text");
     }
 
-    private Set<String> setSupertypes() {
-
+    private String getCardInfo(String column, String infoType) throws SQLException {
+      Map<String, String> conditions = new HashMap<>();
+      conditions.put("card_name", name);
+      Set<String> toReturn = retrieveSingleColumn("Card", column,
+          conditions, true, infoType);
+      return singleItemSetToString(toReturn);
     }
 
-    private Set<String> setTypes() {
+    private Set<String> retrieveSingleColumn(String table, String column,
+        Map<String, String> conditions, boolean singleResult, String infoType)
+        throws SQLException {
+      StringBuilder query = new StringBuilder(String.format("SELECT %s FROM %s", column, table));
 
+      boolean singleCondition = true;
+      for (String key : conditions.keySet()) {
+        String value = conditions.get(key);
+        String mergeCond;
+        if (singleCondition) {
+          singleCondition = false;
+          mergeCond = "WHERE";
+        }
+        else {
+          mergeCond = "AND";
+        }
+
+        query.append(String.format(" %s %s = '%s'", mergeCond, key, value));
+      }
+
+      try (Connection connection = connect();
+          PreparedStatement preparedStatement = connection.prepareStatement(query.toString());
+          ResultSet resultSet = preparedStatement.executeQuery()) {
+        Set<String> toReturn = new TreeSet<>();
+        while (resultSet.next()) {
+          toReturn.add(resultSet.getString(column));
+          if (singleResult) {
+            assert toReturn.size() == 1;
+            return toReturn;
+          }
+        }
+        return toReturn;
+      }
+      catch (SQLException e) {
+        throw new SQLException(e.getMessage() +
+            String.format("Failed to retrieve %s for card %s from database!", infoType, name));
+      }
+    }
+
+    private Map<String, Integer> setManaCosts() throws SQLException {
+      String query = String.format("SELECT mana_type, quantity FROM Mana WHERE card_name = '%s'", name);
+      try (Connection connection = connect();
+          PreparedStatement preparedStatement = connection.prepareStatement(query);
+          ResultSet resultSet = preparedStatement.executeQuery()) {
+        Map<String, Integer> manaTypeToQuantity = new HashMap<>();
+        while (resultSet.next()) {
+          String manaType = resultSet.getString("mana_type");
+          int quantity = resultSet.getInt("quantity");
+          manaTypeToQuantity.put(manaType, quantity);
+        }
+        return manaTypeToQuantity;
+      }
+      catch (SQLException e) {
+        throw new SQLException(e.getMessage() +
+            String.format("Failed to retrieve mana type info for card %s from database!", name));
+      }
+    }
+
+    private Set<String> setSupertypes() throws SQLException {
+      return retrieveTypeInfo("supertype");
+    }
+
+    private Set<String> setTypes() throws SQLException {
+      return retrieveTypeInfo("type");
     }
 
 
-    private Set<String> setSubtypes() {
-
+    private Set<String> setSubtypes() throws SQLException {
+      return retrieveTypeInfo("subtype");
     }
 
-    private Set<String> setColors() {
-
+    private Set<String> retrieveTypeInfo(String type) throws SQLException {
+      Map<String, String> conditions = new HashMap<>();
+      conditions.put("card_name", name);
+      conditions.put("category", type);
+      return retrieveSingleColumn("Type", "type", conditions, false, type);
     }
 
-    private Set<String> setColorIdentity() {
+    private Set<String> setColors() throws SQLException {
+      return getColorInfo("Color", "color");
+    }
 
+    private Set<String> setColorIdentity() throws SQLException {
+      return getColorInfo("ColorIdentity", "color identity");
+    }
+
+    private Set<String> getColorInfo(String table, String infoType) throws SQLException {
+      Map<String, String> conditions = new HashMap<>();
+      conditions.put("card_name", name);
+      return retrieveSingleColumn(table, "color", conditions, false, infoType);
     }
 
     private CardRelationship setCardRelationship() {
 
     }
 
-    private Map<String, Integer> setAdditionalInfo() {
+    private Map<String, Integer> setAdditionalInfo(Set<String> expansions) {
 
     }
 
@@ -681,8 +775,24 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     }
 
-    private int setCMC() {
+    private int setCMC() throws SQLException {
+      Map<String, String> conditions = new HashMap<>();
+      conditions.put("card_name", name);
+      conditions.put("category", "cmc");
+      Set<String> singleResult = retrieveSingleColumn("Stat", "base_value", conditions, true, "converted mana cost");
+      return Integer.parseInt(singleItemSetToString(singleResult));
+    }
 
+    private String singleItemSetToString(Set<String> set) {
+      if (set == null) {
+        throw new IllegalArgumentException("Given set can't be null!");
+      }
+      else if (set.size() != 1) {
+        throw new IllegalArgumentException("Given set should only contain a single item!");
+      }
+      String[] dummy = new String[1];
+      dummy = set.toArray(dummy);
+      return dummy[0];
     }
 
 
@@ -693,7 +803,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     @Override
     public int getConvertedManaCost() {
-      return ;
+      return cmc;
     }
 
     @Override
@@ -738,7 +848,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     @Override
     public Map<String, Integer> getExtraStats() {
-      return Collections.unmodifiableMap(additionalinfo);
+      return Collections.unmodifiableMap(additionalInfo);
     }
 
     @Override

@@ -11,6 +11,7 @@ Minor:
 
 Major:
 -CardQuery refactoring
+-Give shortcut names for card query
 -Card retrieval implementation
 -Documentation
 -Optional / "one of" arguments
