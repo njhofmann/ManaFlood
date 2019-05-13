@@ -10,9 +10,10 @@ Minor:
   -Identifier vs Info Container for value objects
 
 Major:
--Finish mixed cardquery tests
 -CardQuery refactoring
 -Card retrieval implementation
+-Documentation
+-Optional / "one of" arguments
 -Card retrieval tests
 -Deck database interactions tests
 -Optional color / color indicator

@@ -19,6 +19,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
 import value_objects.card.Card;
+import value_objects.card.relationship.CardRelationship;
+import value_objects.card_printing.CardPrintingInfo;
 import value_objects.query.CardQuery;
 import value_objects.card_printing.CardPrinting;
 import value_objects.card_printing.DefaultCardPrinting;
@@ -458,8 +460,25 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
   }
 
   @Override
-  public List<Card> queryCards(CardQuery cardQuery) throws IllegalArgumentException {
-    return null;
+  public List<Card> queryCards(CardQuery cardQuery) throws IllegalArgumentException, SQLException {
+    if (cardQuery == null) {
+      throw new IllegalArgumentException("Given cardQuery can't be null!");
+    }
+
+    String query = cardQuery.asQuery();
+    ResultSet cardQueryResults = null;
+    try (Connection connection = connect();
+    PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+      cardQueryResults = preparedStatement.executeQuery();
+    }
+    catch (SQLException e) {
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to query for given card query!"));
+    }
+
+    List<Card> cards = new ArrayList<>();
+
+    return cards;
   }
 
   /**
@@ -490,22 +509,22 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
   }
 
-  public SortedSet<String> getTypes() throws SQLException {
+  public SortedSet<String> getTypes() {
     return types;
   }
 
   @Override
-  public SortedSet<String> getManaTypes() throws SQLException {
+  public SortedSet<String> getManaTypes() {
     return manaTypes;
   }
 
   @Override
-  public SortedSet<String> getRarityTypes() throws SQLException {
+  public SortedSet<String> getRarityTypes() {
     return rarities;
   }
 
   @Override
-  public SortedSet<String> getColors() throws SQLException {
+  public SortedSet<String> getColors() {
     return colors;
   }
 
@@ -522,19 +541,233 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
   }
 
   @Override
-  public SortedSet<String> getBlocks() throws SQLException {
+  public SortedSet<String> getBlocks() {
     return blocks;
   }
 
   @Override
-  public SortedSet<String> getArtists() throws SQLException {
+  public SortedSet<String> getArtists(){
     return artists;
   }
 
   @Override
-  public SortedSet<String> getSets() throws SQLException {
+  public SortedSet<String> getSets() {
     return sets;
   }
+
+  /**
+   * Default implementation of the {@link Card} interface, a simple container to hold all the
+   * information pertaining to a given card.
+   */
+  public class DefaultCard implements Card {
+
+    /**
+     * Name of the Card as it appears in the CDDB.
+     */
+    private final String name;
+
+    /**
+     *
+     */
+    private final int cmc;
+
+    /**
+     * Manacosts and their associated manacosts as they appear in the CDDB for this Card.
+     */
+    private final Map<String, Integer> manaCosts;
+
+    /**
+     * Text making up the Card as it appears in the CDDB.
+     */
+    private final String text;
+
+    /**
+     * Supertypes of the Card as it appears in the CDDB.
+     */
+    private final Set<String> supertypes;
+
+    /**
+     * Types of the Card as it appears in the CDDB.
+     */
+    private final Set<String> types;
+
+    /**
+     * Subtypes of the Card as it appears in the CDDB.
+     */
+    private final Set<String> subtypes;
+
+    /**
+     * Set of colors making up this Card's colors.
+     */
+    private final Set<String> colors;
+
+    /**
+     * Set of colors making up this Card's color identity.
+     */
+    private final Set<String> colorIdentity;
+
+    /**
+     * Relationship this Card has with other Cards, if any.
+     */
+    private final CardRelationship relationship;
+
+    /**
+     *
+     */
+    private final Set<CardPrintingInfo> cardPrintings;
+
+    /**
+     * Any additional info of the Card as it appears in the CDDB.
+     */
+    private final Map<String, Integer> additionalInfo;
+    
+    public DefaultCard(String name, Set<String> expansions) {
+      this.name = setName(name);
+      this.cmc = setCMC();
+      this.text = setText();
+      this.manaCosts = setManaCosts();
+      this.supertypes = setSupertypes();
+      this.types = setTypes();
+      this.subtypes = setSubtypes();
+      this.colors = setColors();
+      this.colorIdentity = setColorIdentity();
+      this.relationship = setCardRelationship();
+      this.additionalInfo = setAdditionalInfo();
+      this.cardPrintings = setCardPrintings();
+    }
+
+    private String setName(String name) {
+      
+    }
+    
+    private String setText() {
+      
+    }
+    
+    private Map<String, Integer> setManaCosts() {
+      
+    }
+
+    private Set<String> setSupertypes() {
+
+    }
+
+    private Set<String> setTypes() {
+
+    }
+
+
+    private Set<String> setSubtypes() {
+
+    }
+
+    private Set<String> setColors() {
+
+    }
+
+    private Set<String> setColorIdentity() {
+
+    }
+
+    private CardRelationship setCardRelationship() {
+
+    }
+
+    private Map<String, Integer> setAdditionalInfo() {
+
+    }
+
+    private Set<CardPrintingInfo> setCardPrintings() {
+
+    }
+
+    private int setCMC() {
+
+    }
+
+
+    @Override
+    public String getName() {
+      return name;
+    }
+
+    @Override
+    public int getConvertedManaCost() {
+      return ;
+    }
+
+    @Override
+    public Map<String, Integer> getManaCost() {
+      return Collections.unmodifiableMap(manaCosts);
+    }
+
+    @Override
+    public Set<String> getColors() {
+      return Collections.unmodifiableSet(colors);
+    }
+
+    @Override
+    public Set<String> getColorIdentity() {
+      return Collections.unmodifiableSet(colorIdentity);
+    }
+
+    @Override
+    public String getText() {
+      return text;
+    }
+
+    @Override
+    public Set<String> getSupertypes() {
+      return Collections.unmodifiableSet(supertypes);
+    }
+
+    @Override
+    public Set<String> getTypes() {
+      return Collections.unmodifiableSet(types);
+    }
+
+    @Override
+    public Set<String> getSubtypes() {
+      return Collections.unmodifiableSet(subtypes);
+    }
+
+    @Override
+    public Set<CardPrinting> getCardPrintings() {
+      return null;
+    }
+
+    @Override
+    public Map<String, Integer> getExtraStats() {
+      return Collections.unmodifiableMap(additionalinfo);
+    }
+
+    @Override
+    public CardRelationship getRelationships() {
+      return relationship;
+    }
+
+    @Override
+    public int compareTo(Card other) throws IllegalArgumentException {
+      if (other == null) {
+        throw new IllegalArgumentException("Given card can't be null!");
+      }
+      return getName().compareTo(other.getName());
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      if (other instanceof Card) {
+        return name.equals(((Card) other).getName());
+      }
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return name.hashCode();
+    }
+  }
+
 
   @Override
   public Card getCard(String name) throws SQLException, IllegalArgumentException {

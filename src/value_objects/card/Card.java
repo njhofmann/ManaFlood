@@ -4,6 +4,7 @@ import value_objects.card.relationship.CardRelationship;
 
 import java.util.Map;
 import java.util.Set;
+import value_objects.card_printing.CardPrinting;
 
 /**
  * Represents all info of an individual card in the Card and Deck Database (CDDB). Uniqueness is
@@ -16,6 +17,8 @@ public interface Card extends Comparable<Card> {
    * @return card's name
    */
   String getName();
+
+  int getConvertedManaCost();
 
   /**
    * Returns the mana symbols and their quantities that make up this {@link Card}'s mana cost
@@ -59,6 +62,13 @@ public interface Card extends Comparable<Card> {
    * @return card's subtypes
    */
   Set<String> getSubtypes();
+
+  /**
+   * Returns a sorted set of all card printings that this Card is associated with - based on
+   * specific set of expansions and printing numbers.
+   * @return set of card printings this card is associated with
+   */
+  Set<CardPrinting> getCardPrintings();
 
   /**
    * If this {@link Card} has either power or toughness, or loyalty, returns that info in a
