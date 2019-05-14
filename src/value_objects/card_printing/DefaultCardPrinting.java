@@ -75,4 +75,19 @@ public class DefaultCardPrinting implements CardPrinting {
   public int hashCode() {
     return Objects.hash(cardName, cardExpansion, identifyingNumber);
   }
+
+  @Override
+  public int compareTo(CardPrinting o) {
+    int nameEquality = cardName.compareTo(o.getCardName());
+    if (nameEquality != 0) {
+      return nameEquality;
+    }
+
+    int expansionEquality = cardExpansion.compareTo(o.getCardExpansion());
+    if (expansionEquality != 0) {
+      return expansionEquality;
+    }
+
+    return identifyingNumber.compareTo(o.getIdentifyingNumber());
+  }
 }

@@ -14,7 +14,7 @@ public class DefaultCardRelationship implements CardRelationship {
   /**
    * Cards making up this {@link CardRelationship}.
    */
-  private final SortedSet<Card> cards;
+  private final SortedSet<String> cards;
 
   /**
    * Returns the nature of the relationship between the cards this {@link CardRelationship}
@@ -22,7 +22,7 @@ public class DefaultCardRelationship implements CardRelationship {
    */
   private final String relationship;
 
-  public DefaultCardRelationship(SortedSet<Card> cards, String relationship) {
+  public DefaultCardRelationship(SortedSet<String> cards, String relationship) {
     if (cards == null || cards.size() < 2) {
       throw new IllegalArgumentException("Given set of cards for this relationship can't be null "
           + "and must contain two cards or more!");
@@ -50,7 +50,7 @@ public class DefaultCardRelationship implements CardRelationship {
   }
 
   @Override
-  public SortedSet<Card> getCards() {
+  public SortedSet<String> getCards() {
     return Collections.unmodifiableSortedSet(cards);
   }
 

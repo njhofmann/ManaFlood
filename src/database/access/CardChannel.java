@@ -26,7 +26,7 @@ public interface CardChannel {
    * @throws IllegalArgumentException if given {@link CardQuery} is null.
    * @throws SQLException if there is a failure to query card info from the CDDB
    */
-  List<Card> queryCards(CardQuery cardQuery) throws IllegalArgumentException, SQLException;
+  SortedSet<Card> queryCards(CardQuery cardQuery) throws IllegalArgumentException, SQLException;
 
   /**
    * Returns a unmodifiable sorted set of all the card types held in the CDDB. Supertypes, types,

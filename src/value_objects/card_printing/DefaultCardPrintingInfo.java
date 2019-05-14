@@ -58,4 +58,9 @@ public class DefaultCardPrintingInfo implements CardPrintingInfo {
   public String getIdentifyingNumber() {
     return cardPrinting.getIdentifyingNumber();
   }
+
+  @Override
+  public int compareTo(CardPrinting o) {
+    return cardPrinting.compareTo(o);
+  }
 }

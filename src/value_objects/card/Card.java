@@ -1,10 +1,12 @@
 package value_objects.card;
 
+import java.util.SortedSet;
 import value_objects.card.relationship.CardRelationship;
 
 import java.util.Map;
 import java.util.Set;
 import value_objects.card_printing.CardPrinting;
+import value_objects.card_printing.CardPrintingInfo;
 
 /**
  * Represents all info of an individual card in the Card and Deck Database (CDDB). Uniqueness is
@@ -68,7 +70,7 @@ public interface Card extends Comparable<Card> {
    * specific set of expansions and printing numbers.
    * @return set of card printings this card is associated with
    */
-  Set<CardPrinting> getCardPrintings();
+  SortedSet<CardPrintingInfo> getCardPrintings();
 
   /**
    * If this {@link Card} has either power or toughness, or loyalty, returns that info in a
@@ -78,7 +80,7 @@ public interface Card extends Comparable<Card> {
    * If card has no additional info returns only an empty map.
    * @return any extra stats this card may have
    */
-  Map<String, Integer> getExtraStats();
+  Map<String, String> getExtraStats();
 
   /**
    * If this {@link Card} has a relationship with one or more other cards, returns the other

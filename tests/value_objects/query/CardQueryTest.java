@@ -41,7 +41,7 @@ class CardQueryTest {
   @DisplayName("No parameters")
   @Test
   public void noParameters() {
-    String result = "SELECT t0.card_name, t0.expansion FROM CardExpansion t0";
+    String result = "SELECT t0.card_name card_name, t0.expansion expansion FROM CardExpansion t0";
     assertEquals(result, cardQuery.asQuery());
   }
 
@@ -76,7 +76,7 @@ class CardQueryTest {
     @DisplayName("Include single name parameter")
     @Test
     public void includeSingleName() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -92,7 +92,7 @@ class CardQueryTest {
     @DisplayName("Include multiple name parameters")
     @Test
     public void includeMultipleName() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN ("
           + ""
@@ -109,7 +109,7 @@ class CardQueryTest {
     @DisplayName("Disallow single name parameter")
     @Test
     public void disallowSingleName() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -124,7 +124,7 @@ class CardQueryTest {
     @DisplayName("Disallow multiple name parameters")
     @Test
     public void disallowMultipleName() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -141,7 +141,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple name parameters")
     @Test
     public void mixedMultipleName() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -193,7 +193,7 @@ class CardQueryTest {
     @DisplayName("Include single text parameter")
     @Test
     public void includeSingleText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -208,7 +208,7 @@ class CardQueryTest {
     @DisplayName("Include multiple text parameters")
     @Test
     public void includeMultipleText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -225,7 +225,7 @@ class CardQueryTest {
     @DisplayName("Disallow single text parameter")
     @Test
     public void disallowSingleText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -240,7 +240,7 @@ class CardQueryTest {
     @DisplayName("Disallow multiple text parameters")
     @Test
     public void disallowMultipleText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -257,7 +257,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple text parameters")
     @Test
     public void mixedMultipleText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -299,7 +299,7 @@ class CardQueryTest {
     @DisplayName("Include single color parameter")
     @Test
     public void includeSingleColor() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -314,7 +314,7 @@ class CardQueryTest {
     @DisplayName("Include multiple color parameters")
     @Test
     public void includeMultipleColor() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -333,7 +333,7 @@ class CardQueryTest {
     @DisplayName("Disallow single color parameter")
     @Test
     public void disallowSingleColor() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -348,7 +348,7 @@ class CardQueryTest {
     @DisplayName("Disallow multiple color parameters")
     @Test
     public void disallowMultipleColor() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -371,7 +371,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple color parameters")
     @Test
     public void mixedMultipleColor() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -419,7 +419,7 @@ class CardQueryTest {
     @DisplayName("Include single color parameter")
     @Test
     public void includeSingleColor() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -434,7 +434,7 @@ class CardQueryTest {
     @DisplayName("Include multiple color parameters")
     @Test
     public void includeMultipleColor() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -453,7 +453,7 @@ class CardQueryTest {
     @DisplayName("Disallow single color parameter")
     @Test
     public void disallowSingleColor() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -468,7 +468,7 @@ class CardQueryTest {
     @DisplayName("Disallow multiple color parameters")
     @Test
     public void disallowMultipleColor() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -487,7 +487,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple color parameters")
     @Test
     public void mixedMultipleColor() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -535,7 +535,7 @@ class CardQueryTest {
     @DisplayName("Include single type parameter")
     @Test
     public void includeSingleType() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -550,7 +550,7 @@ class CardQueryTest {
     @DisplayName("Include multiple type parameters")
     @Test
     public void includeMultipleType() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -569,7 +569,7 @@ class CardQueryTest {
     @DisplayName("Disallow single type parameter")
     @Test
     public void disallowSingleType() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -584,7 +584,7 @@ class CardQueryTest {
     @DisplayName("Disallow multiple type parameters")
     @Test
     public void disallowMultipleType() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -603,7 +603,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple type parameters")
     @Test
     public void mixedMultipleType() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -647,7 +647,7 @@ class CardQueryTest {
     @DisplayName("Include single block parameter")
     @Test
     public void includeSingleBlock() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion IN "
           + "("
@@ -661,7 +661,7 @@ class CardQueryTest {
     @DisplayName("Include multiple block parameters")
     @Test
     public void includeMultipleBlock() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion IN "
           + "("
@@ -676,7 +676,7 @@ class CardQueryTest {
     @DisplayName("Disallow single block parameter")
     @Test
     public void disallowSingleBlock() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion IN "
           + "("
@@ -690,7 +690,7 @@ class CardQueryTest {
     @DisplayName("Disallow multiple block parameters")
     @Test
     public void disallowMultipleBlock() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion IN "
           + "("
@@ -705,7 +705,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple block parameters")
     @Test
     public void mixedMultipleBlock() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion IN "
           + "("
@@ -744,7 +744,7 @@ class CardQueryTest {
     @DisplayName("Include single set parameter")
     @Test
     public void includeSingleSet() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion = 'Guilds of Ravnica'";
       cardQuery.bySet("Guilds of Ravnica", true);
@@ -754,7 +754,7 @@ class CardQueryTest {
     @DisplayName("Include multiple set parameters")
     @Test
     public void includeMultipleSet() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -769,7 +769,7 @@ class CardQueryTest {
     @DisplayName("Disallow single set parameter")
     @Test
     public void disallowSingleSet() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.expansion != 'Theros'";
       cardQuery.bySet("Theros", false);
@@ -779,7 +779,7 @@ class CardQueryTest {
     @DisplayName("Disallow multiple set parameters")
     @Test
     public void disallowMultipleSet() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -794,7 +794,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple set parameters")
     @Test
     public void mixedMultipleSet() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -841,7 +841,7 @@ class CardQueryTest {
     @DisplayName("Include single artist parameter")
     @Test
     public void includeSingleArtist() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.artist = 'John Avon'";
       cardQuery.byArtist("John Avon", true);
@@ -851,7 +851,7 @@ class CardQueryTest {
     @DisplayName("Include multiple artist parameters")
     @Test
     public void includeMultipleArtist() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -871,7 +871,7 @@ class CardQueryTest {
     @DisplayName("Disallow single artist parameter")
     @Test
     public void disallowSingleArtist() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.artist != 'Izzy'";
       cardQuery.byArtist("Izzy", false);
@@ -881,7 +881,7 @@ class CardQueryTest {
     @DisplayName("Disallow multiple artist parameters")
     @Test
     public void disallowMultipleArtist() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -896,7 +896,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple artist parameters")
     @Test
     public void mixedMultipleArtist() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -955,7 +955,7 @@ class CardQueryTest {
     @DisplayName("Include single flavor text parameter")
     @Test
     public void includeSingleFlavorText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.flavor_text LIKE '%foo%'";
       cardQuery.byFlavorText("foo", true);
@@ -965,7 +965,7 @@ class CardQueryTest {
     @DisplayName("Include multiple flavor text parameters")
     @Test
     public void includeMultipleFlavorText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -980,7 +980,7 @@ class CardQueryTest {
     @DisplayName("Disallow single flavor text parameter")
     @Test
     public void disallowSingleFlavorText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.flavor_text NOT LIKE '%kop%'";
       cardQuery.byFlavorText("kop", false);
@@ -990,7 +990,7 @@ class CardQueryTest {
     @DisplayName("Disallow multiple flavor text parameters")
     @Test
     public void disallowMultipleFlavorText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -1005,7 +1005,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple flavor text parameters")
     @Test
     public void mixedMultipleFlavorText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -1051,7 +1051,7 @@ class CardQueryTest {
     @DisplayName("Include single rarity parameter")
     @Test
     public void includeSingleRarity() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.rarity = 'common'";
       cardQuery.byRarity("common", true);
@@ -1061,7 +1061,7 @@ class CardQueryTest {
     @DisplayName("Include multiple rarity parameters")
     @Test
     public void includeMultipleRarity() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -1076,7 +1076,7 @@ class CardQueryTest {
     @DisplayName("Disallow single rarity parameter")
     @Test
     public void disallowSingleRarity() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.rarity != 'rare'";
       cardQuery.byRarity("rare", false);
@@ -1086,7 +1086,7 @@ class CardQueryTest {
     @DisplayName("Disallow multiple rarity parameters")
     @Test
     public void disallowMultipleRarity() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -1101,7 +1101,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple rarity parameters")
     @Test
     public void mixedMultipleRarity() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -1142,7 +1142,7 @@ class CardQueryTest {
     @DisplayName("Single stat parameter for each stat and comparison combination")
     @Test
     public void singleStatCombo() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -1165,7 +1165,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple stat parameters")
     @Test
     public void mixedMultipleStat() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -1220,7 +1220,7 @@ class CardQueryTest {
     @DisplayName("Single stat parameter for each stat, comparison, and stat combination")
     @Test
     public void singleStatComparisonStat() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN ("
           + "SELECT t0.card_name "
@@ -1255,7 +1255,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple stat versus stat parameters")
     @Test
     public void mixedMultipleStatVersusStat() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN ("
           + "SELECT t0.card_name "
@@ -1302,7 +1302,7 @@ class CardQueryTest {
     @DisplayName("Single mana type parameter for each type of mana type and comparison")
     @Test
     public void includeSingleManaType() throws SQLException {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -1329,7 +1329,7 @@ class CardQueryTest {
     @DisplayName("Mixed multiple mana type parameters")
     @Test
     public void mixedMultipleManaType() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -1360,7 +1360,7 @@ class CardQueryTest {
     @DisplayName("Multiple card expansion parameters")
     @Test
     public void multipleCardExpansionParameters() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "JOIN CardExpansion t1 "
           + "ON t0.card_name = t1.card_name "
@@ -1385,7 +1385,7 @@ class CardQueryTest {
     @DisplayName("Name and text parameters")
     @Test
     public void nameAndText() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -1404,7 +1404,7 @@ class CardQueryTest {
     @DisplayName("Color and color identity parameters")
     @Test
     public void colorAndColorIdentity() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -1424,7 +1424,7 @@ class CardQueryTest {
     @DisplayName("Stat and stat vs stat parameters")
     @Test
     public void statAndStatVsStat() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -1449,7 +1449,7 @@ class CardQueryTest {
     @DisplayName("Single card and block parameters")
     @Test
     public void singleCardAndBlock() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -1473,7 +1473,7 @@ class CardQueryTest {
     @DisplayName("Multiple card and block parameters")
     @Test
     public void multipleCardAndBlock() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.card_name IN "
           + "("
@@ -1497,7 +1497,7 @@ class CardQueryTest {
     @DisplayName("One of each type of parameter")
     @Test
     public void singleEverything() {
-      String result = "SELECT t0.card_name, t0.expansion "
+      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
           + "WHERE t0.flavor_text LIKE '%h%' "
           + "AND t0.card_name IN "

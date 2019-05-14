@@ -21,7 +21,7 @@ public interface CardRelationship {
    * an empty set if this CardRelationship doesn't represent any relationship.
    * @return cards in this relationship
    */
-  SortedSet<Card> getCards();
+  SortedSet<String> getCards();
 
   /**
    * Returns the nature of the relationship between the cards this {@link CardRelationship} holds.
