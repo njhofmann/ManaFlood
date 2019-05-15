@@ -20,6 +20,10 @@ public interface Card extends Comparable<Card> {
    */
   String getName();
 
+  /**
+   *
+   * @return
+   */
   int getConvertedManaCost();
 
   /**

@@ -643,6 +643,13 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private final Map<String, String> additionalInfo;
     
     protected DefaultCard(String name, Set<String> expansions) throws SQLException {
+      if (name == null) {
+        throw new IllegalArgumentException("Given name can't be null!");
+      }
+      else if (expansions == null || expansions.isEmpty()) {
+        throw new IllegalArgumentException("Given expansions can't be null nor empty!");
+      }
+
       Connection connection = connect();
       this.name = setName(connection, name);
       this.text = setText(connection, name);
@@ -669,7 +676,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     private String getCardInfo(Connection connection, String column, String infoType, String cardName) throws SQLException {
       Map<String, String> conditions = new HashMap<>();
-      conditions.put("card_name", cardName);
+      conditions.put("name", cardName);
       Set<String> toReturn = retrieveSingleColumn(connection, "Card", column,
           conditions, true, infoType);
       return singleItemSetToString(toReturn);
@@ -806,21 +813,20 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       // When constructing variables, call after initiating types
       Map<String, String> additionalInfo = new HashMap<>();
       Map<String, String> conditions = new HashMap<>();
-      if (supertypes.contains("planeswalker")) {
+      if (types.contains("planeswalker")) {
         String loyalty = "loyalty";
         conditions.put("card_name", name);
-        conditions.put("type", loyalty);
+        conditions.put("category", loyalty);
         Set<String> result = retrieveSingleColumn(connection, "Stat", "value", conditions, true, "loyalty");
         additionalInfo.put(loyalty, singleItemSetToString(result));
       }
       else if (types.contains("creature") || subtypes.contains("vehicle")) {
         String[] powerToughness = new String[]{"power", "toughness"};
-        for (String value : powerToughness) {
-          additionalInfo.clear();
+        for (String category : powerToughness) {
           conditions.put("card_name", name);
-          conditions.put("type", value);
-          Set<String> result = retrieveSingleColumn(connection,"Stat", "value", conditions, true, value);
-          additionalInfo.put(value, singleItemSetToString(result));
+          conditions.put("category", category);
+          Set<String> result = retrieveSingleColumn(connection,"Stat", "value", conditions, true, category);
+          additionalInfo.put(category, singleItemSetToString(result));
         }
       }
       return additionalInfo;

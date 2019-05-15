@@ -1,8 +1,9 @@
 Minor:
 -Documentation
 -Add Scryfall image url
+-Promo bugs
 -CardPrinting equality double check
--Split multiple artists
+-Split multiple artists (fix tests)
 -Write down how time handling is done (timestamp in database)
 -Update text on cards option (erreta)
 -Add release dates to expansions
