@@ -78,16 +78,16 @@ public class DefaultCardPrinting implements CardPrinting {
 
   @Override
   public int compareTo(CardPrinting o) {
-    int nameEquality = cardName.compareTo(o.getCardName());
+    int nameEquality = getCardName().compareTo(o.getCardName());
     if (nameEquality != 0) {
       return nameEquality;
     }
 
-    int expansionEquality = cardExpansion.compareTo(o.getCardExpansion());
+    int expansionEquality = getCardExpansion().compareTo(o.getCardExpansion());
     if (expansionEquality != 0) {
       return expansionEquality;
     }
 
-    return identifyingNumber.compareTo(o.getIdentifyingNumber());
+    return getIdentifyingNumber().compareTo(o.getIdentifyingNumber());
   }
 }

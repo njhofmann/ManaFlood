@@ -577,6 +577,127 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
   }
 
   /**
+   * Retrieves all information stored in the given column apart of the given table from the CDDB.
+   * @param tableName name of the table to query
+   * @param columnName name of the column that is apart of the given table to query from
+   * @return sorted set of the row info from the given column apart of the
+   * @throws SQLException failure to query information from the CDDB
+   * @throws IllegalStateException if connection to the database is closed or not working
+   */
+  private SortedSet<String> retrieveColumnInfo(String tableName, String columnName) throws SQLException {
+    Connection connection = connect();
+    SortedSet<String> toReturn = retrieveColumnInfo(tableName, columnName, connection);
+    disconnect(connection);
+    return toReturn;
+  }
+
+  private SortedSet<String> retrieveColumnInfo(String tableName, String columnName,
+      Connection connection) throws SQLException {
+    if (connection == null || connection.isClosed()) {
+      throw new IllegalArgumentException("Given connection can't be null or closed!");
+    }
+
+    SortedSet<String> toReturn = new TreeSet<>();
+    String query = String.format("SELECT DISTINCT(%s) FROM %s", columnName, tableName);
+    try (PreparedStatement preparedStatement = connection.prepareStatement(query);
+    ResultSet queryResult = preparedStatement.executeQuery()) {
+
+      while (queryResult.next()) {
+        toReturn.add(queryResult.getString(columnName));
+      }
+    }
+    catch (SQLException e) {
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to query for column %s from table %s!", columnName, tableName));
+    }
+    return Collections.unmodifiableSortedSet(toReturn);
+  }
+
+  /**
+   * Returns {@link ResultSet} of all the information stored under table of the given name from the
+   * CDDB.
+   * @param tableName name of table to retrieve
+   * @return ResultSet of all info is in the database
+   * @throws SQLException failure to query info from the database
+   * @throws IllegalStateException if connection to the database is closed or not working
+   */
+  private ResultSet retrieveTableInfo(String tableName) throws SQLException {
+    if (tableName == null) {
+      throw new IllegalArgumentException("Given table name can't be null!");
+    }
+
+    // Check if table exists, then retrieve info
+    String checkQuery = "SELECT name FROM sqlite_master WHERE name='?'";
+    try (Connection connection = connect();
+        PreparedStatement preparedStatement = connection.prepareStatement(checkQuery);) {
+      preparedStatement.setString(1, tableName);
+      ResultSet checkQueryResult = preparedStatement.executeQuery();
+
+      // Should only have one resulting row if table exists
+      if (!checkQueryResult.next()) {
+        throw new IllegalArgumentException("Table matching given table name doesn't exist in "
+            + "database!");
+      }
+      else if (!checkQueryResult.next()) { // Now should return false, passed first and only row
+        String query = "SELECT * FROM %s";
+        query = String.format(query, tableName);
+        PreparedStatement preparedStatementRetrieval = connection.prepareStatement(query);
+        ResultSet queryResult = preparedStatementRetrieval.executeQuery();
+        closeResultSet(queryResult);
+        return queryResult;
+      }
+      else {
+        throw new IllegalArgumentException("Database returned multiple tables matching given table"
+            + " name, should only return zero or one tables!");
+      }
+    }
+    catch (SQLException e) {
+      throw new SQLException(e.getMessage() +
+          String.format("\nFailed to query for table %s!", tableName));
+    }
+  }
+
+  @Override
+  public Card getCard(String name) throws SQLException, IllegalArgumentException {
+    if (name == null) {
+      throw new IllegalArgumentException("Given card can't be null!");
+    }
+
+    // Check if card is in database
+
+    Connection connection = null;
+    PreparedStatement preparedStatement = null;
+    ResultSet resultSet = null;
+    try {
+      connection = connect();
+      String checkQuery = "SELECT name FROM Card WHERE name = ?";
+      preparedStatement = connection.prepareStatement(checkQuery);
+      preparedStatement.setString(1, name);
+      resultSet = preparedStatement.executeQuery();
+
+      if (!resultSet.next()) {
+        throw new IllegalArgumentException(String.format("Database doesn't contain card %s!", name));
+      }
+
+      close(resultSet, preparedStatement);
+
+      String cardQuery = "";
+
+
+      Card card = null;
+
+      return card;
+    }
+    catch (SQLException e) {
+      throw new SQLException("Failed to query for card");
+    }
+    finally {
+      close(resultSet, preparedStatement);
+      disconnect(connection);
+    }
+  }
+
+  /**
    * Default implementation of the {@link Card} interface, a simple container to hold all the
    * information pertaining to a given card.
    */
@@ -641,7 +762,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * Any additional info of the Card as it appears in the CDDB.
      */
     private final Map<String, String> additionalInfo;
-    
+
     protected DefaultCard(String name, Set<String> expansions) throws SQLException {
       if (name == null) {
         throw new IllegalArgumentException("Given name can't be null!");
@@ -669,7 +790,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private String setName(Connection connection, String cardName) throws SQLException {
       return getCardInfo(connection,"name", "name", cardName);
     }
-    
+
     private String setText(Connection connection, String cardName) throws SQLException{
       return getCardInfo(connection,"card_text", "card text", cardName);
     }
@@ -959,7 +1080,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     @Override
     public boolean equals(Object other) {
       if (other instanceof Card) {
-        return name.equals(((Card) other).getName());
+        Card otherCard = (Card) other;
+        return name.equals(otherCard.getName()) && cardPrintings.equals(otherCard.getCardPrintings());
       }
       return false;
     }
@@ -967,128 +1089,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     @Override
     public int hashCode() {
       return name.hashCode();
-    }
-  }
-
-
-  @Override
-  public Card getCard(String name) throws SQLException, IllegalArgumentException {
-    if (name == null) {
-      throw new IllegalArgumentException("Given card can't be null!");
-    }
-
-    // Check if card is in database
-
-    Connection connection = null;
-    PreparedStatement preparedStatement = null;
-    ResultSet resultSet = null;
-    try {
-      connection = connect();
-      String checkQuery = "SELECT name FROM Card WHERE name = ?";
-      preparedStatement = connection.prepareStatement(checkQuery);
-      preparedStatement.setString(1, name);
-      resultSet = preparedStatement.executeQuery();
-
-      if (!resultSet.next()) {
-        throw new IllegalArgumentException(String.format("Database doesn't contain card %s!", name));
-      }
-
-      close(resultSet, preparedStatement);
-
-      String cardQuery = "";
-
-
-      Card card = null;
-
-      return card;
-    }
-    catch (SQLException e) {
-      throw new SQLException("Failed to query for card");
-    }
-    finally {
-      close(resultSet, preparedStatement);
-      disconnect(connection);
-    }
-  }
-
-  /**
-   * Retrieves all information stored in the given column apart of the given table from the CDDB.
-   * @param tableName name of the table to query
-   * @param columnName name of the column that is apart of the given table to query from
-   * @return sorted set of the row info from the given column apart of the
-   * @throws SQLException failure to query information from the CDDB
-   * @throws IllegalStateException if connection to the database is closed or not working
-   */
-  private SortedSet<String> retrieveColumnInfo(String tableName, String columnName) throws SQLException {
-    Connection connection = connect();
-    SortedSet<String> toReturn = retrieveColumnInfo(tableName, columnName, connection);
-    disconnect(connection);
-    return toReturn;
-  }
-
-  private SortedSet<String> retrieveColumnInfo(String tableName, String columnName,
-      Connection connection) throws SQLException {
-    if (connection == null || connection.isClosed()) {
-      throw new IllegalArgumentException("Given connection can't be null or closed!");
-    }
-
-    SortedSet<String> toReturn = new TreeSet<>();
-    String query = String.format("SELECT DISTINCT(%s) FROM %s", columnName, tableName);
-    try (PreparedStatement preparedStatement = connection.prepareStatement(query);
-    ResultSet queryResult = preparedStatement.executeQuery()) {
-
-      while (queryResult.next()) {
-        toReturn.add(queryResult.getString(columnName));
-      }
-    }
-    catch (SQLException e) {
-      throw new SQLException(e.getMessage() +
-          String.format("\nFailed to query for column %s from table %s!", columnName, tableName));
-    }
-    return Collections.unmodifiableSortedSet(toReturn);
-  }
-
-  /**
-   * Returns {@link ResultSet} of all the information stored under table of the given name from the
-   * CDDB.
-   * @param tableName name of table to retrieve
-   * @return ResultSet of all info is in the database
-   * @throws SQLException failure to query info from the database
-   * @throws IllegalStateException if connection to the database is closed or not working
-   */
-  private ResultSet retrieveTableInfo(String tableName) throws SQLException {
-    if (tableName == null) {
-      throw new IllegalArgumentException("Given table name can't be null!");
-    }
-
-    // Check if table exists, then retrieve info
-    String checkQuery = "SELECT name FROM sqlite_master WHERE name='?'";
-    try (Connection connection = connect();
-        PreparedStatement preparedStatement = connection.prepareStatement(checkQuery);) {
-      preparedStatement.setString(1, tableName);
-      ResultSet checkQueryResult = preparedStatement.executeQuery();
-
-      // Should only have one resulting row if table exists
-      if (!checkQueryResult.next()) {
-        throw new IllegalArgumentException("Table matching given table name doesn't exist in "
-            + "database!");
-      }
-      else if (!checkQueryResult.next()) { // Now should return false, passed first and only row
-        String query = "SELECT * FROM %s";
-        query = String.format(query, tableName);
-        PreparedStatement preparedStatementRetrieval = connection.prepareStatement(query);
-        ResultSet queryResult = preparedStatementRetrieval.executeQuery();
-        closeResultSet(queryResult);
-        return queryResult;
-      }
-      else {
-        throw new IllegalArgumentException("Database returned multiple tables matching given table"
-            + " name, should only return zero or one tables!");
-      }
-    }
-    catch (SQLException e) {
-      throw new SQLException(e.getMessage() +
-          String.format("\nFailed to query for table %s!", tableName));
     }
   }
 
