@@ -814,38 +814,95 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       Connection connection = connect();
       this.name = setName(connection, name);
       this.text = setText(connection, name);
-      this.cmc = setCMC(connection);
-      this.manaCosts = setManaCosts(connection);
-      this.supertypes = setSupertypes(connection);
-      this.types = setTypes(connection);
-      this.subtypes = setSubtypes(connection);
-      this.colors = setColors(connection);
-      this.colorIdentity = setColorIdentity(connection);
-      this.relationship = setCardRelationship(connection);
-      this.additionalInfo = setAdditionalInfo(connection);
-      this.cardPrintings = setCardPrintings(connection, expansions);
+      this.cmc = setCMC(connection, name);
+      this.manaCosts = setManaCosts(connection, name);
+      this.supertypes = setSupertypes(connection, name);
+      this.types = setTypes(connection, name);
+      this.subtypes = setSubtypes(connection, name);
+      this.colors = setColors(connection, name);
+      this.colorIdentity = setColorIdentity(connection, name);
+      this.relationship = setCardRelationship(connection, name);
+      this.additionalInfo = setAdditionalInfo(connection, name);
+      this.cardPrintings = setCardPrintings(connection, expansions, name);
       disconnect(connection);
     }
 
+    /**
+     * Retrieves the name of this {@link Card} using the given connection to the CDDB.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param cardName name of card to retrieve data for
+     * @return name of this card from the database
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
     private String setName(Connection connection, String cardName) throws SQLException {
       return getCardInfo(connection,"name", "name", cardName);
     }
 
-    private String setText(Connection connection, String cardName) throws SQLException{
+    /**
+     * Retrieves the text of this {@link Card} using the given connection to the CDDB.
+     * @param connection connection to the CDDB to use
+     * @param cardName name of card to retrieve data for
+     * @return text of this card from the CDDB
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
+    private String setText(Connection connection, String cardName) throws SQLException {
       return getCardInfo(connection,"card_text", "card text", cardName);
     }
 
-    private String getCardInfo(Connection connection, String column, String infoType, String cardName) throws SQLException {
+    /**
+     * Retrieves some base info of this {@link Card} using the given connection to the CDDB, from
+     * the Card table in the CDDB.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param column name of column to retrieve data from
+     * @param infoType type of info retrieved from the column
+     * @param cardName name of card to retrieve data for
+     * @return some piece of base info of this card from the Card table in the CDDB
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if given connection is closed, or if any of the given
+     * parameters are null
+     */
+    private String getCardInfo(Connection connection, String column, String infoType,
+        String cardName) throws SQLException {
       Map<String, String> conditions = new HashMap<>();
       conditions.put("name", cardName);
       Set<String> toReturn = retrieveSingleColumn(connection, "Card", column,
-          conditions, true, infoType);
+          conditions, true, infoType, cardName);
       return singleItemSetToString(toReturn);
     }
 
+    /**
+     * Retrieves all the info from a single column, for a given table, associated this {@link Card}.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param table name of table to retrieve info from
+     * @param column name of column on given table to retrieve data from
+     * @param conditions search conditions to apply to query, in form of column name to a matching
+     * string
+     * @param singleResult boolean flag to single if returned set should contain a single item or
+     * multiple items
+     * @param infoType type of info being retrieved
+     * @param cardName name of card to retrieve data for
+     * @return set of all data from given column of given table associated with given card name, as
+     * per given conditions
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
     private Set<String> retrieveSingleColumn(Connection connection, String table, String column,
-        Map<String, String> conditions, boolean singleResult, String infoType)
+        Map<String, String> conditions, boolean singleResult, String infoType, String cardName)
         throws SQLException {
+
+      if (connection == null || table == null || column == null ||
+          conditions == null || infoType == null) {
+        throw new IllegalArgumentException("None of the given parameters can be null!");
+      }
+      else if (connection.isClosed()) {
+        throw new IllegalArgumentException("Given connection can't be closed!");
+      }
+
       StringBuilder query = new StringBuilder(String.format("SELECT %s FROM %s", column, table));
 
       boolean singleCondition = true;
@@ -877,12 +934,21 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       }
       catch (SQLException e) {
         throw new SQLException(e.getMessage() +
-            String.format("Failed to retrieve %s for card %s from database!", infoType, name));
+            String.format("Failed to retrieve %s for card %s from database!", infoType, cardName));
       }
     }
 
-    private Map<String, Integer> setManaCosts(Connection connection) throws SQLException {
-      String query = String.format("SELECT mana_type, quantity FROM Mana WHERE card_name = '%s'", name);
+    /**
+     * Retrieves the mana symbols and respective quantities associated with this {@link Card}.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param cardName name of card to retrieve data for
+     * @return mapping of mana symbols to their quantities for this card
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
+    private Map<String, Integer> setManaCosts(Connection connection, String cardName) throws SQLException {
+      String query = String.format("SELECT mana_type, quantity FROM Mana WHERE card_name = '%s'", cardName);
       try (PreparedStatement preparedStatement = connection.prepareStatement(query);
           ResultSet resultSet = preparedStatement.executeQuery()) {
         Map<String, Integer> manaTypeToQuantity = new HashMap<>();
@@ -895,47 +961,129 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       }
       catch (SQLException e) {
         throw new SQLException(e.getMessage() +
-            String.format("Failed to retrieve mana type info for card %s from database!", name));
+            String.format("Failed to retrieve mana type info for card %s from database!", cardName));
       }
     }
 
-    private Set<String> setSupertypes(Connection connection) throws SQLException {
-      return retrieveTypeInfo(connection, "supertype");
+    /**
+     * Retrieves the supertypes associated with this {@link Card}.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param cardName name of card to retrieve data for
+     * @return set of supertypes associated with this card
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
+    private Set<String> setSupertypes(Connection connection, String cardName) throws SQLException {
+      return retrieveTypeInfo(connection, "supertype", cardName);
     }
 
-    private Set<String> setTypes(Connection connection) throws SQLException {
-      return retrieveTypeInfo(connection,"type");
+    /**
+     * Retrieves the types associated with this {@link Card}.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param cardName name of card to retrieve data for
+     * @return set of types associated with this card
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
+    private Set<String> setTypes(Connection connection, String cardName) throws SQLException {
+      return retrieveTypeInfo(connection,"type", cardName);
     }
 
-    private Set<String> setSubtypes(Connection connection) throws SQLException {
-      return retrieveTypeInfo(connection,"subtype");
+    /**
+     * Retrieves the subtypes associated with this {@link Card}.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param cardName name of card to retrieve data for
+     * @return set of subtypes associatd with this card
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if given connection is closed, or if any of the given
+     * parameters are null
+     */
+    private Set<String> setSubtypes(Connection connection, String cardName) throws SQLException {
+      return retrieveTypeInfo(connection,"subtype", cardName);
     }
 
-    private Set<String> retrieveTypeInfo(Connection connection, String type) throws SQLException {
+    /**
+     * Retrieves types associated with this {@link Card}, for a given category of type (supertype,
+     * type, subtype).
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param type category of type to retrieve
+     * @param cardName name of card to retrieve data for
+     * @return set of given category of type associated with this card
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if given connection is closed, or if any of the given
+     * parameters are null
+     */
+    private Set<String> retrieveTypeInfo(Connection connection, String type, String cardName) throws SQLException {
       Map<String, String> conditions = new HashMap<>();
-      conditions.put("card_name", name);
+      conditions.put("card_name", cardName);
       conditions.put("category", type);
-      return retrieveSingleColumn(connection,"Type", "type", conditions, false, type);
+      return retrieveSingleColumn(connection,"Type", "type", conditions,
+          false, type, cardName);
     }
 
-    private Set<String> setColors(Connection connection) throws SQLException {
-      return getColorInfo(connection,"Color", "color");
+    /**
+     * Retrieves the colors associated with this {@link Card}.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param cardName name of card to retrieve data for
+     * @return set of colors associated with this card
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
+    private Set<String> setColors(Connection connection, String cardName) throws SQLException {
+      return getColorInfo(connection,"Color", "color", cardName);
     }
 
-    private Set<String> setColorIdentity(Connection connection) throws SQLException {
-      return getColorInfo(connection,"ColorIdentity", "color identity");
+    /**
+     * Retrieves the colors associated with this {@link Card}'s color identity.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param cardName name of card to retrieve data for
+     * @return colors making up this card's color identity
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
+    private Set<String> setColorIdentity(Connection connection, String cardName) throws SQLException {
+      return getColorInfo(connection,"ColorIdentity", "color identity", cardName);
     }
 
-    private Set<String> getColorInfo(Connection connection, String table, String infoType) throws SQLException {
+    /**
+     * Retrieves color info from a given table associated with this {@link Card}.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param table table to retrieve info from
+     * @param infoType type of info being retrieved
+     * @param cardName name of card to retrieve data for
+     * @return set of colors from given table associated with this card
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
+    private Set<String> getColorInfo(Connection connection, String table, String infoType,
+        String cardName) throws SQLException {
       Map<String, String> conditions = new HashMap<>();
-      conditions.put("card_name", name);
-      return retrieveSingleColumn(connection, table, "color", conditions, false, infoType);
+      conditions.put("card_name", cardName);
+      return retrieveSingleColumn(connection, table, "color", conditions,
+          false, infoType, cardName);
     }
 
-    private CardRelationship setCardRelationship(Connection connection) throws SQLException {
+    /**
+     * Builds a {@link CardRelationship} for any relationships this {@link Card} may have with
+     * other cards.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param cardName name of card to retrieve data for
+     * @return a CardRelationship to represent the relationship this card may have with other cards
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
+    private CardRelationship setCardRelationship(Connection connection,
+        String cardName) throws SQLException {
       SortedSet<String> cardNames = new TreeSet<>();
 
-      String twoCardQuery = String.format("SELECT * FROM TwoCards WHERE card_a = '%s' OR card_b = '%s'", name, name);
+      String twoCardQuery = String.format("SELECT * FROM TwoCards WHERE card_a = '%s' "
+          + "OR card_b = '%s'", cardName, cardName);
       try (PreparedStatement preparedStatement = connection.prepareStatement(twoCardQuery);
           ResultSet resultSet = preparedStatement.executeQuery()) {
         if (resultSet.next()) {
@@ -947,10 +1095,12 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       }
       catch (SQLException e) {
         throw new SQLException(e.getMessage() +
-            String.format("Failed to check for two card relationship info for card %s from database!", name));
+            String.format("Failed to check for two card relationship info for card %s from "
+                + "database!", cardName));
       }
 
-      String threeCardQuery = String.format("SELECT * FROM ThreeCards WHERE card_a = '%s' OR card_b = '%s' OR card_c = '%s'", name, name, name);
+      String threeCardQuery = String.format("SELECT * FROM ThreeCards WHERE card_a = '%s' "
+          + "OR card_b = '%s' OR card_c = '%s'", cardName, cardName, cardName);
       try (PreparedStatement preparedStatement = connection.prepareStatement(threeCardQuery);
           ResultSet resultSet = preparedStatement.executeQuery()) {
         if (resultSet.next()) {
@@ -963,36 +1113,72 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       }
       catch (SQLException e) {
         throw new SQLException(e.getMessage() +
-            String.format("Failed to check for three card relationship info for card %s from database!", name));
+            String.format("Failed to check for three card relationship info for card %s from database!", cardName));
       }
 
       return new DefaultCardRelationship();
     }
 
-    private Map<String, String> setAdditionalInfo(Connection connection) throws SQLException {
+    /**
+     * Retrieves any additional information associated with this {@link Card} such as power,
+     * toughness, or loyalty.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param cardName name of card to retrieve data for
+     * @return any additional info and their respective quantities associated with this {@link Card}
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
+    private Map<String, String> setAdditionalInfo(Connection connection,
+        String cardName) throws SQLException {
       // When constructing variables, call after initiating types
       Map<String, String> additionalInfo = new HashMap<>();
       Map<String, String> conditions = new HashMap<>();
       if (types.contains("planeswalker")) {
         String loyalty = "loyalty";
-        conditions.put("card_name", name);
+        conditions.put("card_name", cardName);
         conditions.put("category", loyalty);
-        Set<String> result = retrieveSingleColumn(connection, "Stat", "value", conditions, true, "loyalty");
+        Set<String> result = retrieveSingleColumn(connection, "Stat", "value",
+            conditions, true, "loyalty", cardName);
         additionalInfo.put(loyalty, singleItemSetToString(result));
       }
       else if (types.contains("creature") || subtypes.contains("vehicle")) {
         String[] powerToughness = new String[]{"power", "toughness"};
         for (String category : powerToughness) {
-          conditions.put("card_name", name);
+          conditions.put("card_name", cardName);
           conditions.put("category", category);
-          Set<String> result = retrieveSingleColumn(connection,"Stat", "value", conditions, true, category);
+          Set<String> result = retrieveSingleColumn(connection,"Stat", "value",
+              conditions, true, category, cardName);
           additionalInfo.put(category, singleItemSetToString(result));
         }
       }
       return additionalInfo;
     }
 
-    private SortedSet<CardPrintingInfo> setCardPrintings(Connection connection, Set<String> expansions) throws SQLException {
+    /**
+     * For a set of expansions this {@link Card } was printed in, retrieves the unique information
+     * associated with each card printing.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param expansions set of expansions associated card was printed in to retrieve data from
+     * @param cardName name of card to retrieve data for
+     * @return set of CardPrintingInfo for the expansions given t
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, if given connection is
+     * closed, or if given set of expansions is null
+     */
+    private SortedSet<CardPrintingInfo> setCardPrintings(Connection connection,
+        Set<String> expansions, String cardName) throws SQLException {
+
+      if (connection == null || expansions == null || cardName == null) {
+        throw new IllegalArgumentException("Given parameters can't be null!");
+      }
+      else if (connection.isClosed()) {
+        throw new IllegalArgumentException("Given connection can't be closed!");
+      }
+      else if (expansions.isEmpty()) {
+        throw new IllegalArgumentException("Given set of expansions can't be empty!");
+      }
+
       StringBuilder expansionsIn = new StringBuilder("(");
       boolean afterFirst = false;
       for (String expansion : expansions) {
@@ -1008,7 +1194,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
       SortedSet<CardPrintingInfo> cardPrintingInfo = new TreeSet<>();
       String query = String.format("SELECT * FROM CardExpansion "
-          + "WHERE card_name = '%s' AND expansion IN %s", name, expansionsIn.toString());
+          + "WHERE card_name = '%s' AND expansion IN %s", cardName, expansionsIn.toString());
       try (PreparedStatement preparedStatement = connection.prepareStatement(query);
           ResultSet resultSet = preparedStatement.executeQuery()) {
         while (resultSet.next()) {
@@ -1017,24 +1203,43 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
           String artist = resultSet.getString("artist");
           String rarity = resultSet.getString("rarity");
           String flavor_text = resultSet.getString("flavor_text");
-          cardPrintingInfo.add(new DefaultCardPrintingInfo(name, expansion, number, artist, flavor_text, rarity));
+          cardPrintingInfo.add(new DefaultCardPrintingInfo(cardName, expansion, number,
+              artist, flavor_text, rarity));
         }
         return cardPrintingInfo;
       }
       catch (SQLException e) {
         throw new SQLException(e.getMessage() +
-            String.format("Failed to retrieve card expansion info for card %s from database!", name));
+            String.format("Failed to retrieve card expansion info for card %s from database!",
+                cardName));
       }
     }
 
-    private int setCMC(Connection connection) throws SQLException {
+    /**
+     * Retrieves the converted mana cost with this {@link Card}.
+     * @param connection connection to the CDDB to use for retrieving data
+     * @param cardName name of card to retrieve data for
+     * @return associated card's converted mana cost
+     * @throws SQLException if there is an error in retrieving data from the CDDB
+     * @throws IllegalArgumentException if any given parameter is null, or if given connection is
+     * closed
+     */
+    private int setCMC(Connection connection, String cardName) throws SQLException {
       Map<String, String> conditions = new HashMap<>();
-      conditions.put("card_name", name);
+      conditions.put("card_name", cardName);
       conditions.put("category", "cmc");
-      Set<String> singleResult = retrieveSingleColumn(connection, "Stat", "base_value", conditions, true, "converted mana cost");
+      Set<String> singleResult = retrieveSingleColumn(connection, "Stat", "base_value",
+          conditions, true, "converted mana cost", cardName);
       return Integer.parseInt(singleItemSetToString(singleResult));
     }
 
+    /**
+     * Given a set of Strings with a single item, returns the sole String in that set.
+     * @param set set of Strings to pull from
+     * @return single String in the given set
+     * @throws IllegalArgumentException if given set in null or contains a number of items other
+     * than one
+     */
     private String singleItemSetToString(Set<String> set) {
       if (set == null) {
         throw new IllegalArgumentException("Given set can't be null!");
@@ -1177,36 +1382,82 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
   /**
    * Default implementation of the {@link CardQuery} interface, listed inside
    * {@link DefaultDatabaseChannel} due its tight coupling with it for purposes of determining
-   * what is and is not a valid parameter.
+   * what is and is not a valid parameter. Stores lists of added parameters of each type of
+   * parameter supported, then builds the desired query on demand to retrieved desired info from
+   * the CDDB.
    */
   private class DefaultCardQuery implements CardQuery {
-    
+
+    /**
+     * List of parameters added to search by a card's name.
+     */
     private final List<Pair<String, Boolean>> nameParams;
-    
+
+    /**
+     * List of parameters added to search by a card's text.
+     */
     private final List<Pair<String, Boolean>> textParams;
-    
+
+    /**
+     * List of parameters added to search by a card's colors.
+     */
     private final List<Pair<String, Boolean>> colorParams;
-    
+
+    /**
+     * List of parameters added to search by a card's color identity.
+     */
     private final List<Pair<String, Boolean>> colorIdentityParams;
-    
+
+    /**
+     * List of parameters added to search by a card's types.
+     */
     private final List<Pair<String, Boolean>> typeParams;
 
+    /**
+     * List of parameters added to search by the blocks a card was printed in.
+     */
     private final List<Pair<String, Boolean>> blockParams;
 
+    /**
+     * List of parameters added to search by the expansions a card was printed in.
+     */
     private final List<Pair<String, Boolean>> setParams;
 
+    /**
+     * List of parameters added to search by the artists who painted a card.
+     */
     private final List<Pair<String, Boolean>> artistParams;
 
+    /**
+     * List of parameters added to search by the rarities a card has been printed with.
+     */
     private final List<Pair<String, Boolean>> rarityParams;
 
+    /**
+     * List of parameters added to search by the flavor text a card has been printed with.
+     */
     private final List<Pair<String, Boolean>> flavorTextParams;
-    
+
+    /**
+     * List of parameters added to search by the stats of a card compared to a given quantity.
+     */
     private final List<Triple<Stat, Comparison, Integer>> statParams;
-    
+
+    /**
+     * List of parameters added to search by the stats of a card compared to another stat of the
+     * same card.
+     */
     private final List<Triple<Stat, Comparison, Stat>> statVersusStatParams;
 
+    /**
+     * List of parameters added to search by the quantities of mana symbols of a card.
+     */
     private final List<Triple<String, Comparison, Integer>> manaTypeParams;
 
+    /**
+     * Default constructor for this {@link DefaultCardQuery}, sets empty array lists for each type
+     * of parameter list
+     */
     private DefaultCardQuery() {
       nameParams = new ArrayList<>();
       textParams = new ArrayList<>();
@@ -1223,8 +1474,19 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       manaTypeParams = new ArrayList<>();
     }
 
+    /**
+     * Function object for formatting a given String parameter into a SQL 'LIKE' statement with
+     * universal wildcard operators.
+     */
     class BooleanToLike implements BiFunction<Boolean, String, String> {
 
+      /**
+       * Format the given String parameter as a SQL LIKE statement, where 'LIKE' or 'NOT LIKE'
+       * is determined by include parameter.
+       * @param include for formatted parameter to be 'LIKE' or 'NOT LIKE'
+       * @param parameter string parameter to format
+       * @return properly formatted parameter
+       */
       @Override
       public String apply(Boolean include, String parameter) {
         String includeString = include ? "LIKE" : "NOT LIKE";
@@ -1232,8 +1494,18 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       }
     }
 
+    /**
+     * Function object for formatting a given String parameter into a SQL equality statement
+     */
     class BooleanToEqual implements BiFunction<Boolean, String, String> {
 
+      /**
+       * Format the given String parameter as a SQL equality statement, where equality or
+       * inequality is determined by include parameter.
+       * @param include for formatted parameter to be equal or not equal
+       * @param parameter string parameter to format
+       * @return properly formatted parameter
+       */
       @Override
       public String apply(Boolean include, String parameter) {
         String includeString = include ? "=" : "!=";
@@ -1249,8 +1521,9 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     /**
-     *
-     * @return
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * name and text parameters entered so far.
+     * @return part of this CardQuery dealing with name and text parameters as a StringBuilder
      */
     private StringBuilder buildNameAndTextQuery() {
       if (nameParams.isEmpty() && textParams.isEmpty()) {
@@ -1295,10 +1568,26 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       colorParams.add(new Pair<>(color, searchFor));
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * color parameters entered so far.
+     * @return part of this CardQuery dealing with color parameters as a StringBuilder
+     */
     private StringBuilder buildColorQuery() {
-      return buildGenericCardQuery(colorParams, "Color", "card_name", "color");
+      return buildGenericCardQuery(colorParams, "Color",
+          "card_name", "color");
     }
 
+    /**
+     * Creates a query for drawing info from a single column in a given table against a list of
+     * entered parameters, where tables are matched on a given column.
+     * @param params parameters entered so far
+     * @param table table to draw info from
+     * @param returnJoinColumn column to return and join tables on
+     * @param connectColumn column to match entered parameters against on
+     * @return StringBuilder that queries given table against entered parameters based on given
+     * columns
+     */
     private StringBuilder buildGenericCardQuery(List<Pair<String, Boolean>> params, String table,
         String returnJoinColumn, String connectColumn) {
       if (params.isEmpty()) {
@@ -1331,8 +1620,28 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return query.append(conditions);
     }
 
-    private Triple<StringBuilder, Boolean, String> buildEvenMoreGenericCardQuery(String table, String[] tableMatchColumns,
-        List<Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>>> conditionals) {
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that match card
+     * printing parameters from the parameters entered so far
+     * @param table table to draw card printing info from
+     * @param tableMatchColumns columns to match tables against
+     * @param conditionals list of the parameters to find for this card printing - each parameter
+     * is a triple of a String representing the parameter's name, a list of parameters entered so
+     * far for that type of parameter, and a BiFunction signalling how to match that type of
+     * parameter in the query
+     * @return triple of the StringBuilder representing the card expansion part of this CardQuery,
+     * a boolean signalling if conditionals were added to this part of the query, and the name of
+     * the starting table of this query
+     */
+    private Triple<StringBuilder, Boolean, String> buildCardPrintingQuery(String table,
+        String[] tableMatchColumns,
+        List<
+            Triple<
+                String,
+                List<Pair<String, Boolean>>,
+                BiFunction<Boolean, String, String>
+                >
+            > conditionals) {
 
       StringBuilder query = new StringBuilder("SELECT ");
       StringBuilder conditions = new StringBuilder();
@@ -1402,8 +1711,14 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       colorIdentityParams.add(new Pair<>(color, searchFor));
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * color identities parameters entered so far.
+     * @return part of this CardQuery dealing with color identity parameters as a StringBuilder
+     */
     private StringBuilder buildColorIdentityQuery() {
-      return buildGenericCardQuery(colorIdentityParams, "ColorIdentity", "card_name", "color");
+      return buildGenericCardQuery(colorIdentityParams, "ColorIdentity",
+          "card_name", "color");
     }
 
     @Override
@@ -1417,8 +1732,14 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       typeParams.add(new Pair<>(type, searchFor));
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * text parameters entered so far.
+     * @return part of this CardQuery dealing with text parameters as a StringBuilder
+     */
     private StringBuilder buildTypeQuery() {
-      return buildGenericCardQuery(typeParams, "Type", "card_name", "type");
+      return buildGenericCardQuery(typeParams, "Type",
+          "card_name", "type");
     }
 
     @Override
@@ -1432,6 +1753,11 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       blockParams.add(new Pair<>(block, searchFor));
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * block parameters entered so far.
+     * @return part of this CardQuery dealing with block parameters as a StringBuilder
+     */
     private StringBuilder buildBlockQuery() {
       if (blockParams.isEmpty()) {
         return new StringBuilder();
@@ -1526,7 +1852,13 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       rarityParams.add(new Pair<>(rarity, searchFor));
     }
 
-    private Triple<StringBuilder, Boolean, String> buildCardExpansionQuery() {
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * card expanstion parameters entered so far - expansion, rarity, flavor text, and artist
+     * parameters
+     * @return part of this CardQuery dealing with card expansion parameters as a StringBuilder
+     */
+    private Triple<StringBuilder, Boolean, String> buildCardPrintingQuery() {
       String[] returnAndMatchColumns = new String[]{"card_name", "expansion"};
 
       List<Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>>> params =
@@ -1536,7 +1868,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       params.add(new Triple<>("flavor_text", flavorTextParams, new BooleanToLike()));
       params.add(new Triple<>("artist", artistParams, new BooleanToEqual()));
 
-      return buildEvenMoreGenericCardQuery("CardExpansion", returnAndMatchColumns, params);
+      return buildCardPrintingQuery("CardExpansion", returnAndMatchColumns, params);
     }
 
     @Override
@@ -1551,6 +1883,11 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       statParams.add(new Triple<>(stat, comparison, quantity));
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * stat parameters entered so far.
+     * @return part of this CardQuery dealing with color parameters as a StringBuilder
+     */
     private StringBuilder buildStatQuery() {
       List<Triple<String, Comparison, Integer>> convertedParams = new ArrayList<>();
       for (Triple<Stat, Comparison, Integer> param : statParams) {
@@ -1575,11 +1912,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       statVersusStatParams.add(new Triple<>(thisStat, comparison, otherStat));
     }
 
-    private StringBuilder buildStatVersusStatQuery() {
-      return buildGenericComparisonToStatQuery("Stat", "card_name",
-          "category", "base_value", statVersusStatParams);
-    }
-
     @Override
     public void byManaType(String type, Comparison comparison, int quantity) throws IllegalArgumentException {
       if (type == null) {
@@ -1594,11 +1926,25 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       manaTypeParams.add(new Triple<>(type, comparison, quantity));
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * mana symbol parameters entered so far.
+     * @return part of this CardQuery dealing with mana symbol parameters as a StringBuilder
+     */
     private StringBuilder buildManaTypeQuery() {
       return buildGenericComparisonToIntQuery("Mana", "card_name",
           "mana_type", "quantity", manaTypeParams);
     }
 
+    /**
+     * Builds stat part of this {@link CardQuery} from given parameters.
+     * @param table table to draw stat info from
+     * @param tableMatchColumn what column to match tables on
+     * @param categoryColumn column determining type of each stat
+     * @param comparisonColumn column to compare stat values against
+     * @param conditionals stat  parameters user has entered so far
+     * @return StringBuilder of all the stat part of this CardQuery
+     */
     private StringBuilder buildGenericComparisonToIntQuery(String table, String tableMatchColumn,
         String categoryColumn, String comparisonColumn,
         List<Triple<String, Comparison, Integer>> conditionals) {
@@ -1635,6 +1981,25 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return query.append(conditions);
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * stat vs stat parameters entered so far.
+     * @return part of this CardQuery dealing with color parameters as a StringBuilder
+     */
+    private StringBuilder buildStatVersusStatQuery() {
+      return buildGenericComparisonToStatQuery("Stat", "card_name",
+          "category", "base_value", statVersusStatParams);
+    }
+
+    /**
+     * Builds stat vs stat part of this {@link CardQuery} from given parameters.
+     * @param table table to draw stat vs stat info from
+     * @param tableMatchColumn what column to match tables on
+     * @param categoryColumn column determining type of each stat
+     * @param comparisonColumn column to compare stat values against
+     * @param conditionals stat vs stat parameters user has entered so far
+     * @return StringBuilder of all the stat vs stat part of this CardQuery
+     */
     private StringBuilder buildGenericComparisonToStatQuery(String table, String tableMatchColumn,
         String categoryColumn, String comparisonColumn,
         List<Triple<Stat, Comparison, Stat>> conditionals) {
@@ -1679,6 +2044,11 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return query.append(conditions);
     }
 
+    /**
+     * Returns if the given StringBuilder is empty.
+     * @param toCheck StringBuilder to check
+     * @return if given StringBuilder is empty
+     */
     private boolean isStringBuilderEmpty(StringBuilder toCheck) {
       return toCheck.length() == 0;
     }
@@ -1691,6 +2061,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       buildColorIdentityQuery(), buildTypeQuery(), buildStatQuery(), buildStatVersusStatQuery(),
       buildManaTypeQuery()};
 
+      // Intersection of all card specific queries
       for (StringBuilder query : cardQueries) {
         if (!isStringBuilderEmpty(query)) {
           if (!isStringBuilderEmpty(completeCardQuery)) {
@@ -1700,11 +2071,13 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         }
       }
 
-      Triple<StringBuilder, Boolean, String> cardExpansionResults = buildCardExpansionQuery();
+      // Get card expansion query
+      Triple<StringBuilder, Boolean, String> cardExpansionResults = buildCardPrintingQuery();
       StringBuilder completeQuery = cardExpansionResults.getA();
       boolean cardExpansionConditionsAdded = cardExpansionResults.getB();
       String cardExpansionQueryStartingTable = cardExpansionResults.getC();
 
+      // Add card specific queries if any
       String mergeCond = cardExpansionConditionsAdded ? "AND" : "WHERE";
       if (!isStringBuilderEmpty(completeCardQuery)) {
         completeQuery.append(String.format(" %s %s.card_name IN (",
@@ -1714,6 +2087,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         mergeCond = "AND";
       }
 
+      // Merge with block query if able
       StringBuilder blockQuery = buildBlockQuery();
       if (!isStringBuilderEmpty(blockQuery)) {
         completeQuery.append(String.format(" %s %s.expansion IN (",
@@ -1760,39 +2134,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       else if (word.isEmpty()) {
         throw new IllegalArgumentException("Given word can't be empty!");
       }
-    }
-
-    /**
-     * Given a string, splits all sequences of non-space characters along any spaces (" "), and
-     * removes and other present spaces. Returns the sequences of non-space characters as a String
-     * array.
-     * @param string string to work on
-     * @return string array of all non-space characters
-     */
-    private String[] splitAndTrimSpaces(String string) {
-      if (string == null) {
-        throw new IllegalArgumentException("Given string can't be null!");
-      }
-      else if (string.isEmpty() || string.isBlank()) {
-        return new String[]{""};
-      }
-
-      List<String> words = new ArrayList<>();
-      StringBuilder curWord = new StringBuilder();
-      char[] chars = string.toCharArray();
-      for (int i = 0; i < chars.length; i++) {
-        char curChar = chars[i];
-        if (curChar != ' ') {
-          curWord.append(curChar);
-          if (i == chars.length - 1 || chars[i+1] == ' ') {
-            words.add(curWord.toString());
-            curWord.delete(0, curWord.length());
-            i++;
-          }
-        }
-      }
-      String[] toReturn = new String[words.size()];
-      return words.toArray(toReturn);
     }
   }
 }

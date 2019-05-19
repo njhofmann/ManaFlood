@@ -1,7 +1,6 @@
 Minor:
 -Documentation
 -Add Scryfall image url
--CardPrinting equality double check
 -Split multiple artists (fix tests)
 -Write down how time handling is done (timestamp in database)
 -Update text on cards option (erreta)
@@ -11,11 +10,13 @@ Minor:
   -Identifier vs Info Container for value objects
 
 Major:
--Add name and expansions check to DefaultCard constructor
+-Add name, expansions, and name-expansion checks to DefaultCard constructor
+-Documentation
+-Set to sorted set when appropriate
+-Card retrieval testing
 -CardQuery refactoring
 -Give shortcut names for card query
 -Card retrieval implementation
--Documentation
 -Optional / "one of" arguments
 -Card retrieval tests
 -Deck database interactions tests
