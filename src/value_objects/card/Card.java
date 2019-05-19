@@ -5,8 +5,7 @@ import value_objects.card.relationship.CardRelationship;
 
 import java.util.Map;
 import java.util.Set;
-import value_objects.card_printing.CardPrinting;
-import value_objects.card_printing.CardPrintingInfo;
+import value_objects.card.printing.CardPrintingInfo;
 
 /**
  * Represents all info of an individual card in the Card and Deck Database (CDDB). Uniqueness is
@@ -21,8 +20,8 @@ public interface Card extends Comparable<Card> {
   String getName();
 
   /**
-   *
-   * @return
+   * Returns the converted mana cost of this {@link Card}.
+   * @return cards converted mana cost
    */
   int getConvertedManaCost();
 
@@ -97,14 +96,24 @@ public interface Card extends Comparable<Card> {
   CardRelationship getRelationships();
 
   /**
-   * Compares this Card with another Card for order based their names. Returns a zero if their
-   * names are the same, a negative int if this Card's name comes after inputted Card's name
-   * alphabetically, and a positive int if this Card's name comes before the inputted Card's name
-   * alphabetically.
+   * Compares this Card with another Card for order based their names. Returns a negative int if
+   * this Card's name comes after inputted Card's name alphabetically, and a positive int if this
+   * Card's name comes before the inputted Card's name alphabetically. If names are the sames,
+   * checks for equality off of card printings included within each card. Returns 0 if and only
+   * if this Card and given Card have the same card printings.
    * @param other another {@link Card} to compare this {@link Card} to
-   * @return int representing ordering of two DeckInstances
+   * @return int representing ordering of this Card and given card
    * @throws IllegalArgumentException if given Card is null
    */
   @Override
   int compareTo(Card other) throws IllegalArgumentException;
+
+  /**
+   * Returns if given object is equal to this {@link Card} if and only if it is a Card itself, it
+   * has the same name as this card, and has the same card printings as this card.
+   * @param other object to compare to
+   * @return if this given object equals this Card
+   */
+  @Override
+  boolean equals(Object other);
 }

@@ -22,17 +22,17 @@ import java.util.function.BiFunction;
 import value_objects.card.Card;
 import value_objects.card.relationship.CardRelationship;
 import value_objects.card.relationship.DefaultCardRelationship;
-import value_objects.card_printing.CardPrintingInfo;
-import value_objects.card_printing.DefaultCardPrintingInfo;
-import value_objects.query.CardQuery;
-import value_objects.card_printing.CardPrinting;
-import value_objects.card_printing.DefaultCardPrinting;
+import value_objects.card.printing.CardPrintingInfo;
+import value_objects.card.printing.DefaultCardPrintingInfo;
+import value_objects.card.query.CardQuery;
+import value_objects.card.printing.CardPrinting;
+import value_objects.card.printing.DefaultCardPrinting;
 import value_objects.deck.Deck;
 import value_objects.deck.DefaultDeck;
-import value_objects.deck_instance.DeckInstance;
-import value_objects.deck_instance.DefaultDeckInstance;
-import value_objects.query.Comparison;
-import value_objects.query.Stat;
+import value_objects.deck.instance.DeckInstance;
+import value_objects.deck.instance.DefaultDeckInstance;
+import value_objects.card.query.Comparison;
+import value_objects.card.query.Stat;
 import value_objects.utility.Pair;
 import value_objects.utility.Triple;
 
@@ -43,18 +43,39 @@ import value_objects.utility.Triple;
 public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     CardChannel {
 
+  /**
+   * Sorted set of all the card types stored in the CDDB.
+   */
   private final SortedSet<String> types;
 
+  /**
+   * Sorted set of all the card rarites stored in the CDDB.
+   */
   private final SortedSet<String> rarities;
 
+  /**
+   * Sorted set of all the card colors stored in the CDDB.
+   */
   private final SortedSet<String> colors;
 
+  /**
+   * Sorted set of all types of mana symbols stored in the CDDB.
+   */
   private final SortedSet<String> manaTypes;
 
+  /**
+   * Sorted set of all the card artists stored in the CDDB.
+   */
   private final SortedSet<String> artists;
 
+  /**
+   * Sorted set of all the expansions stored in the CDDB.
+   */
   private final SortedSet<String> sets;
 
+  /**
+   * Sorted set of all the blocks stored in the CDDB.
+   */
   private final SortedSet<String> blocks;
 
   /**
@@ -699,7 +720,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
   /**
    * Default implementation of the {@link Card} interface, a simple container to hold all the
-   * information pertaining to a given card.
+   * information pertaining to a given card (and its relevant expansions). Embedded with
+   * {@link DefaultDatabaseChannel} to have access to the CDDB for retriving needed card info.
    */
   public class DefaultCard implements Card {
 
@@ -709,7 +731,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private final String name;
 
     /**
-     *
+     * Converted mana cost of the associated card as it appears in the CDDB.
      */
     private final int cmc;
 
@@ -754,7 +776,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private final CardRelationship relationship;
 
     /**
-     *
+     * Sorted set of all the card printings associated with this Card
      */
     private final SortedSet<CardPrintingInfo> cardPrintings;
 
@@ -763,12 +785,30 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      */
     private final Map<String, String> additionalInfo;
 
-    protected DefaultCard(String name, Set<String> expansions) throws SQLException {
+    /**
+     * Builds a {@link DefaultCard} from a given card name and list of associated expansions from
+     * which the card was printed - make up its associated {@link CardPrintingInfo}s.
+     * @param name name of card to associate with
+     * @param expansions expansions card was printed in to associate with
+     * @throws SQLException if there is a failure in retrieving any of the card's associated info
+     * @throws IllegalArgumentException if any given parameters are null, given set of expansions
+     * is empty, if given name is not a card name in the CDDB, or if expansions contain an expansion
+     * not within the CDDB.
+     */
+    protected DefaultCard(String name, Set<String> expansions) throws SQLException,
+        IllegalArgumentException {
       if (name == null) {
         throw new IllegalArgumentException("Given name can't be null!");
       }
       else if (expansions == null || expansions.isEmpty()) {
         throw new IllegalArgumentException("Given expansions can't be null nor empty!");
+      }
+
+      for (String expansion : expansions) {
+        if (!sets.contains(expansion)) {
+          throw new IllegalArgumentException(String.format("Database doesn't contain printing "
+              + "for card %s from expansion %s!", expansion, name));
+        }
       }
 
       Connection connection = connect();
@@ -866,7 +906,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private Set<String> setTypes(Connection connection) throws SQLException {
       return retrieveTypeInfo(connection,"type");
     }
-
 
     private Set<String> setSubtypes(Connection connection) throws SQLException {
       return retrieveTypeInfo(connection,"subtype");
@@ -1008,7 +1047,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return dummy[0];
     }
 
-
     @Override
     public String getName() {
       return name;
@@ -1074,7 +1112,51 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       if (other == null) {
         throw new IllegalArgumentException("Given card can't be null!");
       }
-      return getName().compareTo(other.getName());
+
+      int nameCompare = getName().compareTo(other.getName());
+      if (nameCompare != 0) {
+        return nameCompare;
+      }
+
+      // Neither should be empty
+      SortedSet<CardPrintingInfo> otherExpansions = other.getCardPrintings();
+      assert !getCardPrintings().isEmpty() && !otherExpansions.isEmpty();
+
+      boolean thisIsShorter;
+      SortedSet<CardPrintingInfo> shorterExpansions;
+      SortedSet<CardPrintingInfo> longerExpansions;
+      if (getCardPrintings().size() < otherExpansions.size()) {
+        thisIsShorter = true;
+        shorterExpansions = getCardPrintings();
+        longerExpansions = otherExpansions;
+      }
+      else {
+        thisIsShorter = false;
+        shorterExpansions = otherExpansions;
+        longerExpansions = getCardPrintings();
+      }
+
+      Iterator<CardPrintingInfo> shortExpansionsIterator = shorterExpansions.iterator();
+      Iterator<CardPrintingInfo> longerExpansionsIterator = longerExpansions.iterator();
+      while (shortExpansionsIterator.hasNext()) {
+        CardPrintingInfo curShorterExpansionsItem = shortExpansionsIterator.next();
+        CardPrintingInfo curLongerExpansionItem = longerExpansionsIterator.next();
+        int curComparison = thisIsShorter ?
+            curShorterExpansionsItem.compareTo(curLongerExpansionItem) :
+            curLongerExpansionItem.compareTo(curShorterExpansionsItem);
+
+        if (curComparison != 0) {
+          return curComparison;
+        }
+      }
+
+      int remainingDifference = 0;
+      while (longerExpansionsIterator.hasNext()) {
+        remainingDifference--;
+      }
+
+      // If remaining difference is 0, should be the exact same card with exact same printings
+      return remainingDifference;
     }
 
     @Override

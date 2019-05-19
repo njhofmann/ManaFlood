@@ -1,4 +1,4 @@
-package value_objects.card_printing;
+package value_objects.card.printing;
 
 public class DefaultCardPrintingInfo implements CardPrintingInfo {
 

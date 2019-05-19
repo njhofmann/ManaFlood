@@ -3,7 +3,7 @@ package database.access;
 import java.sql.SQLException;
 import java.util.HashMap;
 import value_objects.deck.Deck;
-import value_objects.deck_instance.DeckInstance;
+import value_objects.deck.instance.DeckInstance;
 
 /**
  * Represents the set of methods available for interacting with the decks stored in the Card &

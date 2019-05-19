@@ -17,11 +17,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import value_objects.card.Card;
-import value_objects.card_printing.CardPrintingInfo;
-import value_objects.query.CardQuery;
+import value_objects.card.printing.CardPrintingInfo;
+import value_objects.card.query.CardQuery;
 
 /**
- *
+ * Tests to ensure that built up {@link CardQuery}s retrieve the correct {@link Card}s from the
+ * Card and Deck Database (CDDB).
  */
 public class CardRetrievalTest {
 

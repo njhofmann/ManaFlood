@@ -1,10 +1,16 @@
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
-import value_objects.card_printing.CardPrinting;
-import value_objects.card_printing.DefaultCardPrinting;
 
-public class CardPrintingTest {
+import value_objects.card.Card;
+import value_objects.card.printing.CardPrinting;
+import value_objects.card.printing.DefaultCardPrinting;
+
+/**
+ * Tests to ensure overridden equality and implemented compareTo methods for {@link CardPrinting}
+ * work properly.
+ */
+public class CardPrintingEqualityTest {
 
   static CardPrinting cardPrintingA;
   static CardPrinting cardPrintingB;

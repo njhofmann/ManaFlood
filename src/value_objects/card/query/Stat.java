@@ -1,4 +1,4 @@
-package value_objects.query;
+package value_objects.card.query;
 
 import value_objects.card.Card;
 

@@ -1,5 +1,3 @@
-package value_objects.query;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import database.access.CardChannel;
@@ -14,7 +12,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestReporter;
+import value_objects.card.query.CardQuery;
+import value_objects.card.query.Comparison;
+import value_objects.card.query.Stat;
 
 /**
  * Tests to verify that the queries produced by {@link CardQuery} and its main implementation

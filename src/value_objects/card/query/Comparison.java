@@ -1,4 +1,4 @@
-package value_objects.query;
+package value_objects.card.query;
 
 /**
  * Represents possible comparisons between integers.

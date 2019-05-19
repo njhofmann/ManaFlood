@@ -1,10 +1,9 @@
 package database.access;
 
 import java.sql.SQLException;
-import java.util.List;
 import java.util.SortedSet;
 import value_objects.card.Card;
-import value_objects.query.CardQuery;
+import value_objects.card.query.CardQuery;
 
 /**
  * Provides methods for accessing enumerated info about cards, and querying specific cards stored in

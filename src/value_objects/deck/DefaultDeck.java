@@ -1,10 +1,9 @@
 package value_objects.deck;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
-import value_objects.deck_instance.DeckInstance;
+import value_objects.deck.instance.DeckInstance;
 
 /**
  * Default implementation of {@link Deck}, contains all identifying info of a Deck and the list of

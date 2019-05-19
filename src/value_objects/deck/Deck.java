@@ -2,7 +2,7 @@ package value_objects.deck;
 
 import java.util.SortedSet;
 import value_objects.card.Card;
-import value_objects.deck_instance.DeckInstance;
+import value_objects.deck.instance.DeckInstance;
 
 /**
  * Represents the "history" of a specific deck of {@link Card}s as stored in the Card & Deck

@@ -1,4 +1,4 @@
-package value_objects.deck_instance;
+package value_objects.deck.instance;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import value_objects.deck.Deck;
-import value_objects.card_printing.CardPrinting;
+import value_objects.card.printing.CardPrinting;
 
 /**
  * Default implementation of {@link DeckInstance}, a container for identifies of this DeckInstance

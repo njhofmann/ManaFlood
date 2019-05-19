@@ -11,7 +11,7 @@ Minor:
   -Identifier vs Info Container for value objects
 
 Major:
--Comparison testing, add card expansions to card expansions
+-Add name and expansions check to DefaultCard constructor
 -CardQuery refactoring
 -Give shortcut names for card query
 -Card retrieval implementation
