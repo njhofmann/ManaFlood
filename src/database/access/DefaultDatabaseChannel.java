@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
+import java.util.regex.Pattern;
 import value_objects.card.Card;
 import value_objects.card.relationship.CardRelationship;
 import value_objects.card.relationship.DefaultCardRelationship;
@@ -497,7 +498,9 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
       while (cardQueryResults.next()) {
         String cardName = cardQueryResults.getString("card_name");
+        // Replace single quotes with doubled up single quotes for SQL
         String expansion = cardQueryResults.getString("expansion");
+
         if (cardNameToExpansions.containsKey(cardName)) {
           cardNameToExpansions.get(cardName).add(expansion);
         }
@@ -1209,6 +1212,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         return cardPrintingInfo;
       }
       catch (SQLException e) {
+        System.out.println(query);
         throw new SQLException(e.getMessage() +
             String.format("Failed to retrieve card expansion info for card %s from database!",
                 cardName));
@@ -1357,7 +1361,14 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
       int remainingDifference = 0;
       while (longerExpansionsIterator.hasNext()) {
-        remainingDifference--;
+        longerExpansionsIterator.next();
+
+        if (thisIsShorter) {
+          remainingDifference--;
+        }
+        else {
+          remainingDifference++;
+        }
       }
 
       // If remaining difference is 0, should be the exact same card with exact same printings
@@ -1517,6 +1528,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     @Override
     public void byName(String word, boolean searchFor) throws IllegalArgumentException {
       validWord(word);
+      word = formatWordToSQL(word);
       nameParams.add(new Pair<>(word, searchFor));
     }
 
@@ -1554,6 +1566,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     @Override
     public void byText(String word, boolean searchFor) throws IllegalArgumentException {
       validWord(word);
+      word = formatWordToSQL(word);
       textParams.add(new Pair<>(word, searchFor));
     }
 
@@ -1620,86 +1633,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return query.append(conditions);
     }
 
-    /**
-     * Builds the part of this {@link CardQuery} concerned with querying cards that match card
-     * printing parameters from the parameters entered so far
-     * @param table table to draw card printing info from
-     * @param tableMatchColumns columns to match tables against
-     * @param conditionals list of the parameters to find for this card printing - each parameter
-     * is a triple of a String representing the parameter's name, a list of parameters entered so
-     * far for that type of parameter, and a BiFunction signalling how to match that type of
-     * parameter in the query
-     * @return triple of the StringBuilder representing the card expansion part of this CardQuery,
-     * a boolean signalling if conditionals were added to this part of the query, and the name of
-     * the starting table of this query
-     */
-    private Triple<StringBuilder, Boolean, String> buildCardPrintingQuery(String table,
-        String[] tableMatchColumns,
-        List<
-            Triple<
-                String,
-                List<Pair<String, Boolean>>,
-                BiFunction<Boolean, String, String>
-                >
-            > conditionals) {
-
-      StringBuilder query = new StringBuilder("SELECT ");
-      StringBuilder conditions = new StringBuilder();
-
-      int i = 0;
-      String curTable = "t" + i;
-      String startingTable = curTable;
-
-      int j = 0;
-      for (String returnParam : tableMatchColumns) {
-        if (j != 0) {
-          query.append(", ");
-        }
-        query.append(String.format("%s.%s %s", curTable, returnParam, returnParam));
-        j++;
-      }
-      query.append(String.format(" FROM %s %s", table, curTable));
-
-      String cond = "";
-      for (Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>> paramType : conditionals ) {
-        String column = paramType.getA();
-        List<Pair<String, Boolean>> params = paramType.getB();
-        BiFunction<Boolean, String, String> toInclude = paramType.getC();
-
-        for (Pair<String, Boolean> param : params) {
-          curTable = "t" + i;
-          if (i == 0) {
-            cond = "WHERE";
-          }
-          else {
-            query.append(String.format(" JOIN %s %s", table, curTable));
-            int k = 0;
-            for (String joinParam : tableMatchColumns) {
-              if (k == 0) {
-                query.append(" ON");
-              }
-              else {
-                query.append(" AND");
-              }
-              query.append(String.format(" %s.%s = %s.%s",
-                  startingTable, joinParam, curTable, joinParam));
-              k++;
-            }
-            cond = "AND";
-          }
-          String booleanToString = toInclude.apply(param.getB(), param.getA());
-          String condToAdd = String.format(" %s %s.%s %s",
-              cond, curTable, column, booleanToString);
-          conditions.append(condToAdd);
-          i++;
-        }
-      }
-
-      query.append(conditions);
-      boolean conditionsAdded = !cond.isEmpty();
-      return new Triple<>(query, conditionsAdded, startingTable);
-    }
-
     @Override
     public void byColorIdentity(String color, boolean searchFor) throws IllegalArgumentException {
       if (color == null) {
@@ -1729,6 +1662,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       else if (!types.contains(type)) {
         throw new IllegalArgumentException("Given type is not contained in the CDDB!");
       }
+      type = formatWordToSQL(type);
       typeParams.add(new Pair<>(type, searchFor));
     }
 
@@ -1759,29 +1693,49 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @return part of this CardQuery dealing with block parameters as a StringBuilder
      */
     private StringBuilder buildBlockQuery() {
-      if (blockParams.isEmpty()) {
+      return buildGenericInclusionQuery("Block", "expansion",
+          "block", blockParams);
+    }
+
+    private StringBuilder buildExpansionQuery() {
+      return buildGenericInclusionQuery("Expansion", "expansion",
+          "expansion", setParams);
+    }
+
+    /**
+     *
+     * @param table
+     * @param returnColumn
+     * @param inclusionColumn
+     * @param params
+     * @return
+     */
+    private StringBuilder buildGenericInclusionQuery(String table, String returnColumn,
+        String inclusionColumn, List<Pair<String, Boolean>> params) {
+      if (params.isEmpty()) {
         return new StringBuilder();
       }
 
-      StringBuilder query = new StringBuilder("SELECT expansion FROM Block");
+      StringBuilder query = new StringBuilder(String.format("SELECT %s FROM %s",
+          returnColumn, table));
 
-      List<String> blockInclude = new ArrayList<>();
-      List<String> blockDisallow = new ArrayList<>();
+      List<String> includeParams = new ArrayList<>();
+      List<String> disallowParams = new ArrayList<>();
 
-      for (Pair<String, Boolean> param : blockParams) {
+      for (Pair<String, Boolean> param : params) {
         String value = param.getA();
         boolean include = param.getB();
         if (include) {
-          blockInclude.add(value);
+          includeParams.add(value);
         }
         else {
-          blockDisallow.add(value);
+          disallowParams.add(value);
         }
       }
 
       Map<Boolean, List<String>> lists = new HashMap<>();
-      lists.put(true, blockInclude);
-      lists.put(false, blockDisallow);
+      lists.put(true, includeParams);
+      lists.put(false, disallowParams);
 
       boolean first = true;
 
@@ -1798,8 +1752,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
             addCond = "AND";
           }
 
-          query.append(String.format(" %s block%s IN (",
-              addCond, include));
+          query.append(String.format(" %s %s%s IN (",
+              addCond, inclusionColumn, include));
           for (int i = 0; i < list.size(); i++) {
             if (i != 0) {
               query.append(", ");
@@ -1819,8 +1773,9 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         throw new IllegalArgumentException("Given set can't be null!");
       }
       else if (!sets.contains(set)) {
-        throw new IllegalArgumentException("Given set is not contained in the CDDB!");
+        throw new IllegalArgumentException(String.format("Given set %s is not contained in the CDDB!", set));
       }
+      set = formatWordToSQL(set);
       setParams.add(new Pair<>(set, searchFor));
     }
 
@@ -1832,12 +1787,14 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       else if (!artists.contains(artist)) {
         throw new IllegalArgumentException("Given artist is not contained in the CDDB!");
       }
+      artist = formatWordToSQL(artist);
       artistParams.add(new Pair<>(artist, searchFor));
     }
 
     @Override
     public void byFlavorText(String word, boolean searchFor) throws IllegalArgumentException {
       validWord(word);
+      word = formatWordToSQL(word);
       flavorTextParams.add(new Pair<>(word, searchFor));
     }
 
@@ -1850,25 +1807,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         throw new IllegalArgumentException("Given rarity is not contained in the CDDB!");
       }
       rarityParams.add(new Pair<>(rarity, searchFor));
-    }
-
-    /**
-     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
-     * card expanstion parameters entered so far - expansion, rarity, flavor text, and artist
-     * parameters
-     * @return part of this CardQuery dealing with card expansion parameters as a StringBuilder
-     */
-    private Triple<StringBuilder, Boolean, String> buildCardPrintingQuery() {
-      String[] returnAndMatchColumns = new String[]{"card_name", "expansion"};
-
-      List<Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>>> params =
-          new ArrayList<>(4);
-      params.add(new Triple<>("expansion", setParams, new BooleanToEqual()));
-      params.add(new Triple<>("rarity", rarityParams, new BooleanToEqual()));
-      params.add(new Triple<>("flavor_text", flavorTextParams, new BooleanToLike()));
-      params.add(new Triple<>("artist", artistParams, new BooleanToEqual()));
-
-      return buildCardPrintingQuery("CardExpansion", returnAndMatchColumns, params);
     }
 
     @Override
@@ -2055,48 +1993,114 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     @Override
     public String asQuery() {
-      StringBuilder completeCardQuery = new StringBuilder();
+      // Card printings completeCardQuery
+      String cardExpansionTable = "CardExpansion";
+      String[] cardExpansionMatchColumns = new String[]{"card_name", "expansion"};
+      List<Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>>> cardExpansionParams =
+          new ArrayList<>(3);
+      cardExpansionParams.add(new Triple<>("rarity", rarityParams, new BooleanToEqual()));
+      cardExpansionParams.add(new Triple<>("flavor_text", flavorTextParams, new BooleanToLike()));
+      cardExpansionParams.add(new Triple<>("artist", artistParams, new BooleanToEqual()));
+
+      StringBuilder completeCardQuery = new StringBuilder("SELECT ");
+      StringBuilder conditions = new StringBuilder();
+
+      int i = 0;
+      String curTable = "t" + i;
+      String startingTable = curTable;
+
+      int j = 0;
+      for (String returnParam : cardExpansionMatchColumns) {
+        if (j != 0) {
+          completeCardQuery.append(", ");
+        }
+        completeCardQuery.append(String.format("%s.%s %s", curTable, returnParam, returnParam));
+        j++;
+      }
+      completeCardQuery.append(String.format(" FROM %s %s", cardExpansionTable, curTable));
+
+      String cond = "";
+      for (Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>> paramType : cardExpansionParams) {
+        String column = paramType.getA();
+        List<Pair<String, Boolean>> params = paramType.getB();
+        BiFunction<Boolean, String, String> toInclude = paramType.getC();
+
+        for (Pair<String, Boolean> param : params) {
+          curTable = "t" + i;
+          if (i == 0) {
+            cond = "WHERE";
+          }
+          else {
+            completeCardQuery.append(String.format(" JOIN %s %s", cardExpansionTable, curTable));
+            int k = 0;
+            for (String joinParam : cardExpansionMatchColumns) {
+              if (k == 0) {
+                completeCardQuery.append(" ON");
+              }
+              else {
+                completeCardQuery.append(" AND");
+              }
+              completeCardQuery.append(String.format(" %s.%s = %s.%s",
+                  startingTable, joinParam, curTable, joinParam));
+              k++;
+            }
+            cond = "AND";
+          }
+          String booleanToString = toInclude.apply(param.getB(), param.getA());
+          String condToAdd = String.format(" %s %s.%s %s",
+              cond, curTable, column, booleanToString);
+          conditions.append(condToAdd);
+          i++;
+        }
+      }
+
+      boolean conditionsAdded = !cond.isEmpty();
+      completeCardQuery.append(conditions);
 
       StringBuilder[] cardQueries = new StringBuilder[]{buildNameAndTextQuery(), buildColorQuery(),
       buildColorIdentityQuery(), buildTypeQuery(), buildStatQuery(), buildStatVersusStatQuery(),
       buildManaTypeQuery()};
 
       // Intersection of all card specific queries
+      StringBuilder cardQuery = new StringBuilder();
       for (StringBuilder query : cardQueries) {
         if (!isStringBuilderEmpty(query)) {
-          if (!isStringBuilderEmpty(completeCardQuery)) {
-            completeCardQuery.append(" INTERSECT ");
+          if (!isStringBuilderEmpty(cardQuery)) {
+            cardQuery.append(" INTERSECT ");
           }
-          completeCardQuery.append(query);
+          cardQuery.append(query);
         }
       }
 
-      // Get card expansion query
-      Triple<StringBuilder, Boolean, String> cardExpansionResults = buildCardPrintingQuery();
-      StringBuilder completeQuery = cardExpansionResults.getA();
-      boolean cardExpansionConditionsAdded = cardExpansionResults.getB();
-      String cardExpansionQueryStartingTable = cardExpansionResults.getC();
-
       // Add card specific queries if any
-      String mergeCond = cardExpansionConditionsAdded ? "AND" : "WHERE";
-      if (!isStringBuilderEmpty(completeCardQuery)) {
-        completeQuery.append(String.format(" %s %s.card_name IN (",
-            mergeCond, cardExpansionQueryStartingTable));
-        completeQuery.append(completeCardQuery);
-        completeQuery.append(")");
+      String mergeCond = conditionsAdded ? "AND" : "WHERE";
+      if (!isStringBuilderEmpty(cardQuery)) {
+        completeCardQuery.append(String.format(" %s %s.card_name IN (",
+            mergeCond, startingTable));
+        completeCardQuery.append(cardQuery);
+        completeCardQuery.append(")");
         mergeCond = "AND";
       }
 
-      // Merge with block query if able
+      // Merge with block completeCardQuery if able
       StringBuilder blockQuery = buildBlockQuery();
       if (!isStringBuilderEmpty(blockQuery)) {
-        completeQuery.append(String.format(" %s %s.expansion IN (",
-            mergeCond, cardExpansionQueryStartingTable));
-        completeQuery.append(blockQuery);
-        completeQuery.append(")");
+        completeCardQuery.append(String.format(" %s %s.expansion IN (",
+            mergeCond, startingTable));
+        completeCardQuery.append(blockQuery);
+        completeCardQuery.append(")");
       }
 
-      return completeQuery.toString();
+      // Merge with block completeCardQuery if able
+      StringBuilder expansionQuery = buildExpansionQuery();
+      if (!isStringBuilderEmpty(expansionQuery)) {
+        completeCardQuery.append(String.format(" %s %s.expansion IN (",
+            mergeCond, startingTable));
+        completeCardQuery.append(expansionQuery);
+        completeCardQuery.append(")");
+      }
+
+      return completeCardQuery.toString();
     }
 
     @Override
@@ -2114,6 +2118,20 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       statVersusStatParams.clear();
       rarityParams.clear();
       manaTypeParams.clear();
+    }
+
+    /**
+     * Formats and returns a given String that is malformatted by most SQL implementation Replaces
+     * any single quote with double up single quotes to prevent invalid SQL queries
+     * "foo's" --> "foo''s"
+     * @param word word to format
+     * @return properly formatted word
+     */
+    private String formatWordToSQL(String word) {
+      if (word == null) {
+        throw new IllegalArgumentException("Given word can't be null!");
+      }
+      return word.replace("'", "''");
     }
 
     /**

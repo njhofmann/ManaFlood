@@ -45,7 +45,7 @@ public class CardRetrievalTest {
   }
 
   // Single creature card from single expansion with no relationship
-  @DisplayName("Single creature card with expansion with no relaitonship")
+  @DisplayName("Single creature card with expansion with no relationship")
   @Test
   public void singleCreatureSingleExpansionNoRelationship() throws SQLException {
     cardQuery.byName("Fabled", true);

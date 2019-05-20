@@ -746,7 +746,12 @@ class CardQueryTest {
     public void includeSingleSet() {
       String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
-          + "WHERE t0.expansion = 'Guilds of Ravnica'";
+          + "WHERE t0.expansion IN "
+          + "("
+          + "SELECT expansion "
+          + "FROM Expansion "
+          + "WHERE expansion IN ('Guilds of Ravnica')"
+          + ")";
       cardQuery.bySet("Guilds of Ravnica", true);
       assertEquals(result, cardQuery.asQuery());
     }
@@ -756,11 +761,12 @@ class CardQueryTest {
     public void includeMultipleSet() {
       String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
-          + "JOIN CardExpansion t1 "
-          + "ON t0.card_name = t1.card_name "
-          + "AND t0.expansion = t1.expansion "
-          + "WHERE t0.expansion = 'Guilds of Ravnica' "
-          + "AND t1.expansion = 'Ravnica Allegiance'";
+          + "WHERE t0.expansion IN "
+          + "("
+          + "SELECT expansion "
+          + "FROM Expansion "
+          + "WHERE expansion IN ('Guilds of Ravnica', 'Ravnica Allegiance')"
+          + ")";
       cardQuery.bySet("Guilds of Ravnica", true);
       cardQuery.bySet("Ravnica Allegiance", true);
       assertEquals(result, cardQuery.asQuery());
@@ -771,7 +777,12 @@ class CardQueryTest {
     public void disallowSingleSet() {
       String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
-          + "WHERE t0.expansion != 'Theros'";
+          + "WHERE t0.expansion IN "
+          + "("
+          + "SELECT expansion "
+          + "FROM Expansion "
+          + "WHERE expansion NOT IN ('Theros')"
+          + ")";
       cardQuery.bySet("Theros", false);
       assertEquals(result, cardQuery.asQuery());
     }
@@ -781,11 +792,12 @@ class CardQueryTest {
     public void disallowMultipleSet() {
       String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
-          + "JOIN CardExpansion t1 "
-          + "ON t0.card_name = t1.card_name "
-          + "AND t0.expansion = t1.expansion "
-          + "WHERE t0.expansion != 'Fate Reforged' "
-          + "AND t1.expansion != 'Dark Ascension'";
+          + "WHERE t0.expansion IN "
+          + "("
+          + "SELECT expansion "
+          + "FROM Expansion "
+          + "WHERE expansion NOT IN ('Fate Reforged', 'Dark Ascension')"
+          + ")";
       cardQuery.bySet("Fate Reforged", false);
       cardQuery.bySet("Dark Ascension", false);
       assertEquals(result, cardQuery.asQuery());
@@ -796,19 +808,13 @@ class CardQueryTest {
     public void mixedMultipleSet() {
       String result = "SELECT t0.card_name card_name, t0.expansion expansion "
           + "FROM CardExpansion t0 "
-          + "JOIN CardExpansion t1 "
-          + "ON t0.card_name = t1.card_name "
-          + "AND t0.expansion = t1.expansion "
-          + "JOIN CardExpansion t2 "
-          + "ON t0.card_name = t2.card_name "
-          + "AND t0.expansion = t2.expansion "
-          + "JOIN CardExpansion t3 "
-          + "ON t0.card_name = t3.card_name "
-          + "AND t0.expansion = t3.expansion "
-          + "WHERE t0.expansion != 'Amonkhet' "
-          + "AND t1.expansion = 'Ixalan' "
-          + "AND t2.expansion != 'Dominaria' "
-          + "AND t3.expansion = 'Battlebond'";
+          + "WHERE t0.expansion IN "
+          + "("
+          + "SELECT expansion "
+          + "FROM Expansion "
+          + "WHERE expansion NOT IN ('Amonkhet', 'Dominaria') "
+          + "AND expansion IN ('Ixalan', 'Battlebond')"
+          + ")";
 
       cardQuery.bySet("Amonkhet", false);
       cardQuery.bySet("Ixalan", true);
@@ -1368,16 +1374,11 @@ class CardQueryTest {
           + "JOIN CardExpansion t2 "
           + "ON t0.card_name = t2.card_name "
           + "AND t0.expansion = t2.expansion "
-          + "JOIN CardExpansion t3 "
-          + "ON t0.card_name = t3.card_name "
-          + "AND t0.expansion = t3.expansion "
-          + "WHERE t0.expansion = 'Born of the Gods' "
-          + "AND t1.rarity = 'rare' "
-          + "AND t2.flavor_text LIKE '%evil%' "
-          + "AND t3.artist = 'Kev Walker'";
+          + "WHERE t0.rarity = 'rare' "
+          + "AND t1.flavor_text LIKE '%evil%' "
+          + "AND t2.artist = 'Kev Walker'";
       cardQuery.byArtist("Kev Walker", true);
       cardQuery.byFlavorText("evil", true);
-      cardQuery.bySet("Born of the Gods", true);
       cardQuery.byRarity("rare", true);
       assertEquals(result, cardQuery.asQuery());
     }

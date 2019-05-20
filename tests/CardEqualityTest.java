@@ -154,21 +154,176 @@ public class CardEqualityTest {
   }
 
 
-  @DisplayName("Different cards, same name, different expansions, before")
+  @DisplayName("Same name, same expansions with more, before")
+  @Test
+  public void sameNameSameExpansionsMoreBefore() throws SQLException {
+    cardQuery.byName("Giant", true);
+    cardQuery.byName("Growth", true);
+    cardQuery.bySet("Battlebond", true);
+    cardQuery.bySet("Magic 2014", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+    assertEquals(1, cardQueryResult.size());
+    cardA = cardQueryResult.first();
+
+    cardQuery.bySet("Return to Ravnica", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+
+    assertEquals(1, cardQueryResult.size());
+    cardB = cardQueryResult.first();
+
+    assertNotEquals(cardA, cardB);
+    assertTrue(cardA.compareTo(cardB) < 0);
+    assertTrue(cardB.compareTo(cardA) > 0);
+  }
+
+  @DisplayName("Different cards, same expansions with more, after")
+  @Test
+  public void sameNameSameExpansionsMoreAfter() throws SQLException {
+    cardQuery.byName("Lightning", true);
+    cardQuery.byName("Bolt", true);
+    cardQuery.bySet("Magic 2011", true);
+    cardQuery.bySet("Beatdown Box Set", true);
+    cardQuery.bySet("Anthologies", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+    assertEquals(1, cardQueryResult.size());
+    cardA = cardQueryResult.first();
+    cardQuery.clear();
+
+    cardQuery.byName("Lightning", true);
+    cardQuery.byName("Bolt", true);
+    cardQuery.bySet("Beatdown Box Set", true);
+    cardQuery.bySet("Anthologies", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+
+    assertEquals(1, cardQueryResult.size());
+    cardB = cardQueryResult.first();
+
+    assertNotEquals(cardA, cardB);
+    assertTrue(cardB.compareTo(cardA) < 0);
+    assertTrue(cardA.compareTo(cardB) > 0);
+  }
+
+  @DisplayName("Different cards, same name same expansions and more, transitive")
+  @Test
+  public void sameNameSameExpansionsMoreTransitive() throws SQLException {
+    cardQuery.byName("Swords", true);
+    cardQuery.byName("to", true);
+    cardQuery.byName("Plowshares", true);
+    cardQuery.bySet("Conspiracy", true);
+
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+    assertEquals(1, cardQueryResult.size());
+    cardA = cardQueryResult.first();
+
+    cardQuery.bySet("Iconic Masters", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+
+    assertEquals(1, cardQueryResult.size());
+    cardB = cardQueryResult.first();
+
+    cardQuery.bySet("Masters 25", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+
+    assertEquals(1, cardQueryResult.size());
+    cardC = cardQueryResult.first();
+
+    assertNotEquals(cardA, cardB);
+    assertNotEquals(cardA, cardC);
+    assertNotEquals(cardB, cardC);
+
+
+    assertTrue(cardA.compareTo(cardB) < 0);
+    assertTrue(cardB.compareTo(cardA) > 0);
+    assertTrue(cardB.compareTo(cardC) < 0);
+    assertTrue(cardC.compareTo(cardB) > 0);
+    assertTrue(cardA.compareTo(cardC) < 0);
+    assertTrue(cardC.compareTo(cardA) > 0);
+  }
+
+  @DisplayName("Same name, different expansions, before")
   @Test
   public void sameNameDiffExpansionsBefore() throws SQLException {
+    cardQuery.byName("Dark", true);
+    cardQuery.byName("Ritual", true);
+    cardQuery.bySet("Planechase", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
 
+    assertEquals(1, cardQueryResult.size());
+    cardA = cardQueryResult.first();
+    cardQuery.clear();
+
+    cardQuery.byName("Dark", true);
+    cardQuery.byName("Ritual", true);
+    cardQuery.bySet("Tempest Remastered", true);
+    cardQuery.bySet("Urza's Saga", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+
+    assertEquals(1, cardQueryResult.size());
+    cardB = cardQueryResult.first();
+
+    assertNotEquals(cardA, cardB);
+    assertTrue(cardA.compareTo(cardB) < 0);
+    assertTrue(cardB.compareTo(cardA) > 0);
   }
 
-  @DisplayName("Different cards, same name, different expansions, after")
+  @DisplayName("Different cards, diff expansions, after")
   @Test
   public void sameNameDiffExpansionsAfter() throws SQLException {
+    cardQuery.byName("Brainstorm", true);
+    cardQuery.bySet("Vintage Masters", true);
+    cardQuery.bySet("Beatdown Box Set", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
 
+    assertEquals(1, cardQueryResult.size());
+    cardA = cardQueryResult.first();
+    cardQuery.clear();
+
+    cardQuery.byName("Brainstorm", true);
+    cardQuery.bySet("Commander 2018", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+
+    assertEquals(1, cardQueryResult.size());
+    cardB = cardQueryResult.first();
+
+    assertNotEquals(cardA, cardB);
+    assertTrue(cardA.compareTo(cardB) < 0);
+    assertTrue(cardB.compareTo(cardA) > 0);
   }
 
-  @DisplayName("Different cards, same name, different expansions, transitive")
+  @DisplayName("Different cards, diff expansions, transitive")
   @Test
   public void sameNameDiffExpansionsTransitive() throws SQLException {
+    cardQuery.byName("Swords", true);
+    cardQuery.byName("to", true);
+    cardQuery.byName("Plowshares", true);
+    cardQuery.bySet("Conspiracy", true);
 
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+    assertEquals(1, cardQueryResult.size());
+    cardA = cardQueryResult.first();
+
+    cardQuery.bySet("Iconic Masters", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+
+    assertEquals(1, cardQueryResult.size());
+    cardB = cardQueryResult.first();
+
+    cardQuery.bySet("Masters 25", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+
+    assertEquals(1, cardQueryResult.size());
+    cardC = cardQueryResult.first();
+
+    assertNotEquals(cardA, cardB);
+    assertNotEquals(cardA, cardC);
+    assertNotEquals(cardB, cardC);
+
+
+    assertTrue(cardA.compareTo(cardB) < 0);
+    assertTrue(cardB.compareTo(cardA) > 0);
+    assertTrue(cardB.compareTo(cardC) < 0);
+    assertTrue(cardC.compareTo(cardB) > 0);
+    assertTrue(cardA.compareTo(cardC) < 0);
+    assertTrue(cardC.compareTo(cardA) > 0);
   }
 }
