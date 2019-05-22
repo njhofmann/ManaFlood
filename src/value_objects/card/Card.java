@@ -34,15 +34,15 @@ public interface Card extends Comparable<Card> {
 
   /**
    * Returns the colors (WUBRG or colorless) that make up this {@link Card}'s colors.
-   * @return set of this card's colors
+   * @return sorted set of this card's colors
    */
-  Set<String> getColors();
+  SortedSet<String> getColors();
 
   /**
    * Returns the colors (WUBRG or colorless) that make up this {@link Card}'s color identity.
    * @return set of this card's color identity
    */
-  Set<String> getColorIdentity();
+  SortedSet<String> getColorIdentity();
 
   /**
    * Returns the text making up this {@link Card}.
@@ -54,19 +54,19 @@ public interface Card extends Comparable<Card> {
    * Returns the supertypes of this {@link Card} as an immutable set.
    * @return card's supertypes
    */
-  Set<String> getSupertypes();
+  SortedSet<String> getSupertypes();
 
   /**
    * Returns the types of this {@link Card} as an immutable set.
    * @return card's types
    */
-  Set<String> getTypes();
+  SortedSet<String> getTypes();
 
   /**
    * Returns the subtypes of this {@link Card}.
    * @return card's subtypes
    */
-  Set<String> getSubtypes();
+  SortedSet<String> getSubtypes();
 
   /**
    * Returns a sorted set of all card printings that this Card is associated with - based on

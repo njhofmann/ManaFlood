@@ -29,4 +29,15 @@ public interface CardRelationship {
    * @return nature of this relationship
    */
   String getRelationship();
+
+
+  /**
+   * Returns if the given object is equal to this {@link CardRelationship}. Given object must be
+   * a CardRelationship itself, have the same set of cards making up its relationship, and have
+   * same type of relationship.
+   * @param other object to compare
+   * @return if given object equals this CardRelaitonship
+   */
+  @Override
+  boolean equals(Object other);
 }

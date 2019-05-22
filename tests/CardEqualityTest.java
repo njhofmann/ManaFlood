@@ -326,4 +326,95 @@ public class CardEqualityTest {
     assertTrue(cardA.compareTo(cardC) < 0);
     assertTrue(cardC.compareTo(cardA) > 0);
   }
+
+  @DisplayName("Same name, single diff expansion, before")
+  @Test
+  public void sameNameSingleDiffExpansionBefore() throws SQLException {
+    cardQuery.byName("Path", true);
+    cardQuery.byName("to", true);
+    cardQuery.byName("Exile", true);
+    cardQuery.bySet("Archenemy", true);
+
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+    assertEquals(1, cardQueryResult.size());
+    cardA = cardQueryResult.first();
+    cardQuery.clear();
+
+    cardQuery.byName("Path", true);
+    cardQuery.byName("to", true);
+    cardQuery.byName("Exile", true);
+    cardQuery.bySet("Conflux", true);
+
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+    assertEquals(1, cardQueryResult.size());
+    cardB = cardQueryResult.first();
+
+    assertNotEquals(cardA, cardB);
+    assertTrue(cardA.compareTo(cardB) < 0);
+    assertTrue(cardB.compareTo(cardA) > 0);
+  }
+
+  @DisplayName("Same name, single diff expansion, after")
+  @Test
+  public void sameNameSingleDiffExpansionAfter() throws SQLException {
+    cardQuery.byName("Doom", true);
+    cardQuery.byName("Blade", true);
+    cardQuery.bySet("Explorers of Ixalan", true);
+
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+    assertEquals(1, cardQueryResult.size());
+    cardA = cardQueryResult.first();
+    cardQuery.clear();
+
+    cardQuery.byName("Doom", true);
+    cardQuery.byName("Blade", true);
+    cardQuery.bySet("Commander 2011", true);
+
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+    assertEquals(1, cardQueryResult.size());
+    cardB = cardQueryResult.first();
+
+    assertNotEquals(cardA, cardB);
+    assertTrue(cardB.compareTo(cardA) < 0);
+    assertTrue(cardA.compareTo(cardB) > 0);
+  }
+
+  @DisplayName("Same name, single diff expansion, transitive")
+  @Test
+  public void sameNameSingleDiffExpansionTransitive() throws SQLException {
+    cardQuery.byName("Counterspell", true);
+    cardQuery.bySet("Amonkhet Invocations", true);
+
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+    assertEquals(1, cardQueryResult.size());
+    cardA = cardQueryResult.first();
+    cardQuery.clear();
+
+    cardQuery.byName("Counterspell", true);
+    cardQuery.bySet("Conspiracy", true);
+    cardQuery.bySet("Masters 25", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+
+    assertEquals(1, cardQueryResult.size());
+    cardB = cardQueryResult.first();
+    cardQuery.clear();
+
+    cardQuery.byName("Counterspell", true);
+    cardQuery.bySet("Vintage Masters", true);
+    cardQueryResult = cardChannel.queryCards(cardQuery);
+
+    assertEquals(1, cardQueryResult.size());
+    cardC = cardQueryResult.first();
+
+    assertNotEquals(cardA, cardB);
+    assertNotEquals(cardA, cardC);
+    assertNotEquals(cardB, cardC);
+
+    assertTrue(cardA.compareTo(cardB) < 0);
+    assertTrue(cardB.compareTo(cardA) > 0);
+    assertTrue(cardB.compareTo(cardC) < 0);
+    assertTrue(cardC.compareTo(cardB) > 0);
+    assertTrue(cardA.compareTo(cardC) < 0);
+    assertTrue(cardC.compareTo(cardA) > 0);
+  }
 }

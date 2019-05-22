@@ -277,8 +277,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     disconnect(connection);
 
-    Deck toReturn = new DefaultDeck(deckID, deckName, deckDesp, deckInstances);
-    return toReturn;
+    return new DefaultDeck(deckID, deckName, deckDesp, deckInstances);
   }
 
   @Override
@@ -364,7 +363,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         preparedStatement.executeUpdate();
       }
       catch (SQLException e){
-        throw new SQLException(e.getMessage() + String.format("\nFailed to add card %s for deck instance %d, "
+        throw new SQLException(e.getMessage() + String.format("\nFailed to add card %s for deck instance %s, "
             + "%s!", card, deck, creationInfo.toString()));
       }
     }
@@ -390,7 +389,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       catch (SQLException e){
         throw new SQLException(e.getMessage() +
             String.format("\nFailed to add card printing %s, %s, %s for deck "
-            + "instance %d, %s!", cardName, expansion, identifier, cardPrinting, deck,
+            + "instance %s, %s!", cardName, expansion, identifier, deck,
             creationInfo.toString()));
       }
     }
@@ -412,7 +411,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         catch (SQLException e){
           throw new SQLException(e.getMessage() +
               String.format("\nFailed to add card %s, to category %s for deck "
-                  + "instance %d, %s!", card, category, deck, creationInfo.toString()));
+                  + "instance %s, %s!", card, category, deck, creationInfo.toString()));
         }
       }
     }
@@ -722,6 +721,20 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
   }
 
   /**
+   * Formats and returns a given String that is malformatted by most SQL implementation Replaces
+   * any single quote with double up single quotes to prevent invalid SQL queries
+   * "foo's" --> "foo''s"
+   * @param word word to format
+   * @return properly formatted word
+   */
+  private String formatWordToSQL(String word) {
+    if (word == null) {
+      throw new IllegalArgumentException("Given word can't be null!");
+    }
+    return word.replace("'", "''");
+  }
+
+  /**
    * Default implementation of the {@link Card} interface, a simple container to hold all the
    * information pertaining to a given card (and its relevant expansions). Embedded with
    * {@link DefaultDatabaseChannel} to have access to the CDDB for retriving needed card info.
@@ -751,27 +764,27 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     /**
      * Supertypes of the Card as it appears in the CDDB.
      */
-    private final Set<String> supertypes;
+    private final SortedSet<String> supertypes;
 
     /**
      * Types of the Card as it appears in the CDDB.
      */
-    private final Set<String> types;
+    private final SortedSet<String> types;
 
     /**
      * Subtypes of the Card as it appears in the CDDB.
      */
-    private final Set<String> subtypes;
+    private final SortedSet<String> subtypes;
 
     /**
      * Set of colors making up this Card's colors.
      */
-    private final Set<String> colors;
+    private final SortedSet<String> colors;
 
     /**
      * Set of colors making up this Card's color identity.
      */
-    private final Set<String> colorIdentity;
+    private final SortedSet<String> colorIdentity;
 
     /**
      * Relationship this Card has with other Cards, if any.
@@ -894,7 +907,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @throws IllegalArgumentException if any given parameter is null, or if given connection is
      * closed
      */
-    private Set<String> retrieveSingleColumn(Connection connection, String table, String column,
+    private SortedSet<String> retrieveSingleColumn(Connection connection, String table, String column,
         Map<String, String> conditions, boolean singleResult, String infoType, String cardName)
         throws SQLException {
 
@@ -925,7 +938,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
       try (PreparedStatement preparedStatement = connection.prepareStatement(query.toString());
           ResultSet resultSet = preparedStatement.executeQuery()) {
-        Set<String> toReturn = new TreeSet<>();
+        SortedSet<String> toReturn = new TreeSet<>();
         while (resultSet.next()) {
           toReturn.add(resultSet.getString(column));
           if (singleResult) {
@@ -977,7 +990,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @throws IllegalArgumentException if any given parameter is null, or if given connection is
      * closed
      */
-    private Set<String> setSupertypes(Connection connection, String cardName) throws SQLException {
+    private SortedSet<String> setSupertypes(Connection connection, String cardName) throws SQLException {
       return retrieveTypeInfo(connection, "supertype", cardName);
     }
 
@@ -990,7 +1003,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @throws IllegalArgumentException if any given parameter is null, or if given connection is
      * closed
      */
-    private Set<String> setTypes(Connection connection, String cardName) throws SQLException {
+    private SortedSet<String> setTypes(Connection connection, String cardName) throws SQLException {
       return retrieveTypeInfo(connection,"type", cardName);
     }
 
@@ -1003,7 +1016,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @throws IllegalArgumentException if given connection is closed, or if any of the given
      * parameters are null
      */
-    private Set<String> setSubtypes(Connection connection, String cardName) throws SQLException {
+    private SortedSet<String> setSubtypes(Connection connection, String cardName) throws SQLException {
       return retrieveTypeInfo(connection,"subtype", cardName);
     }
 
@@ -1018,7 +1031,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @throws IllegalArgumentException if given connection is closed, or if any of the given
      * parameters are null
      */
-    private Set<String> retrieveTypeInfo(Connection connection, String type, String cardName) throws SQLException {
+    private SortedSet<String> retrieveTypeInfo(Connection connection, String type, String cardName) throws SQLException {
       Map<String, String> conditions = new HashMap<>();
       conditions.put("card_name", cardName);
       conditions.put("category", type);
@@ -1035,7 +1048,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @throws IllegalArgumentException if any given parameter is null, or if given connection is
      * closed
      */
-    private Set<String> setColors(Connection connection, String cardName) throws SQLException {
+    private SortedSet<String> setColors(Connection connection, String cardName) throws SQLException {
       return getColorInfo(connection,"Color", "color", cardName);
     }
 
@@ -1048,7 +1061,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @throws IllegalArgumentException if any given parameter is null, or if given connection is
      * closed
      */
-    private Set<String> setColorIdentity(Connection connection, String cardName) throws SQLException {
+    private SortedSet<String> setColorIdentity(Connection connection, String cardName) throws SQLException {
       return getColorInfo(connection,"ColorIdentity", "color identity", cardName);
     }
 
@@ -1063,7 +1076,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @throws IllegalArgumentException if any given parameter is null, or if given connection is
      * closed
      */
-    private Set<String> getColorInfo(Connection connection, String table, String infoType,
+    private SortedSet<String> getColorInfo(Connection connection, String table, String infoType,
         String cardName) throws SQLException {
       Map<String, String> conditions = new HashMap<>();
       conditions.put("card_name", cardName);
@@ -1191,7 +1204,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         else {
           afterFirst = true;
         }
-        expansionsIn.append(String.format("'%s'", expansion));
+        expansionsIn.append(String.format("'%s'", formatWordToSQL(expansion)));
       }
       expansionsIn.append(")");
 
@@ -1272,13 +1285,13 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     @Override
-    public Set<String> getColors() {
-      return Collections.unmodifiableSet(colors);
+    public SortedSet<String> getColors() {
+      return Collections.unmodifiableSortedSet(colors);
     }
 
     @Override
-    public Set<String> getColorIdentity() {
-      return Collections.unmodifiableSet(colorIdentity);
+    public SortedSet<String> getColorIdentity() {
+      return Collections.unmodifiableSortedSet(colorIdentity);
     }
 
     @Override
@@ -1287,18 +1300,18 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     @Override
-    public Set<String> getSupertypes() {
-      return Collections.unmodifiableSet(supertypes);
+    public SortedSet<String> getSupertypes() {
+      return Collections.unmodifiableSortedSet(supertypes);
     }
 
     @Override
-    public Set<String> getTypes() {
-      return Collections.unmodifiableSet(types);
+    public SortedSet<String> getTypes() {
+      return Collections.unmodifiableSortedSet(types);
     }
 
     @Override
-    public Set<String> getSubtypes() {
-      return Collections.unmodifiableSet(subtypes);
+    public SortedSet<String> getSubtypes() {
+      return Collections.unmodifiableSortedSet(subtypes);
     }
 
     @Override
@@ -2118,20 +2131,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       statVersusStatParams.clear();
       rarityParams.clear();
       manaTypeParams.clear();
-    }
-
-    /**
-     * Formats and returns a given String that is malformatted by most SQL implementation Replaces
-     * any single quote with double up single quotes to prevent invalid SQL queries
-     * "foo's" --> "foo''s"
-     * @param word word to format
-     * @return properly formatted word
-     */
-    private String formatWordToSQL(String word) {
-      if (word == null) {
-        throw new IllegalArgumentException("Given word can't be null!");
-      }
-      return word.replace("'", "''");
     }
 
     /**

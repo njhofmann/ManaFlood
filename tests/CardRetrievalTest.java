@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.SystemMenuBar;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import value_objects.card.Card;
 import value_objects.card.printing.CardPrintingInfo;
 import value_objects.card.query.CardQuery;
+import value_objects.card.relationship.CardRelationship;
+import value_objects.card.relationship.DefaultCardRelationship;
 
 /**
  * Tests to ensure that built up {@link CardQuery}s retrieve the correct {@link Card}s from the
@@ -243,7 +246,6 @@ public class CardRetrievalTest {
     colorIdentity.add("B");
     assertEquals(colorIdentity, soleResult.getColorIdentity());
 
-
     // Check text
     String expectedText = "Flying\nYou may pay {W}{U}{B}{R}{G} rather than pay the mana cost for "
         + "spells that you cast.";
@@ -375,7 +377,7 @@ public class CardRetrievalTest {
   }
 
   // Multiple cards from single expansion with no relationship
-  @DisplayName("Mulitiple cards with no relationship from single expansion")
+  @DisplayName("Multiple cards with no relationship from single expansion")
   @Test
   public void multipleCardsNoRelationshipSingleExpansion() throws SQLException {
     cardQuery.byType("instant", true);
@@ -402,7 +404,6 @@ public class CardRetrievalTest {
     expectedManaCost.put("{B}", 1);
     expectedManaCost.put("{U}", 1);
     assertEquals(expectedManaCost, soleResult.getManaCost());
-
 
     Set<String> colors = new HashSet<>();
     colors.add("R");
@@ -450,7 +451,165 @@ public class CardRetrievalTest {
   }
 
   // Single card from single expansion with two card relationship
+  @DisplayName("Single card with two card relationship from single expansion")
+  @Test
+  public void singleCardTwoCardRelationshipSingleExpansion() throws SQLException {
+    cardQuery.byName("Beck", true);
+    cardQuery.byType("sorcery", true);
+    cardQuery.byColor("U", true);
+    cardQuery.byColor("G", true);
+    cardQuery.bySet("Dragon's Maze", true);
+    SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
+
+    // Check size
+    assertEquals(1, queryResult.size());
+
+    Card soleResult = queryResult.first();
+
+    // Check name
+    assertEquals("Beck", soleResult.getName());
+
+    // Check cmc
+    assertEquals(2, soleResult.getConvertedManaCost());
+
+    // Check mana cost
+    Map<String, Integer> expectedManaCost = new HashMap<>();
+    expectedManaCost.put("{G}", 1);
+    expectedManaCost.put("{U}", 1);
+    assertEquals(expectedManaCost, soleResult.getManaCost());
+
+
+    Set<String> colors = new HashSet<>();
+    colors.add("U");
+    colors.add("G");
+    // Check colors
+    assertEquals(colors, soleResult.getColors());
+
+    colors.add("W");
+    // Check color identity
+    assertEquals(colors, soleResult.getColorIdentity());
+
+    // Check text
+    String expectedText = "Whenever a creature enters the battlefield this turn, you may draw a "
+        + "card.\nFuse (You may cast one or both halves of this card from your hand.)";
+    assertEquals(expectedText, soleResult.getText());
+
+    // Check supertypes
+    assertTrue(soleResult.getSupertypes().isEmpty());
+
+    // Check types
+    Set<String> types = new HashSet<>();
+    types.add("sorcery");
+    assertEquals(types, soleResult.getTypes());
+
+    // Check subtypes
+    assertTrue(soleResult.getSubtypes().isEmpty());
+
+    // Check extra stats
+    assertTrue(soleResult.getExtraStats().isEmpty());
+
+    // Check relationship
+    SortedSet<String> cards = new TreeSet<>();
+    cards.add("Beck");
+    cards.add("Call");
+    CardRelationship cardRelationship = new DefaultCardRelationship(cards, "split");
+
+    CardRelationship soleResultCardRelationship = soleResult.getRelationships();
+    assertTrue(soleResultCardRelationship.hasRelationship());
+    assertEquals(cardRelationship, soleResult.getRelationships());
+
+    // Check card printings
+    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
+    assertEquals(1, cardPrintings.size());
+
+    CardPrintingInfo firstPrinting = cardPrintings.first();
+    assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
+    assertEquals("Dragon's Maze", firstPrinting.getCardExpansion()); // Check expansion
+    assertEquals("123", firstPrinting.getIdentifyingNumber()); // Check identifying number
+    assertEquals("rare", firstPrinting.getRarity()); // Check rarity
+    assertTrue(firstPrinting.getFlavorText().isEmpty()); // Check flavor text
+    assertEquals("Adam Paquette", firstPrinting.getArtist()); // Check artist
+  }
 
   // Single card from single expansion with three card relationship
+  @DisplayName("Single card with three card relationship from single expansion")
+  @Test
+  public void singleCardThreeCardRelationshipSingleExpansion() throws SQLException {
+    cardQuery.byName("Graf", true);
+    cardQuery.byName("Rats", true);
+    SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
 
+    // Check size
+    assertEquals(1, queryResult.size());
+
+    Card soleResult = queryResult.first();
+
+    // Check name
+    assertEquals("Graf Rats", soleResult.getName());
+
+    // Check cmc
+    assertEquals(2, soleResult.getConvertedManaCost());
+
+    // Check mana cost
+    Map<String, Integer> expectedManaCost = new HashMap<>();
+    expectedManaCost.put("{1}", 1);
+    expectedManaCost.put("{B}", 1);
+    assertEquals(expectedManaCost, soleResult.getManaCost());
+
+    Set<String> colors = new HashSet<>();
+    colors.add("B");
+    // Check colors
+    assertEquals(colors, soleResult.getColors());
+
+    // Check color identity
+    assertEquals(colors, soleResult.getColorIdentity());
+
+    // Check text
+    String expectedText = "At the beginning of combat on your turn, if you both own and control "
+        + "Graf Rats and a creature named Midnight Scavengers, exile them, then meld them into "
+        + "Chittering Host.";
+    assertEquals(expectedText, soleResult.getText());
+
+    // Check supertypes
+    assertTrue(soleResult.getSupertypes().isEmpty());
+
+    // Check types
+    Set<String> types = new HashSet<>();
+    types.add("creature");
+    assertEquals(types, soleResult.getTypes());
+
+    // Check subtypes
+    Set<String> subtypes = new HashSet<>();
+    subtypes.add("rat");
+    assertEquals(subtypes, soleResult.getSubtypes());
+
+    // Check extra stats
+    HashMap<String, String> stats = new HashMap<>();
+    stats.put("power", "2");
+    stats.put("toughness", "1");
+    assertEquals(stats, soleResult.getExtraStats());
+
+    // Check relationship
+    SortedSet<String> cards = new TreeSet<>();
+    cards.add("Graf Rats");
+    cards.add("Midnight Scavengers");
+    cards.add("Chittering Host");
+    CardRelationship cardRelationship = new DefaultCardRelationship(cards, "meld");
+
+    CardRelationship soleResultCardRelationship = soleResult.getRelationships();
+    assertTrue(soleResultCardRelationship.hasRelationship());
+    assertEquals(cardRelationship, soleResult.getRelationships());
+
+    // Check card printings
+    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
+    assertEquals(1, cardPrintings.size());
+
+    CardPrintingInfo firstPrinting = cardPrintings.first();
+    assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
+    assertEquals("Eldritch Moon", firstPrinting.getCardExpansion()); // Check expansion
+    assertEquals("91a", firstPrinting.getIdentifyingNumber()); // Check identifying number
+    assertEquals("common", firstPrinting.getRarity()); // Check rarity
+    assertTrue(firstPrinting.getFlavorText().isEmpty()); // Check flavor text
+    assertEquals("Jason Felix", firstPrinting.getArtist()); // Check artist
+  }
 }

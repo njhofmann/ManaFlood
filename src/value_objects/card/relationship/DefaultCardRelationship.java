@@ -1,6 +1,7 @@
 package value_objects.card.relationship;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import value_objects.card.Card;
@@ -57,5 +58,21 @@ public class DefaultCardRelationship implements CardRelationship {
   @Override
   public String getRelationship() {
     return relationship;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getRelationship(), getCards());
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (other instanceof CardRelationship) {
+      CardRelationship otherRelationship = (CardRelationship)other;
+      return otherRelationship.hasRelationship() &&
+          getRelationship().equals(otherRelationship.getRelationship()) &&
+          getCards().equals(otherRelationship.getCards());
+    }
+    return false;
   }
 }
