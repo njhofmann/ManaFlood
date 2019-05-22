@@ -19,7 +19,8 @@ CREATE TABLE Block (
 --An individual card
 CREATE TABLE Card (
   name TEXT PRIMARY KEY,
-  card_text TEXT NOT NULL
+  text TEXT NOT NULL,
+  cmc INTEGER NOT NULL
 );
 
 --All the colors associated with a card.
@@ -38,13 +39,19 @@ CREATE TABLE ColorIdentity (
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
---Stores extra stats associated with a card - cmc, power, toughness, and loyalty - under category
-CREATE TABLE Stat (
-  card_name TEXT,
-  category TEXT,
-  value TEXT NOT NULL,
-  base_value INTEGER NOT NULL,
-  PRIMARY KEY(card_name, category),
+CREATE Table Loyalty (
+  card_name TEXT PRIMARY KEY,
+  loyalty TEXT NOT NULL,
+  loyalty_value INTEGER NOT NULL,
+  FOREIGN KEY(card_name) REFERENCES Card(name)
+);
+
+CREATE Table PowerToughness (
+  card_name TEXT PRIMARY KEY,
+  power TEXT NOT NULL,
+  power_value INTEGER NOT NULL,
+  toughness TEXT NOT NULL,
+  toughness_value INTEGER NOT NULL,
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
@@ -62,17 +69,40 @@ CREATE TABLE CardExpansion (
   number TEXT,
   rarity TEXT NOT NULL,
   flavor_text TEXT NOT NULL,
-  artist TEXT NOT NULL,
   PRIMARY KEY(card_name, expansion, number),
   FOREIGN KEY(card_name) REFERENCES Card(name),
   FOREIGN KEY(expansion) REFERENCES Expansion(expansion)
 );
 
---All the types associated with a card - category determines if type is supertype, type, or subtype
+CREATE TABLE Artist (
+  card_name TEXT,
+  expansion TEXT,
+  number TEXT,
+  artist TEXT NOT NULL,
+  PRIMARY KEY(card_name, expansion, number),
+  FOREIGN KEY(card_name,expansion,number) REFERENCES Expansion(card_name,expansion,number)
+);
+
+--All the supertypes associated with a card
+CREATE TABLE Supertype (
+  card_name TEXT,
+  type TEXT,
+  PRIMARY KEY(card_name, type),
+  FOREIGN KEY(card_name) REFERENCES Card(name)
+);
+
+--All the types associated with a card
 CREATE TABLE Type (
   card_name TEXT,
   type TEXT,
-  category TEXT NOT NULL,
+  PRIMARY KEY(card_name, type),
+  FOREIGN KEY(card_name) REFERENCES Card(name)
+);
+
+--All the subtypes associated with a card
+CREATE TABLE Subtype (
+  card_name TEXT,
+  type TEXT,
   PRIMARY KEY(card_name, type),
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );

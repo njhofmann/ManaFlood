@@ -19,7 +19,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
-import java.util.regex.Pattern;
 import value_objects.card.Card;
 import value_objects.card.relationship.CardRelationship;
 import value_objects.card.relationship.DefaultCardRelationship;
@@ -45,9 +44,19 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     CardChannel {
 
   /**
+   * Sorted set of all the card supertypes stored in the CDDB.
+   */
+  private final SortedSet<String> supertypes;
+
+  /**
    * Sorted set of all the card types stored in the CDDB.
    */
   private final SortedSet<String> types;
+
+  /**
+   * Sorted set of all the card subtypes stored in the CDDB.
+   */
+  private final SortedSet<String> subtypes;
 
   /**
    * Sorted set of all the card rarites stored in the CDDB.
@@ -88,12 +97,14 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
   public DefaultDatabaseChannel(Path pathToDatabase) throws SQLException {
     super(pathToDatabase);
     Connection connection = connect();
+    supertypes = retrieveColumnInfo("Supertype", "type", connection);
     types = retrieveColumnInfo("Type", "type", connection);
+    subtypes = retrieveColumnInfo("Subtype", "type", connection);
     rarities = retrieveColumnInfo("CardExpansion", "rarity", connection);
     colors = retrieveColumnInfo("Color", "color", connection);
     manaTypes = retrieveColumnInfo("Mana", "mana_type", connection);
     blocks = retrieveColumnInfo("Block", "block", connection);
-    artists = retrieveColumnInfo("CardExpansion", "artist", connection);
+    artists = retrieveColumnInfo("Artist", "artist", connection);
     sets = retrieveColumnInfo("Expansion", "expansion", connection);
     disconnect(connection);
   }
@@ -553,23 +564,34 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
   }
 
+  @Override
+  public SortedSet<String> getSupertypes() {
+    return Collections.unmodifiableSortedSet(supertypes);
+  }
+
+  @Override
   public SortedSet<String> getTypes() {
-    return types;
+    return Collections.unmodifiableSortedSet(types);
+  }
+
+  @Override
+  public SortedSet<String> getSubtypes() {
+    return Collections.unmodifiableSortedSet(subtypes);
   }
 
   @Override
   public SortedSet<String> getManaTypes() {
-    return manaTypes;
+    return Collections.unmodifiableSortedSet(manaTypes);
   }
 
   @Override
   public SortedSet<String> getRarityTypes() {
-    return rarities;
+    return Collections.unmodifiableSortedSet(rarities);
   }
 
   @Override
   public SortedSet<String> getColors() {
-    return colors;
+    return Collections.unmodifiableSortedSet(colors);
   }
 
   @Override
@@ -586,17 +608,17 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
   @Override
   public SortedSet<String> getBlocks() {
-    return blocks;
+    return Collections.unmodifiableSortedSet(blocks);
   }
 
   @Override
   public SortedSet<String> getArtists(){
-    return artists;
+    return Collections.unmodifiableSortedSet(artists);
   }
 
   @Override
   public SortedSet<String> getSets() {
-    return sets;
+    return Collections.unmodifiableSortedSet(sets);
   }
 
   /**
@@ -991,7 +1013,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * closed
      */
     private SortedSet<String> setSupertypes(Connection connection, String cardName) throws SQLException {
-      return retrieveTypeInfo(connection, "supertype", cardName);
+      return retrieveTypeInfo(connection, "Supertype", "supertype", cardName);
     }
 
     /**
@@ -1004,7 +1026,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * closed
      */
     private SortedSet<String> setTypes(Connection connection, String cardName) throws SQLException {
-      return retrieveTypeInfo(connection,"type", cardName);
+      return retrieveTypeInfo(connection,"Type", "type", cardName);
     }
 
     /**
@@ -1017,13 +1039,14 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * parameters are null
      */
     private SortedSet<String> setSubtypes(Connection connection, String cardName) throws SQLException {
-      return retrieveTypeInfo(connection,"subtype", cardName);
+      return retrieveTypeInfo(connection,"Subtype", "subtype", cardName);
     }
 
     /**
      * Retrieves types associated with this {@link Card}, for a given category of type (supertype,
      * type, subtype).
      * @param connection connection to the CDDB to use for retrieving data
+     * @table table to retrieve data from
      * @param type category of type to retrieve
      * @param cardName name of card to retrieve data for
      * @return set of given category of type associated with this card
@@ -1031,11 +1054,10 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @throws IllegalArgumentException if given connection is closed, or if any of the given
      * parameters are null
      */
-    private SortedSet<String> retrieveTypeInfo(Connection connection, String type, String cardName) throws SQLException {
+    private SortedSet<String> retrieveTypeInfo(Connection connection, String table, String type, String cardName) throws SQLException {
       Map<String, String> conditions = new HashMap<>();
       conditions.put("card_name", cardName);
-      conditions.put("category", type);
-      return retrieveSingleColumn(connection,"Type", "type", conditions,
+      return retrieveSingleColumn(connection, table, "type", conditions,
           false, type, cardName);
     }
 
@@ -1153,17 +1175,15 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       if (types.contains("planeswalker")) {
         String loyalty = "loyalty";
         conditions.put("card_name", cardName);
-        conditions.put("category", loyalty);
-        Set<String> result = retrieveSingleColumn(connection, "Stat", "value",
-            conditions, true, "loyalty", cardName);
+        Set<String> result = retrieveSingleColumn(connection, "Loyalty", loyalty,
+            conditions, true, loyalty, cardName);
         additionalInfo.put(loyalty, singleItemSetToString(result));
       }
       else if (types.contains("creature") || subtypes.contains("vehicle")) {
         String[] powerToughness = new String[]{"power", "toughness"};
         for (String category : powerToughness) {
           conditions.put("card_name", cardName);
-          conditions.put("category", category);
-          Set<String> result = retrieveSingleColumn(connection,"Stat", "value",
+          Set<String> result = retrieveSingleColumn(connection,"PowerToughness", category,
               conditions, true, category, cardName);
           additionalInfo.put(category, singleItemSetToString(result));
         }
@@ -1209,23 +1229,39 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       expansionsIn.append(")");
 
       SortedSet<CardPrintingInfo> cardPrintingInfo = new TreeSet<>();
-      String query = String.format("SELECT * FROM CardExpansion "
+      String expansion, number, rarity, flavor_text;
+      String cardExpansionQuery = String.format("SELECT * FROM CardExpansion "
           + "WHERE card_name = '%s' AND expansion IN %s", cardName, expansionsIn.toString());
-      try (PreparedStatement preparedStatement = connection.prepareStatement(query);
+      try (PreparedStatement preparedStatement = connection.prepareStatement(cardExpansionQuery);
           ResultSet resultSet = preparedStatement.executeQuery()) {
         while (resultSet.next()) {
-          String expansion = resultSet.getString("expansion");
-          String number = resultSet.getString("number");
-          String artist = resultSet.getString("artist");
-          String rarity = resultSet.getString("rarity");
-          String flavor_text = resultSet.getString("flavor_text");
+          expansion = resultSet.getString("expansion");
+          number = resultSet.getString("number");
+          rarity = resultSet.getString("rarity");
+          flavor_text = resultSet.getString("flavor_text");
+
+          // Get artists
+          String artistsQuery = String.format("SELECT artist FROM Artist WHERE card_name = '%s' "
+              + "AND expansion = '%s' AND number = '%s'", cardName, expansion, number);
+          SortedSet<String> artists = new TreeSet<>();
+          try (PreparedStatement preparedStatement1 = connection.prepareStatement(artistsQuery);
+          ResultSet resultSet1 = preparedStatement1.executeQuery()) {
+            while (resultSet1.next()) {
+              artists.add(resultSet1.getString("artist"));
+            }
+          }
+          catch (SQLException e) {
+            throw new IllegalArgumentException(String.format("Failed to find artists for "
+                + "card printing %s, %s, %s!", cardName, expansion, number));
+          }
+
           cardPrintingInfo.add(new DefaultCardPrintingInfo(cardName, expansion, number,
-              artist, flavor_text, rarity));
+              artists, flavor_text, rarity));
         }
         return cardPrintingInfo;
       }
       catch (SQLException e) {
-        System.out.println(query);
+        System.out.println(cardExpansionQuery);
         throw new SQLException(e.getMessage() +
             String.format("Failed to retrieve card expansion info for card %s from database!",
                 cardName));
@@ -1244,8 +1280,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private int setCMC(Connection connection, String cardName) throws SQLException {
       Map<String, String> conditions = new HashMap<>();
       conditions.put("card_name", cardName);
-      conditions.put("category", "cmc");
-      Set<String> singleResult = retrieveSingleColumn(connection, "Stat", "base_value",
+      Set<String> singleResult = retrieveSingleColumn(connection, "Card", "cmc",
           conditions, true, "converted mana cost", cardName);
       return Integer.parseInt(singleItemSetToString(singleResult));
     }
@@ -1316,7 +1351,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     @Override
     public SortedSet<CardPrintingInfo> getCardPrintings() {
-      return cardPrintings;
+      return Collections.unmodifiableSortedSet(cardPrintings);
     }
 
     @Override
@@ -1433,9 +1468,19 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private final List<Pair<String, Boolean>> colorIdentityParams;
 
     /**
+     * List of parameters added to search by a card's supertypes.
+     */
+    private final List<Pair<String, Boolean>> supertypeParams;
+
+    /**
      * List of parameters added to search by a card's types.
      */
     private final List<Pair<String, Boolean>> typeParams;
+
+    /**
+     * List of parameters added to search by a card's subtypes.
+     */
+    private final List<Pair<String, Boolean>> subtypeParams;
 
     /**
      * List of parameters added to search by the blocks a card was printed in.
@@ -1487,7 +1532,9 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       textParams = new ArrayList<>();
       colorParams = new ArrayList<>();
       colorIdentityParams = new ArrayList<>();
+      supertypeParams = new ArrayList<>();
       typeParams = new ArrayList<>();
+      subtypeParams = new ArrayList<>();
       blockParams = new ArrayList<>();
       setParams = new ArrayList<>();
       artistParams = new ArrayList<>();
@@ -1536,7 +1583,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         return String.format("%s '%s'", includeString, parameter);
       }
     }
-
 
     @Override
     public void byName(String word, boolean searchFor) throws IllegalArgumentException {
@@ -1667,25 +1713,70 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
           "card_name", "color");
     }
 
+
+    @Override
+    public void bySupertype(String type, boolean searchFor) throws IllegalArgumentException {
+      if (type == null) {
+        throw new IllegalArgumentException("Given type can't be null!");
+      }
+      else if (!supertypes.contains(type)) {
+        throw new IllegalArgumentException(String.format("Given supertype %s is not contained in the CDDB!", type));
+      }
+      type = formatWordToSQL(type);
+      supertypeParams.add(new Pair<>(type, searchFor));
+    }
+
     @Override
     public void byType(String type, boolean searchFor) throws IllegalArgumentException {
       if (type == null) {
         throw new IllegalArgumentException("Given type can't be null!");
       }
       else if (!types.contains(type)) {
-        throw new IllegalArgumentException("Given type is not contained in the CDDB!");
+        throw new IllegalArgumentException(String.format("Given type %s is not contained in the CDDB!", type));
       }
       type = formatWordToSQL(type);
       typeParams.add(new Pair<>(type, searchFor));
     }
 
+    @Override
+    public void bySubtype(String type, boolean searchFor) throws IllegalArgumentException {
+      if (type == null) {
+        throw new IllegalArgumentException("Given type can't be null!");
+      }
+      else if (!subtypes.contains(type)) {
+        throw new IllegalArgumentException(String.format("Given subtype %s is not contained in the CDDB!", type));
+      }
+      type = formatWordToSQL(type);
+      subtypeParams.add(new Pair<>(type, searchFor));
+    }
+
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * supertype parameters entered so far.
+     * @return part of this CardQuery dealing with supertype parameters as a StringBuilder
+     */
+    private StringBuilder buildSupertypeQuery() {
+      return buildGenericCardQuery(supertypeParams, "Supertype",
+          "card_name", "type");
+    }
+
     /**
      * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
      * text parameters entered so far.
-     * @return part of this CardQuery dealing with text parameters as a StringBuilder
+     * @return part of this CardQuery dealing with type parameters as a StringBuilder
      */
     private StringBuilder buildTypeQuery() {
       return buildGenericCardQuery(typeParams, "Type",
+          "card_name", "type");
+    }
+
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * subtype parameters entered so far.
+     * @return part of this CardQuery dealing with subtype parameters as a StringBuilder
+     */
+    private StringBuilder buildSubtypeQuery() {
+      return buildGenericCardQuery(subtypeParams, "Subtype",
           "card_name", "type");
     }
 
@@ -2071,8 +2162,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       completeCardQuery.append(conditions);
 
       StringBuilder[] cardQueries = new StringBuilder[]{buildNameAndTextQuery(), buildColorQuery(),
-      buildColorIdentityQuery(), buildTypeQuery(), buildStatQuery(), buildStatVersusStatQuery(),
-      buildManaTypeQuery()};
+      buildColorIdentityQuery(), buildSupertypeQuery(), buildTypeQuery(), buildSubtypeQuery(),
+          buildStatQuery(), buildStatVersusStatQuery(), buildManaTypeQuery()};
 
       // Intersection of all card specific queries
       StringBuilder cardQuery = new StringBuilder();
@@ -2122,7 +2213,9 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       textParams.clear();
       colorParams.clear();
       colorIdentityParams.clear();
+      supertypes.clear();
       typeParams.clear();
+      subtypes.clear();
       blockParams.clear();
       setParams.clear();
       artistParams.clear();

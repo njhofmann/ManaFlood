@@ -28,13 +28,28 @@ public interface CardChannel {
   SortedSet<Card> queryCards(CardQuery cardQuery) throws IllegalArgumentException, SQLException;
 
   /**
-   * Returns a unmodifiable sorted set of all the card types held in the CDDB. Supertypes, types,
-   * and subtypes.
+   * Returns a unmodifiable sorted set of all the card supertypes held in the CDDB.
+   * @return unmodifiable sorted set of all the card types
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getSupertypes() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all the card types held in the CDDB.
    * @return unmodifiable sorted set of all the card types
    * @throws SQLException if connection to CDDB has not yet been established, or if there is a
    * failure to query from the database
    */
   SortedSet<String> getTypes() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all the card subtypes held in the CDDB.
+   * @return unmodifiable sorted set of all the card types
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getSubtypes() throws SQLException;
 
   /**
    * Returns a unmodifiable sorted set of all the card rarity types held in the CDDB.

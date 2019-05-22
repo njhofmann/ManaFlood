@@ -1,32 +1,50 @@
 package value_objects.card.printing;
 
+import java.util.SortedSet;
+
+/**
+ * Default implementation of {@link CardPrintingInfo}, represents additional info for a given
+ * {@link CardPrinting}.
+ */
 public class DefaultCardPrintingInfo implements CardPrintingInfo {
 
+  /**
+   * Card Printing this {@link CardPrintingInfo} represents.
+   */
   private final CardPrinting cardPrinting;
 
-  private final String artist;
+  private final SortedSet<String> artists;
 
   private final String flavorText;
 
   private final String rarity;
 
   public DefaultCardPrintingInfo(String cardName, String cardExpansion, String identifyingNumber,
-      String artist, String flavorText, String rarity) {
-    cardPrinting = new DefaultCardPrinting(cardName, cardExpansion, identifyingNumber);
+      SortedSet<String> artists, String flavorText, String rarity) {
+    this(new DefaultCardPrinting(cardName, cardExpansion, identifyingNumber),
+        artists, flavorText, rarity);
+  }
 
-    if (artist == null) {
-      throw new IllegalArgumentException("Given artist can't be null!");
+  public DefaultCardPrintingInfo(CardPrinting cardPrinting, SortedSet<String> artists,
+      String flavorText, String rarity) {
+
+    if (artists == null || artists.isEmpty()) {
+      throw new IllegalArgumentException("Given artists set can't be null or empty!");
     }
     else if (flavorText == null) {
       throw new IllegalArgumentException("Given flavor text can't be null!");
     }
-    else if (identifyingNumber == null) {
+    else if (rarity == null) {
       throw new IllegalArgumentException("Given rarity can't be null!");
     }
+    else if (cardPrinting == null) {
+      throw new IllegalArgumentException("Given CardPrinting can't be null!");
+    }
 
-    this.artist = artist;
+    this.artists = artists;
     this.flavorText = flavorText;
     this.rarity = rarity;
+    this.cardPrinting = cardPrinting;
   }
 
   @Override
@@ -35,8 +53,8 @@ public class DefaultCardPrintingInfo implements CardPrintingInfo {
   }
 
   @Override
-  public String getArtist() {
-    return artist;
+  public SortedSet<String> getArtists() {
+    return artists;
   }
 
   @Override

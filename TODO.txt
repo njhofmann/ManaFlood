@@ -2,6 +2,7 @@ Minor:
 -Add Scryfall image url
 -Hashcode equality
 -Split multiple artists (fix tests)
+-connection isclosed checks
 -Write down how time handling is done (timestamp in database)
 -Update text on cards option (erreta)
 -Add release dates to expansions

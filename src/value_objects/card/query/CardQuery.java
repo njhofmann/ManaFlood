@@ -48,6 +48,15 @@ public interface CardQuery {
   void byColorIdentity(String color, boolean searchFor) throws IllegalArgumentException;
 
   /**
+   * Add parameter to search for cards with given supertype, or not the given type.
+   * @param type supertype to search by
+   * @param searchFor to search for cards with the given type, or not the given type
+   * @throws IllegalArgumentException if the given type isn't a supported supertype by the CDDB,
+   * or is null
+   */
+  void bySupertype(String type, boolean searchFor) throws IllegalArgumentException;
+
+  /**
    * Add parameter to search for cards with given type, or not the given type.
    * @param type type to search by
    * @param searchFor to search for cards with the given type, or not the given type
@@ -55,6 +64,15 @@ public interface CardQuery {
    * or is null
    */
   void byType(String type, boolean searchFor) throws IllegalArgumentException;
+
+  /**
+   * Add parameter to search for cards with given subtype, or not the given subtype.
+   * @param type subtype to search by
+   * @param searchFor to search for cards with the given type, or not the given type
+   * @throws IllegalArgumentException if the given type isn't a supported subtype by the CDDB,
+   * or is null
+   */
+  void bySubtype(String type, boolean searchFor) throws IllegalArgumentException;
 
   /**
    * Add parameter to search for cards printed in the given block, or not in the given block.
