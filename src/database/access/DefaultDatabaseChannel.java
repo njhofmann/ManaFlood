@@ -20,6 +20,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
 import value_objects.card.Card;
+import value_objects.card.query.SearchOption;
 import value_objects.card.relationship.CardRelationship;
 import value_objects.card.relationship.DefaultCardRelationship;
 import value_objects.card.printing.CardPrintingInfo;
@@ -1450,62 +1451,62 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     /**
      * List of parameters added to search by a card's name.
      */
-    private final List<Pair<String, Boolean>> nameParams;
+    private final Map<SearchOption, List<String>> nameParams;
 
     /**
      * List of parameters added to search by a card's text.
      */
-    private final List<Pair<String, Boolean>> textParams;
+    private final Map<SearchOption, List<String>> textParams;
 
     /**
      * List of parameters added to search by a card's colors.
      */
-    private final List<Pair<String, Boolean>> colorParams;
+    private final Map<SearchOption, List<String>> colorParams;
 
     /**
      * List of parameters added to search by a card's color identity.
      */
-    private final List<Pair<String, Boolean>> colorIdentityParams;
+    private final Map<SearchOption, List<String>> colorIdentityParams;
 
     /**
      * List of parameters added to search by a card's supertypes.
      */
-    private final List<Pair<String, Boolean>> supertypeParams;
+    private final Map<SearchOption, List<String>> supertypeParams;
 
     /**
      * List of parameters added to search by a card's types.
      */
-    private final List<Pair<String, Boolean>> typeParams;
+    private final Map<SearchOption, List<String>> typeParams;
 
     /**
      * List of parameters added to search by a card's subtypes.
      */
-    private final List<Pair<String, Boolean>> subtypeParams;
+    private final Map<SearchOption, List<String>> subtypeParams;
 
     /**
      * List of parameters added to search by the blocks a card was printed in.
      */
-    private final List<Pair<String, Boolean>> blockParams;
+    private final Map<SearchOption, List<String>> blockParams;
 
     /**
      * List of parameters added to search by the expansions a card was printed in.
      */
-    private final List<Pair<String, Boolean>> setParams;
+    private final Map<SearchOption, List<String>> setParams;
 
     /**
      * List of parameters added to search by the artists who painted a card.
      */
-    private final List<Pair<String, Boolean>> artistParams;
+    private final Map<SearchOption, List<String>> artistParams;
 
     /**
      * List of parameters added to search by the rarities a card has been printed with.
      */
-    private final List<Pair<String, Boolean>> rarityParams;
+    private final Map<SearchOption, List<String>> rarityParams;
 
     /**
      * List of parameters added to search by the flavor text a card has been printed with.
      */
-    private final List<Pair<String, Boolean>> flavorTextParams;
+    private final Map<SearchOption, List<String>> flavorTextParams;
 
     /**
      * List of parameters added to search by the stats of a card compared to a given quantity.
@@ -1528,21 +1529,21 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * of parameter list
      */
     private DefaultCardQuery() {
-      nameParams = new ArrayList<>();
-      textParams = new ArrayList<>();
-      colorParams = new ArrayList<>();
-      colorIdentityParams = new ArrayList<>();
-      supertypeParams = new ArrayList<>();
-      typeParams = new ArrayList<>();
-      subtypeParams = new ArrayList<>();
-      blockParams = new ArrayList<>();
-      setParams = new ArrayList<>();
-      artistParams = new ArrayList<>();
-      flavorTextParams = new ArrayList<>();
-      statParams = new ArrayList<>();
-      statVersusStatParams = new ArrayList<>();
-      rarityParams = new ArrayList<>();
-      manaTypeParams = new ArrayList<>();
+      nameParams = new HashMap<>();
+      textParams = new HashMap<>();
+      colorParams = new HashMap<>();
+      colorIdentityParams = new HashMap<>();
+      supertypeParams = new HashMap<>();
+      typeParams = new HashMap<>();
+      subtypeParams = new HashMap<>();
+      blockParams = new HashMap<>();
+      setParams = new HashMap<>();
+      artistParams = new HashMap<>();
+      flavorTextParams = new HashMap<>();
+      statParams = new HashMap<>();
+      statVersusStatParams = new HashMap<>();
+      rarityParams = new HashMap<>();
+      manaTypeParams = new HashMap<>();
     }
 
     /**
@@ -1585,59 +1586,201 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     @Override
-    public void byName(String word, boolean searchFor) throws IllegalArgumentException {
+    public void byName(String word, SearchOption searchFor) throws IllegalArgumentException {
+      if (searchFor == null) {
+        throw new IllegalArgumentException("Given search for param can't be null!");
+      }
       validWord(word);
       word = formatWordToSQL(word);
-      nameParams.add(new Pair<>(word, searchFor));
+      addParam(nameParams, searchFor, word);
+    }
+
+    @Override
+    public void byText(String word, SearchOption searchFor) throws IllegalArgumentException {
+      if (searchFor == null) {
+        throw new IllegalArgumentException("Given search for param can't be null!");
+      }
+      validWord(word);
+      word = formatWordToSQL(word);
+      addParam(textParams, searchFor, word);
+    }
+
+    @Override
+    public void byColor(String color, SearchOption searchFor) throws IllegalArgumentException {
+      if (color == null || searchFor == null) {
+        throw new IllegalArgumentException("Given params can't be null!");
+      }
+      else if (!colors.contains(color)) {
+        throw new IllegalArgumentException(String.format("Given color %s not contained in the CDDB!", color));
+      }
+      addParam(colorParams, searchFor, color);
+    }
+
+    @Override
+    public void byColorIdentity(String color, SearchOption searchFor) throws IllegalArgumentException {
+      if (color == null || searchFor == null) {
+        throw new IllegalArgumentException("Given params can't be null!");
+      }
+      else if (!colors.contains(color)) {
+        throw new IllegalArgumentException(String.format("Given color %s not contained in the CDDB!", color));
+      }
+      addParam(colorIdentityParams, searchFor, color);
+    }
+
+    @Override
+    public void bySupertype(String type, SearchOption searchFor) throws IllegalArgumentException {
+      if (type == null || searchFor == null) {
+        throw new IllegalArgumentException("Given params can't be null!");
+      }
+      else if (!supertypes.contains(type)) {
+        throw new IllegalArgumentException(String.format("Given supertype %s is not contained in the CDDB!", type));
+      }
+      type = formatWordToSQL(type);
+      addParam(supertypeParams, searchFor, type);
+    }
+
+    @Override
+    public void byType(String type, SearchOption searchFor) throws IllegalArgumentException {
+      if (type == null || searchFor == null) {
+        throw new IllegalArgumentException("Given type can't be null!");
+      }
+      else if (!types.contains(type)) {
+        throw new IllegalArgumentException(String.format("Given type %s is not contained in the CDDB!", type));
+      }
+      type = formatWordToSQL(type);
+      addParam(typeParams, searchFor, type);
+    }
+
+    @Override
+    public void bySubtype(String type, SearchOption searchFor) throws IllegalArgumentException {
+      if (type == null || searchFor == null) {
+        throw new IllegalArgumentException("Given params can't be null!");
+      }
+      else if (!subtypes.contains(type)) {
+        throw new IllegalArgumentException(String.format("Given subtype %s is not contained in the CDDB!", type));
+      }
+      type = formatWordToSQL(type);
+      addParam(subtypeParams, searchFor, type);
+    }
+
+    @Override
+    public void bySet(String set, SearchOption searchFor) throws IllegalArgumentException {
+      if (set == null || searchFor == null) {
+        throw new IllegalArgumentException("Given parameters can't be null!");
+      }
+      else if (!sets.contains(set)) {
+        throw new IllegalArgumentException(String.format("Given set %s is not contained in the CDDB!", set));
+      }
+      set = formatWordToSQL(set);
+      addParam(setParams, searchFor, set);
+    }
+
+    @Override
+    public void byArtist(String artist, SearchOption searchFor) throws IllegalArgumentException {
+      if (artist == null) {
+        throw new IllegalArgumentException("Given type can't be null!");
+      }
+      else if (!artists.contains(artist)) {
+        throw new IllegalArgumentException(String.format("Given artist %s is not contained in the CDDB!", artist));
+      }
+      artist = formatWordToSQL(artist);
+      addParam(artistParams, searchFor, artist);
+    }
+
+    @Override
+    public void byFlavorText(String word, SearchOption searchFor) throws IllegalArgumentException {
+      if (searchFor == null) {
+        throw new IllegalArgumentException("Given params can't be null!");
+      }
+      validWord(word);
+      word = formatWordToSQL(word);
+      addParam(flavorTextParams, searchFor, word);
+    }
+
+    @Override
+    public void byRarity(String rarity, SearchOption searchFor) throws IllegalArgumentException {
+      if (rarity == null || searchFor == null) {
+        throw new IllegalArgumentException("Given params can't be null!");
+      }
+      else if (!rarities.contains(rarity)) {
+        throw new IllegalArgumentException(String.format("Given rarity %s is not contained in the CDDB!", rarity));
+      }
+      addParam(rarityParams, searchFor, rarity);
+    }
+
+    @Override
+    public void byBlock(String block, SearchOption searchFor) throws IllegalArgumentException {
+      if (block == null) {
+        throw new IllegalArgumentException("Given block can't be null!");
+      }
+      else if (!blocks.contains(block)) {
+        throw new IllegalArgumentException(String.format("Given block %s is not contained in the CDDB!", block));
+      }
+      block = formatWordToSQL(block);
+      addParam(blockParams, searchFor, block);
     }
 
     /**
-     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
-     * name and text parameters entered so far.
-     * @return part of this CardQuery dealing with name and text parameters as a StringBuilder
+     *
+     * @param params
+     * @param addUnder
+     * @param paramToAdd
+     * @throws IllegalArgumentException if any given parameter is null
      */
-    private StringBuilder buildNameAndTextQuery() {
-      if (nameParams.isEmpty() && textParams.isEmpty()) {
-        return new StringBuilder();
+    private void addParam(Map<SearchOption, List<String>> params, SearchOption addUnder, String paramToAdd) {
+      if (params == null || addUnder == null || paramToAdd == null) {
+        throw new IllegalArgumentException("Given params can't be null!");
       }
 
-      StringBuilder query = new StringBuilder("SELECT name FROM Card");
-
-      Map<String, List<Pair<String, Boolean>>> nameAndText = new HashMap<>();
-      nameAndText.put("name", nameParams);
-      nameAndText.put("card_text", textParams);
-
-      boolean first = false;
-      for (String category : nameAndText.keySet()) {
-        List<Pair<String, Boolean>> params = nameAndText.get(category);
-        for (Pair<String, Boolean> param : params) {
-          String cond = !first ? "WHERE" : "AND";
-          first = true;
-          String include = new BooleanToLike().apply(param.getB(), param.getA());
-          String toAdd = String.format(" %s %s %s",
-              cond, category, include);
-          query.append(toAdd);
-        }
+      if (params.containsKey(addUnder)) {
+        params.get(addUnder).add(paramToAdd);
       }
-      return query;
+      else {
+        List<String> newParamList = new ArrayList<>();
+        newParamList.add(paramToAdd);
+        params.put(addUnder, newParamList);
+      }
     }
 
     @Override
-    public void byText(String word, boolean searchFor) throws IllegalArgumentException {
-      validWord(word);
-      word = formatWordToSQL(word);
-      textParams.add(new Pair<>(word, searchFor));
+    public void byStat(Stat stat, Comparison comparison, int quantity)
+        throws IllegalArgumentException {
+      if (stat == null) {
+        throw new IllegalArgumentException("Given stat can't be null!");
+      }
+      else if (comparison == null) {
+        throw new IllegalArgumentException("Given comparison can't be null!");
+      }
+      statParams.add(new Triple<>(stat, comparison, quantity));
+    }
+
+
+    @Override
+    public void byStatVersusStat(Stat thisStat, Comparison comparison, Stat otherStat)
+        throws IllegalArgumentException {
+      if (thisStat == null || otherStat == null) {
+        throw new IllegalArgumentException("Given stats can't be null!");
+      }
+      else if (comparison == null) {
+        throw new IllegalArgumentException("Given comparison can't be null!");
+      } else if (thisStat.equals(otherStat)) {
+        throw new IllegalArgumentException("Given stats must be different!");
+      }
+      statVersusStatParams.add(new Triple<>(thisStat, comparison, otherStat));
     }
 
     @Override
-    public void byColor(String color, boolean searchFor) throws IllegalArgumentException {
-      if (color == null) {
-        throw new IllegalArgumentException("Given color can't be null!");
+    public void byManaType(String type, Comparison comparison, int quantity) throws IllegalArgumentException {
+      if (type == null) {
+        throw new IllegalArgumentException("Given mana type can't be null!");
       }
-      else if (!colors.contains(color)) {
-        throw new IllegalArgumentException("Given color is not contained in the CDDB!");
+      else if (comparison == null) {
+        throw new IllegalArgumentException("Given comparison can't be null!");
       }
-      colorParams.add(new Pair<>(color, searchFor));
+      else if (!manaTypes.contains(type)) {
+        throw new IllegalArgumentException("Given mana type is not contained in the CDDB!");
+      }
+      manaTypeParams.add(new Triple<>(type, comparison, quantity));
     }
 
     /**
@@ -1692,15 +1835,23 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return query.append(conditions);
     }
 
-    @Override
-    public void byColorIdentity(String color, boolean searchFor) throws IllegalArgumentException {
-      if (color == null) {
-        throw new IllegalArgumentException("Given color can't be null!");
-      }
-      else if (!colors.contains(color)) {
-        throw new IllegalArgumentException("Given color is not contained in the CDDB!");
-      }
-      colorIdentityParams.add(new Pair<>(color, searchFor));
+
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * name parameters entered so far.
+     * @return part of this CardQuery dealing with name and text parameters as a StringBuilder
+     */
+    private StringBuilder buildNameQuery() {
+
+    }
+
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * text parameters entered so far.
+     * @return part of this CardQuery dealing with name and text parameters as a StringBuilder
+     */
+    private StringBuilder buildTextQuery() {
+
     }
 
     /**
@@ -1709,46 +1860,9 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @return part of this CardQuery dealing with color identity parameters as a StringBuilder
      */
     private StringBuilder buildColorIdentityQuery() {
-      return buildGenericCardQuery(colorIdentityParams, "ColorIdentity",
-          "card_name", "color");
+
     }
 
-
-    @Override
-    public void bySupertype(String type, boolean searchFor) throws IllegalArgumentException {
-      if (type == null) {
-        throw new IllegalArgumentException("Given type can't be null!");
-      }
-      else if (!supertypes.contains(type)) {
-        throw new IllegalArgumentException(String.format("Given supertype %s is not contained in the CDDB!", type));
-      }
-      type = formatWordToSQL(type);
-      supertypeParams.add(new Pair<>(type, searchFor));
-    }
-
-    @Override
-    public void byType(String type, boolean searchFor) throws IllegalArgumentException {
-      if (type == null) {
-        throw new IllegalArgumentException("Given type can't be null!");
-      }
-      else if (!types.contains(type)) {
-        throw new IllegalArgumentException(String.format("Given type %s is not contained in the CDDB!", type));
-      }
-      type = formatWordToSQL(type);
-      typeParams.add(new Pair<>(type, searchFor));
-    }
-
-    @Override
-    public void bySubtype(String type, boolean searchFor) throws IllegalArgumentException {
-      if (type == null) {
-        throw new IllegalArgumentException("Given type can't be null!");
-      }
-      else if (!subtypes.contains(type)) {
-        throw new IllegalArgumentException(String.format("Given subtype %s is not contained in the CDDB!", type));
-      }
-      type = formatWordToSQL(type);
-      subtypeParams.add(new Pair<>(type, searchFor));
-    }
 
     /**
      * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
@@ -1756,8 +1870,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @return part of this CardQuery dealing with supertype parameters as a StringBuilder
      */
     private StringBuilder buildSupertypeQuery() {
-      return buildGenericCardQuery(supertypeParams, "Supertype",
-          "card_name", "type");
+
     }
 
     /**
@@ -1766,8 +1879,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @return part of this CardQuery dealing with type parameters as a StringBuilder
      */
     private StringBuilder buildTypeQuery() {
-      return buildGenericCardQuery(typeParams, "Type",
-          "card_name", "type");
+
     }
 
     /**
@@ -1776,20 +1888,23 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @return part of this CardQuery dealing with subtype parameters as a StringBuilder
      */
     private StringBuilder buildSubtypeQuery() {
-      return buildGenericCardQuery(subtypeParams, "Subtype",
-          "card_name", "type");
+
     }
 
-    @Override
-    public void byBlock(String block, boolean searchFor) throws IllegalArgumentException {
-      if (block == null) {
-        throw new IllegalArgumentException("Given block can't be null!");
-      }
-      else if (!blocks.contains(block)) {
-        throw new IllegalArgumentException("Given block is not contained in the CDDB!");
-      }
-      blockParams.add(new Pair<>(block, searchFor));
+    private StringBuilder buildGenericCardQuery() {
+
     }
+
+
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * expansion parameters entered so far.
+     * @return part of this CardQuery dealing with block parameters as a StringBuilder
+     */
+    private StringBuilder buildExpansionQuery() {
+
+    }
+
 
     /**
      * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
@@ -1797,13 +1912,103 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @return part of this CardQuery dealing with block parameters as a StringBuilder
      */
     private StringBuilder buildBlockQuery() {
-      return buildGenericInclusionQuery("Block", "expansion",
-          "block", blockParams);
+
     }
 
-    private StringBuilder buildExpansionQuery() {
-      return buildGenericInclusionQuery("Expansion", "expansion",
-          "expansion", setParams);
+    private StringBuilder addTable(String tableName, String startingTableShorthand,
+        String tableShorthand, String[] joinParams) {
+      if (startingTableShorthand == null || tableName == null || tableShorthand == null || joinParams == null) {
+        throw new IllegalArgumentException("Given params can't be null!");
+      }
+      else if (joinParams.length == 0) {
+        throw new IllegalArgumentException("Must have at least one join parameter!");
+      }
+
+      StringBuilder tableAdd = new StringBuilder(String.format(" %s.%s JOIN %s.%s",
+          startingTableShorthand, tableName, tableShorthand, tableName));
+
+      boolean firstParam = true;
+      for (String joinParam : joinParams) {
+        String onOrAnd;
+        if (firstParam) {
+          onOrAnd = "ON";
+          firstParam = false;
+        }
+        else {
+          onOrAnd = "AND";
+        }
+        tableAdd.append(String.format(" %s %s.%s = %s.%s",
+            onOrAnd, startingTableShorthand, joinParam, tableShorthand, joinParam));
+      }
+
+      return tableAdd;
+    }
+
+    private StringBuilder buildGenericQuery(Map<SearchOption, List<String>> params,
+        String table, String[] returnColumns, String[] joinColumns, String conditionalColumn,
+        BiFunction<Boolean, String, String> conditionalColumnEquality) {
+      if (table == null || table.isEmpty()) {
+        throw new IllegalArgumentException("Given table can't be null or empty!");
+      }
+
+      int tableCount = 0;
+      String tableSign = "t";
+      String curTable = tableSign + tableCount;
+      String startingTable = curTable;
+      StringBuilder completeQuery = new StringBuilder(String.format("SELECT %s.expansion FROM %s %s",
+          curTable, table, curTable));
+
+      StringBuilder conditions = new StringBuilder();
+
+
+      for (SearchOption searchOption : params.keySet()) {
+        List<String> searchOptionParams = params.get(searchOption);
+        String mergeCond = isStringBuilderEmpty(conditions) ? "WHERE" : "AND";
+        if (searchOption.equals(SearchOption.OneOf)) {
+          if (tableCount > 0) {
+            completeQuery.append(addTable(table, startingTable, curTable, joinColumns));
+          }
+
+          conditions.append(String.format(" %s %s.expansion IN (", mergeCond, curTable));
+          boolean afterFirstOption = false;
+          for (String searchOptionParam : searchOptionParams) {
+            if (afterFirstOption) {
+              conditions.append(", ");
+            }
+            else {
+              afterFirstOption = true;
+            }
+            searchOptionParams.add(String.format("'%s'", searchOptionParam));
+          }
+          conditions.append(")");
+          tableCount++;
+          curTable = tableSign + tableCount;
+        }
+        else {
+          boolean include = searchOption.equals(SearchOption.MustInclude);
+
+          for (String searchOptionParam : searchOptionParams) {
+            if (tableCount > 0) {
+              completeQuery.append(addTable(table, startingTable, curTable, joinColumns));
+            }
+
+            conditions.append(String.format(" %s %s.%s %s",
+                mergeCond, curTable, conditionalColumn,
+                conditionalColumnEquality.apply(include, searchOptionParam)));
+
+            tableCount++;
+            curTable = tableSign + tableCount;
+          }
+        }
+      }
+
+      completeQuery.append(conditions);
+      return completeQuery;
+    }
+
+    private StringBuilder buildGenericExpansionQuery(Map<SearchOption, List<String>> params,
+        String table) {
+
     }
 
     /**
@@ -1871,59 +2076,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return query;
     }
 
-    @Override
-    public void bySet(String set, boolean searchFor) throws IllegalArgumentException {
-      if (set == null) {
-        throw new IllegalArgumentException("Given set can't be null!");
-      }
-      else if (!sets.contains(set)) {
-        throw new IllegalArgumentException(String.format("Given set %s is not contained in the CDDB!", set));
-      }
-      set = formatWordToSQL(set);
-      setParams.add(new Pair<>(set, searchFor));
-    }
-
-    @Override
-    public void byArtist(String artist, boolean searchFor) throws IllegalArgumentException {
-      if (artist == null) {
-        throw new IllegalArgumentException("Given type can't be null!");
-      }
-      else if (!artists.contains(artist)) {
-        throw new IllegalArgumentException("Given artist is not contained in the CDDB!");
-      }
-      artist = formatWordToSQL(artist);
-      artistParams.add(new Pair<>(artist, searchFor));
-    }
-
-    @Override
-    public void byFlavorText(String word, boolean searchFor) throws IllegalArgumentException {
-      validWord(word);
-      word = formatWordToSQL(word);
-      flavorTextParams.add(new Pair<>(word, searchFor));
-    }
-
-    @Override
-    public void byRarity(String rarity, boolean searchFor) throws IllegalArgumentException {
-      if (rarity == null) {
-        throw new IllegalArgumentException("Given rarity can't be null!");
-      }
-      else if (!rarities.contains(rarity)) {
-        throw new IllegalArgumentException("Given rarity is not contained in the CDDB!");
-      }
-      rarityParams.add(new Pair<>(rarity, searchFor));
-    }
-
-    @Override
-    public void byStat(Stat stat, Comparison comparison, int quantity)
-        throws IllegalArgumentException {
-      if (stat == null) {
-        throw new IllegalArgumentException("Given stat can't be null!");
-      }
-      else if (comparison == null) {
-        throw new IllegalArgumentException("Given comparison can't be null!");
-      }
-      statParams.add(new Triple<>(stat, comparison, quantity));
-    }
 
     /**
      * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
@@ -1938,34 +2090,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
       return buildGenericComparisonToIntQuery("Stat", "card_name",
           "category", "base_value", convertedParams);
-    }
-
-    @Override
-    public void byStatVersusStat(Stat thisStat, Comparison comparison, Stat otherStat)
-        throws IllegalArgumentException {
-      if (thisStat == null || otherStat == null) {
-        throw new IllegalArgumentException("Given stats can't be null!");
-      }
-      else if (comparison == null) {
-        throw new IllegalArgumentException("Given comparison can't be null!");
-      } else if (thisStat.equals(otherStat)) {
-        throw new IllegalArgumentException("Given stats must be different!");
-      }
-      statVersusStatParams.add(new Triple<>(thisStat, comparison, otherStat));
-    }
-
-    @Override
-    public void byManaType(String type, Comparison comparison, int quantity) throws IllegalArgumentException {
-      if (type == null) {
-        throw new IllegalArgumentException("Given mana type can't be null!");
-      }
-      else if (comparison == null) {
-        throw new IllegalArgumentException("Given comparison can't be null!");
-      }
-      else if (!manaTypes.contains(type)) {
-        throw new IllegalArgumentException("Given mana type is not contained in the CDDB!");
-      }
-      manaTypeParams.add(new Triple<>(type, comparison, quantity));
     }
 
     /**
@@ -2086,125 +2210,71 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return query.append(conditions);
     }
 
-    /**
-     * Returns if the given StringBuilder is empty.
-     * @param toCheck StringBuilder to check
-     * @return if given StringBuilder is empty
-     */
-    private boolean isStringBuilderEmpty(StringBuilder toCheck) {
-      return toCheck.length() == 0;
+
+    private StringBuilder buildMergedCardQuery() {
+      StringBuilder[] queries = new StringBuilder[]{buildNameQuery(), buildTextQuery(),
+      buildTypeQuery(), buildSubtypeQuery(), buildColorIdentityQuery(), buildColorQuery(),
+      buildSupertypeQuery(), buildManaTypeQuery(), buildStatQuery(), buildStatVersusStatQuery()};
+      return buildGenericMergedQuery(queries);
+    }
+
+    private StringBuilder buildMergedExpansionQuery() {
+      StringBuilder[] queries = new StringBuilder[]{buildExpansionQuery(), buildBlockQuery()};
+      return buildGenericMergedQuery(queries);
+    }
+
+    private StringBuilder buildMergedCardPrintingQuery() {
+      StringBuilder[] queries = new StringBuilder[]{buildExpansionQuery(), buildBlockQuery()};
+      return buildGenericMergedQuery(queries);
+    }
+
+    private StringBuilder buildGenericMergedQuery(StringBuilder[] queries) {
+      if (queries == null) {
+        throw new IllegalArgumentException("Given array of queries can't be null!");
+      }
+      StringBuilder completeQuery = new StringBuilder();
+      for (StringBuilder query : queries) {
+        if (!isStringBuilderEmpty(completeQuery)) {
+          completeQuery.append(" INTERSECT ");
+        }
+        completeQuery.append(query);
+      }
+      return completeQuery;
     }
 
     @Override
     public String asQuery() {
-      // Card printings completeCardQuery
-      String cardExpansionTable = "CardExpansion";
-      String[] cardExpansionMatchColumns = new String[]{"card_name", "expansion"};
-      List<Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>>> cardExpansionParams =
-          new ArrayList<>(3);
-      cardExpansionParams.add(new Triple<>("rarity", rarityParams, new BooleanToEqual()));
-      cardExpansionParams.add(new Triple<>("flavor_text", flavorTextParams, new BooleanToLike()));
-      cardExpansionParams.add(new Triple<>("artist", artistParams, new BooleanToEqual()));
+      StringBuilder completeQuery = new StringBuilder("SELECT card_name, expansion, number FROM CardExpansion");
 
-      StringBuilder completeCardQuery = new StringBuilder("SELECT ");
-      StringBuilder conditions = new StringBuilder();
+      String mergeCond = "WHERE";
 
-      int i = 0;
-      String curTable = "t" + i;
-      String startingTable = curTable;
-
-      int j = 0;
-      for (String returnParam : cardExpansionMatchColumns) {
-        if (j != 0) {
-          completeCardQuery.append(", ");
-        }
-        completeCardQuery.append(String.format("%s.%s %s", curTable, returnParam, returnParam));
-        j++;
-      }
-      completeCardQuery.append(String.format(" FROM %s %s", cardExpansionTable, curTable));
-
-      String cond = "";
-      for (Triple<String, List<Pair<String, Boolean>>, BiFunction<Boolean, String, String>> paramType : cardExpansionParams) {
-        String column = paramType.getA();
-        List<Pair<String, Boolean>> params = paramType.getB();
-        BiFunction<Boolean, String, String> toInclude = paramType.getC();
-
-        for (Pair<String, Boolean> param : params) {
-          curTable = "t" + i;
-          if (i == 0) {
-            cond = "WHERE";
-          }
-          else {
-            completeCardQuery.append(String.format(" JOIN %s %s", cardExpansionTable, curTable));
-            int k = 0;
-            for (String joinParam : cardExpansionMatchColumns) {
-              if (k == 0) {
-                completeCardQuery.append(" ON");
-              }
-              else {
-                completeCardQuery.append(" AND");
-              }
-              completeCardQuery.append(String.format(" %s.%s = %s.%s",
-                  startingTable, joinParam, curTable, joinParam));
-              k++;
-            }
-            cond = "AND";
-          }
-          String booleanToString = toInclude.apply(param.getB(), param.getA());
-          String condToAdd = String.format(" %s %s.%s %s",
-              cond, curTable, column, booleanToString);
-          conditions.append(condToAdd);
-          i++;
-        }
-      }
-
-      boolean conditionsAdded = !cond.isEmpty();
-      completeCardQuery.append(conditions);
-
-      StringBuilder[] cardQueries = new StringBuilder[]{buildNameAndTextQuery(), buildColorQuery(),
-      buildColorIdentityQuery(), buildSupertypeQuery(), buildTypeQuery(), buildSubtypeQuery(),
-          buildStatQuery(), buildStatVersusStatQuery(), buildManaTypeQuery()};
-
-      // Intersection of all card specific queries
-      StringBuilder cardQuery = new StringBuilder();
-      for (StringBuilder query : cardQueries) {
-        if (!isStringBuilderEmpty(query)) {
-          if (!isStringBuilderEmpty(cardQuery)) {
-            cardQuery.append(" INTERSECT ");
-          }
-          cardQuery.append(query);
-        }
-      }
-
-      // Add card specific queries if any
-      String mergeCond = conditionsAdded ? "AND" : "WHERE";
-      if (!isStringBuilderEmpty(cardQuery)) {
-        completeCardQuery.append(String.format(" %s %s.card_name IN (",
-            mergeCond, startingTable));
-        completeCardQuery.append(cardQuery);
-        completeCardQuery.append(")");
+      // Get card specific queries
+      StringBuilder mergedCardQueries = buildMergedCardQuery();
+      if (!isStringBuilderEmpty(mergedCardQueries)) {
+        completeQuery.append(String.format(" %s card_name IN (", mergeCond));
+        completeQuery.append(mergedCardQueries);
+        completeQuery.append(")");
         mergeCond = "AND";
       }
 
-      // Merge with block completeCardQuery if able
-      StringBuilder blockQuery = buildBlockQuery();
-      if (!isStringBuilderEmpty(blockQuery)) {
-        completeCardQuery.append(String.format(" %s %s.expansion IN (",
-            mergeCond, startingTable));
-        completeCardQuery.append(blockQuery);
-        completeCardQuery.append(")");
+      //Get card printing specific queries
+      StringBuilder mergedCardPrintingQueries = buildMergedCardPrintingQuery();
+      if (!isStringBuilderEmpty(mergedCardPrintingQueries)) {
+        completeQuery.append(String.format(" %s (card_name, expansion, number) IN (", mergeCond));
+        completeQuery.append(mergedCardQueries);
+        completeQuery.append(")");
+        mergeCond = "AND";
       }
 
-      // Merge with block completeCardQuery if able
-      StringBuilder expansionQuery = buildExpansionQuery();
-      if (!isStringBuilderEmpty(expansionQuery)) {
-        completeCardQuery.append(String.format(" %s %s.expansion IN (",
-            mergeCond, startingTable));
-        completeCardQuery.append(expansionQuery);
-        completeCardQuery.append(")");
+      // Get expansion specific queries
+      StringBuilder mergedExpansionQueries = buildMergedExpansionQuery();
+      if (!isStringBuilderEmpty(mergedExpansionQueries)) {
+        completeQuery.append(String.format(" %s expansion IN (", mergeCond));
+        completeQuery.append(mergedExpansionQueries);
+        completeQuery.append(")");
       }
 
-      return completeCardQuery.toString();
+      return completeQuery.toString();
     }
 
     @Override
@@ -2224,6 +2294,15 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       statVersusStatParams.clear();
       rarityParams.clear();
       manaTypeParams.clear();
+    }
+
+    /**
+     * Returns if the given StringBuilder is empty.
+     * @param toCheck StringBuilder to check
+     * @return if given StringBuilder is empty
+     */
+    private boolean isStringBuilderEmpty(StringBuilder toCheck) {
+      return toCheck.length() == 0;
     }
 
     /**
