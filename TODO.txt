@@ -1,19 +1,17 @@
-Minor:
+-Retrieve card by given expansions and card numbers
+-Finish card query updates
+-Redo card query tests
 -Add Scryfall image url
--Hashcode equality
--Split multiple artists (fix tests)
--connection isclosed checks
--Write down how time handling is done (timestamp in database)
--Update text on cards option (erreta)
--Add release dates to expansions
--Comprehensive readme explaining project structure and plan
--Identifier vs Info Container for value objects
-
-Major:
--Documentation, refactoring, additional testing
--Deck and deck instance testing
 -Add name, expansions, and name-expansion checks to DefaultCard constructor
--Optional / "one of" arguments
--Optional color / color indicator
--Redo connection, statement openings and closing (old style)
--Terminal thing
+-Redo connection, statement openings and closing (old style) in parser
+-Update text and types on cards option (errata)
+-Get card option
+-Card relationship equality testing
+-Finish card retrieval tests (multiple artists tests, others)
+-Add hashcode to equality tests
+-Deck object testing
+-Terminal view
+-GUI View
+-Documentation updates
+-Write down how time handling is done (timestamp in database)
+-Comprehensive readme explaining project structure and plan and how to use
