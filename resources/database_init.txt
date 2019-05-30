@@ -79,8 +79,8 @@ CREATE TABLE Artist (
   expansion TEXT,
   number TEXT,
   artist TEXT NOT NULL,
-  PRIMARY KEY(card_name, expansion, number),
-  FOREIGN KEY(card_name,expansion,number) REFERENCES Expansion(card_name,expansion,number)
+  PRIMARY KEY(card_name, expansion, number, artist),
+  FOREIGN KEY(card_name,expansion,number) REFERENCES CardExpansion(card_name,expansion,number)
 );
 
 --All the supertypes associated with a card

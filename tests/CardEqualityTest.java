@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import value_objects.card.Card;
 import value_objects.card.query.CardQuery;
 import value_objects.card.query.Comparison;
+import value_objects.card.query.SearchOption;
 import value_objects.card.query.Stat;
 
 /**
@@ -43,16 +44,16 @@ public class CardEqualityTest {
   @DisplayName("Different cards, by name, before")
   @Test
   public void diffCardNamesBefore() throws SQLException {
-    cardQuery.byName("Abzan", true);
-    cardQuery.byName("Charm", true);
+    cardQuery.byName("Abzan", SearchOption.MustInclude);
+    cardQuery.byName("Charm", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Gruul", true);
-    cardQuery.byName("Charm", true);
+    cardQuery.byName("Gruul", SearchOption.MustInclude);
+    cardQuery.byName("Charm", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
@@ -66,16 +67,16 @@ public class CardEqualityTest {
   @DisplayName("Different cards, by name, after")
   @Test
   public void diffCardNamesAfter() throws SQLException {
-    cardQuery.byName("Enforcer", true);
-    cardQuery.byName("Griffin", true);
+    cardQuery.byName("Enforcer", SearchOption.MustInclude);
+    cardQuery.byName("Griffin", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Abbey", true);
-    cardQuery.byName("Griffin", true);
+    cardQuery.byName("Abbey", SearchOption.MustInclude);
+    cardQuery.byName("Griffin", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
@@ -89,24 +90,24 @@ public class CardEqualityTest {
   @DisplayName("Different card, by name, transitive")
   @Test
   public void diffCardNamesTransitive() throws SQLException {
-    cardQuery.byName("Firestorm", true);
-    cardQuery.byName("Phoenix", true);
+    cardQuery.byName("Firestorm", SearchOption.MustInclude);
+    cardQuery.byName("Phoenix", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Kuldotha", true);
-    cardQuery.byName("Phoenix", true);
+    cardQuery.byName("Kuldotha", SearchOption.MustInclude);
+    cardQuery.byName("Phoenix", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
     cardB = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Shard", true);
-    cardQuery.byName("Phoenix", true);
+    cardQuery.byName("Shard", SearchOption.MustInclude);
+    cardQuery.byName("Phoenix", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
@@ -129,20 +130,20 @@ public class CardEqualityTest {
   public void equalCards() throws SQLException {
     // Should retrieve Boros Charm with all of its expansions
 
-    cardQuery.byName("Boros", true);
-    cardQuery.byName("Charm", true);
-    //cardQuery.byBlock("Return to Ravnica", true);
+    cardQuery.byName("Boros", SearchOption.MustInclude);
+    cardQuery.byName("Charm", SearchOption.MustInclude);
+    //cardQuery.byBlock("Return to Ravnica", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byColor("R", true);
-    cardQuery.byColor("W", true);
-    cardQuery.byType("instant", true);
+    cardQuery.byColor("R", SearchOption.MustInclude);
+    cardQuery.byColor("W", SearchOption.MustInclude);
+    cardQuery.byType("instant", SearchOption.MustInclude);
     cardQuery.byStat(Stat.CMC, Comparison.EQUAL, 2);
-    cardQuery.byText("indestructible", true);
+    cardQuery.byText("indestructible", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
@@ -157,15 +158,15 @@ public class CardEqualityTest {
   @DisplayName("Same name, same expansions with more, before")
   @Test
   public void sameNameSameExpansionsMoreBefore() throws SQLException {
-    cardQuery.byName("Giant", true);
-    cardQuery.byName("Growth", true);
-    cardQuery.bySet("Battlebond", true);
-    cardQuery.bySet("Magic 2014", true);
+    cardQuery.byName("Giant", SearchOption.MustInclude);
+    cardQuery.byName("Growth", SearchOption.MustInclude);
+    cardQuery.bySet("Battlebond", SearchOption.MustInclude);
+    cardQuery.bySet("Magic 2014", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
 
-    cardQuery.bySet("Return to Ravnica", true);
+    cardQuery.bySet("Return to Ravnica", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
@@ -179,20 +180,20 @@ public class CardEqualityTest {
   @DisplayName("Different cards, same expansions with more, after")
   @Test
   public void sameNameSameExpansionsMoreAfter() throws SQLException {
-    cardQuery.byName("Lightning", true);
-    cardQuery.byName("Bolt", true);
-    cardQuery.bySet("Magic 2011", true);
-    cardQuery.bySet("Beatdown Box Set", true);
-    cardQuery.bySet("Anthologies", true);
+    cardQuery.byName("Lightning", SearchOption.MustInclude);
+    cardQuery.byName("Bolt", SearchOption.MustInclude);
+    cardQuery.bySet("Magic 2011", SearchOption.MustInclude);
+    cardQuery.bySet("Beatdown Box Set", SearchOption.MustInclude);
+    cardQuery.bySet("Anthologies", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Lightning", true);
-    cardQuery.byName("Bolt", true);
-    cardQuery.bySet("Beatdown Box Set", true);
-    cardQuery.bySet("Anthologies", true);
+    cardQuery.byName("Lightning", SearchOption.MustInclude);
+    cardQuery.byName("Bolt", SearchOption.MustInclude);
+    cardQuery.bySet("Beatdown Box Set", SearchOption.MustInclude);
+    cardQuery.bySet("Anthologies", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
@@ -206,22 +207,22 @@ public class CardEqualityTest {
   @DisplayName("Different cards, same name same expansions and more, transitive")
   @Test
   public void sameNameSameExpansionsMoreTransitive() throws SQLException {
-    cardQuery.byName("Swords", true);
-    cardQuery.byName("to", true);
-    cardQuery.byName("Plowshares", true);
-    cardQuery.bySet("Conspiracy", true);
+    cardQuery.byName("Swords", SearchOption.MustInclude);
+    cardQuery.byName("to", SearchOption.MustInclude);
+    cardQuery.byName("Plowshares", SearchOption.MustInclude);
+    cardQuery.bySet("Conspiracy", SearchOption.MustInclude);
 
     cardQueryResult = cardChannel.queryCards(cardQuery);
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
 
-    cardQuery.bySet("Iconic Masters", true);
+    cardQuery.bySet("Iconic Masters", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
     cardB = cardQueryResult.first();
 
-    cardQuery.bySet("Masters 25", true);
+    cardQuery.bySet("Masters 25", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
@@ -243,19 +244,19 @@ public class CardEqualityTest {
   @DisplayName("Same name, different expansions, before")
   @Test
   public void sameNameDiffExpansionsBefore() throws SQLException {
-    cardQuery.byName("Dark", true);
-    cardQuery.byName("Ritual", true);
-    cardQuery.bySet("Planechase", true);
+    cardQuery.byName("Dark", SearchOption.MustInclude);
+    cardQuery.byName("Ritual", SearchOption.MustInclude);
+    cardQuery.bySet("Planechase", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Dark", true);
-    cardQuery.byName("Ritual", true);
-    cardQuery.bySet("Tempest Remastered", true);
-    cardQuery.bySet("Urza's Saga", true);
+    cardQuery.byName("Dark", SearchOption.MustInclude);
+    cardQuery.byName("Ritual", SearchOption.MustInclude);
+    cardQuery.bySet("Tempest Remastered", SearchOption.MustInclude);
+    cardQuery.bySet("Urza's Saga", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
@@ -269,17 +270,17 @@ public class CardEqualityTest {
   @DisplayName("Different cards, diff expansions, after")
   @Test
   public void sameNameDiffExpansionsAfter() throws SQLException {
-    cardQuery.byName("Brainstorm", true);
-    cardQuery.bySet("Vintage Masters", true);
-    cardQuery.bySet("Beatdown Box Set", true);
+    cardQuery.byName("Brainstorm", SearchOption.MustInclude);
+    cardQuery.bySet("Vintage Masters", SearchOption.MustInclude);
+    cardQuery.bySet("Beatdown Box Set", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Brainstorm", true);
-    cardQuery.bySet("Commander 2018", true);
+    cardQuery.byName("Brainstorm", SearchOption.MustInclude);
+    cardQuery.bySet("Commander 2018", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
@@ -293,22 +294,22 @@ public class CardEqualityTest {
   @DisplayName("Different cards, diff expansions, transitive")
   @Test
   public void sameNameDiffExpansionsTransitive() throws SQLException {
-    cardQuery.byName("Swords", true);
-    cardQuery.byName("to", true);
-    cardQuery.byName("Plowshares", true);
-    cardQuery.bySet("Conspiracy", true);
+    cardQuery.byName("Swords", SearchOption.MustInclude);
+    cardQuery.byName("to", SearchOption.MustInclude);
+    cardQuery.byName("Plowshares", SearchOption.MustInclude);
+    cardQuery.bySet("Conspiracy", SearchOption.MustInclude);
 
     cardQueryResult = cardChannel.queryCards(cardQuery);
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
 
-    cardQuery.bySet("Iconic Masters", true);
+    cardQuery.bySet("Iconic Masters", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
     cardB = cardQueryResult.first();
 
-    cardQuery.bySet("Masters 25", true);
+    cardQuery.bySet("Masters 25", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
@@ -330,20 +331,20 @@ public class CardEqualityTest {
   @DisplayName("Same name, single diff expansion, before")
   @Test
   public void sameNameSingleDiffExpansionBefore() throws SQLException {
-    cardQuery.byName("Path", true);
-    cardQuery.byName("to", true);
-    cardQuery.byName("Exile", true);
-    cardQuery.bySet("Archenemy", true);
+    cardQuery.byName("Path", SearchOption.MustInclude);
+    cardQuery.byName("to", SearchOption.MustInclude);
+    cardQuery.byName("Exile", SearchOption.MustInclude);
+    cardQuery.bySet("Archenemy", SearchOption.MustInclude);
 
     cardQueryResult = cardChannel.queryCards(cardQuery);
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Path", true);
-    cardQuery.byName("to", true);
-    cardQuery.byName("Exile", true);
-    cardQuery.bySet("Conflux", true);
+    cardQuery.byName("Path", SearchOption.MustInclude);
+    cardQuery.byName("to", SearchOption.MustInclude);
+    cardQuery.byName("Exile", SearchOption.MustInclude);
+    cardQuery.bySet("Conflux", SearchOption.MustInclude);
 
     cardQueryResult = cardChannel.queryCards(cardQuery);
     assertEquals(1, cardQueryResult.size());
@@ -357,18 +358,18 @@ public class CardEqualityTest {
   @DisplayName("Same name, single diff expansion, after")
   @Test
   public void sameNameSingleDiffExpansionAfter() throws SQLException {
-    cardQuery.byName("Doom", true);
-    cardQuery.byName("Blade", true);
-    cardQuery.bySet("Explorers of Ixalan", true);
+    cardQuery.byName("Doom", SearchOption.MustInclude);
+    cardQuery.byName("Blade", SearchOption.MustInclude);
+    cardQuery.bySet("Explorers of Ixalan", SearchOption.MustInclude);
 
     cardQueryResult = cardChannel.queryCards(cardQuery);
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Doom", true);
-    cardQuery.byName("Blade", true);
-    cardQuery.bySet("Commander 2011", true);
+    cardQuery.byName("Doom", SearchOption.MustInclude);
+    cardQuery.byName("Blade", SearchOption.MustInclude);
+    cardQuery.bySet("Commander 2011", SearchOption.MustInclude);
 
     cardQueryResult = cardChannel.queryCards(cardQuery);
     assertEquals(1, cardQueryResult.size());
@@ -382,25 +383,25 @@ public class CardEqualityTest {
   @DisplayName("Same name, single diff expansion, transitive")
   @Test
   public void sameNameSingleDiffExpansionTransitive() throws SQLException {
-    cardQuery.byName("Counterspell", true);
-    cardQuery.bySet("Amonkhet Invocations", true);
+    cardQuery.byName("Counterspell", SearchOption.MustInclude);
+    cardQuery.bySet("Amonkhet Invocations", SearchOption.MustInclude);
 
     cardQueryResult = cardChannel.queryCards(cardQuery);
     assertEquals(1, cardQueryResult.size());
     cardA = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Counterspell", true);
-    cardQuery.bySet("Conspiracy", true);
-    cardQuery.bySet("Masters 25", true);
+    cardQuery.byName("Counterspell", SearchOption.MustInclude);
+    cardQuery.bySet("Conspiracy", SearchOption.MustInclude);
+    cardQuery.bySet("Masters 25", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
     cardB = cardQueryResult.first();
     cardQuery.clear();
 
-    cardQuery.byName("Counterspell", true);
-    cardQuery.bySet("Vintage Masters", true);
+    cardQuery.byName("Counterspell", SearchOption.MustInclude);
+    cardQuery.bySet("Vintage Masters", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());

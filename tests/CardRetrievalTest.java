@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import value_objects.card.Card;
 import value_objects.card.printing.CardPrintingInfo;
 import value_objects.card.query.CardQuery;
+import value_objects.card.query.SearchOption;
 import value_objects.card.relationship.CardRelationship;
 import value_objects.card.relationship.DefaultCardRelationship;
 
@@ -51,8 +52,8 @@ public class CardRetrievalTest {
   @DisplayName("Single creature card with expansion with no relationship")
   @Test
   public void singleCreatureSingleExpansionNoRelationship() throws SQLException {
-    cardQuery.byName("Fabled", true);
-    cardQuery.byName("Hero", true);
+    cardQuery.byName("Fabled", SearchOption.MustInclude);
+    cardQuery.byName("Hero", SearchOption.MustInclude);
     SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
 
     // Check size
@@ -112,21 +113,23 @@ public class CardRetrievalTest {
     assertEquals(1, cardPrintings.size());
 
     CardPrintingInfo solePrinting = cardPrintings.first();
+    SortedSet<String> artists = solePrinting.getArtists();
     assertEquals(soleResult.getName(), solePrinting.getCardName()); // Check name
     assertEquals("Theros", solePrinting.getCardExpansion()); // Check expansion
     assertEquals("12", solePrinting.getIdentifyingNumber()); // Check identifying number
     assertEquals("rare", solePrinting.getRarity()); // Check rarity
     assertEquals("\"You. Poet. Be sure to write this down.\"", solePrinting.getFlavorText());
-    assertEquals("Aaron Miller", solePrinting.getArtist());
+    assertEquals(1, artists.size());
+    assertEquals("Aaron Miller", artists.first());
   }
 
   // Single planeswalker card from single expansion with no relationship
   @DisplayName("Single creature card with single expansion with no relationship")
   @Test
   public void singlePlaneswalkerSingleExpansionNoRelationship() throws SQLException {
-    cardQuery.byName("Ajani", true);
-    cardQuery.byName("Valiant", true);
-    cardQuery.byName("Protector", true);
+    cardQuery.byName("Ajani", SearchOption.MustInclude);
+    cardQuery.byName("Valiant", SearchOption.MustInclude);
+    cardQuery.byName("Protector", SearchOption.MustInclude);
     SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
     System.out.println(cardQuery.asQuery());
     // Check size
@@ -193,21 +196,23 @@ public class CardRetrievalTest {
     assertEquals(1, cardPrintings.size());
 
     CardPrintingInfo solePrinting = cardPrintings.first();
+    SortedSet<String> artists = solePrinting.getArtists();
     assertEquals(soleResult.getName(), solePrinting.getCardName()); // Check name
     assertEquals("Aether Revolt", solePrinting.getCardExpansion()); // Check expansion
     assertEquals("185", solePrinting.getIdentifyingNumber()); // Check identifying number
     assertEquals("mythic", solePrinting.getRarity()); // Check rarity
     assertTrue(solePrinting.getFlavorText().isEmpty());
-    assertEquals("Anna Steinbauer", solePrinting.getArtist());
+    assertEquals(1, artists.size());
+    assertEquals("Anna Steinbauer", artists.first());
   }
 
   // Check card with differing color and color identity
   @DisplayName("Card with different color and color identity")
   @Test
   public void differentColorColorIdentity() throws SQLException {
-    cardQuery.byName("Jodah", true);
-    cardQuery.byName("Archmage", true);
-    cardQuery.byName("Eternal", true);
+    cardQuery.byName("Jodah", SearchOption.MustInclude);
+    cardQuery.byName("Archmage", SearchOption.MustInclude);
+    cardQuery.byName("Eternal", SearchOption.MustInclude);
     SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
 
     // Check size
@@ -228,7 +233,6 @@ public class CardRetrievalTest {
     expectedManaCost.put("{W}", 1);
     expectedManaCost.put("{U}", 1);
     assertEquals(expectedManaCost, soleResult.getManaCost());
-
 
     // Check colors
     Set<String> colors = new HashSet<>();
@@ -283,6 +287,7 @@ public class CardRetrievalTest {
     Iterator<CardPrintingInfo> iterator = cardPrintings.iterator();
 
     CardPrintingInfo firstPrinting = iterator.next();
+    SortedSet<String> firstArtists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
     assertEquals("Dominaria", firstPrinting.getCardExpansion()); // Check expansion
     assertEquals("198", firstPrinting.getIdentifyingNumber()); // Check identifying number
@@ -290,9 +295,11 @@ public class CardRetrievalTest {
     assertEquals("\"Chronicles across the ages describe Jodah. They likely refer not to "
         + "one mage, but to a family or an arcane title.\" — Arkol, Argivian scholar",
         firstPrinting.getFlavorText()); // Check flavor text
-    assertEquals("Yongjae Choi", firstPrinting.getArtist()); // Check artist
+    assertEquals(1, firstArtists.size()); // Check artist size
+    assertEquals("Yongjae Choi", firstArtists.first()); // Check artist
 
     CardPrintingInfo secondPrinting = iterator.next();
+    SortedSet<String> secondArtists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), secondPrinting.getCardName()); // Check name
     assertEquals("Dominaria Promos", secondPrinting.getCardExpansion()); // Check expansion
     assertEquals("198s", secondPrinting.getIdentifyingNumber()); // Check identifying number
@@ -300,15 +307,16 @@ public class CardRetrievalTest {
     assertEquals("\"Chronicles across the ages describe Jodah. They likely refer not to "
             + "one mage, but to a family or an arcane title.\" — Arkol, Argivian scholar",
         secondPrinting.getFlavorText()); // Check flavor text
-    assertEquals("Yongjae Choi", secondPrinting.getArtist()); // Check artist
+    assertEquals(1, secondArtists.size()); // Check artist size
+    assertEquals("Yongjae Choi", secondArtists.first()); // Check artist
   }
 
   // Single non-creature, non-planeswalker card from single expansion with no relationship
   @DisplayName("Non-creature, non-planeswalker card from single expansion with no relationship")
   @Test
   public void nonCreatureNonPlaneswalkerSingleExpansionNoRelationship() throws SQLException {
-    cardQuery.byName("Drastic", true);
-    cardQuery.byName("Revelation", true);
+    cardQuery.byName("Drastic", SearchOption.MustInclude);
+    cardQuery.byName("Revelation", SearchOption.MustInclude);
     SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
 
     // Check size
@@ -367,23 +375,24 @@ public class CardRetrievalTest {
     assertEquals(1, cardPrintings.size());
 
     CardPrintingInfo firstPrinting = cardPrintings.first();
+    SortedSet<String> artists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
     assertEquals("Alara Reborn", firstPrinting.getCardExpansion()); // Check expansion
     assertEquals("111", firstPrinting.getIdentifyingNumber()); // Check identifying number
     assertEquals("uncommon", firstPrinting.getRarity()); // Check rarity
     assertEquals("Every disaster holds mystery, for lack of a sane witness.",
         firstPrinting.getFlavorText()); // Check flavor text
-    assertEquals("Trevor Claxton", firstPrinting.getArtist()); // Check artist
+    assertEquals("Trevor Claxton", artists.first()); // Check artist
   }
 
   // Multiple cards from single expansion with no relationship
   @DisplayName("Multiple cards with no relationship from single expansion")
   @Test
   public void multipleCardsNoRelationshipSingleExpansion() throws SQLException {
-    cardQuery.byType("instant", true);
-    cardQuery.byColor("G", true);
-    cardQuery.byColor("B", true);
-    cardQuery.byBlock("Return to Ravnica", true);
+    cardQuery.byType("instant", SearchOption.MustInclude);
+    cardQuery.byColor("G", SearchOption.MustInclude);
+    cardQuery.byColor("B", SearchOption.MustInclude);
+    cardQuery.byBlock("Return to Ravnica", SearchOption.MustInclude);
     SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
 
     // Check size
@@ -441,24 +450,26 @@ public class CardRetrievalTest {
     assertEquals(1, cardPrintings.size());
 
     CardPrintingInfo firstPrinting = cardPrintings.first();
+    SortedSet<String> artists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
     assertEquals("Alara Reborn", firstPrinting.getCardExpansion()); // Check expansion
     assertEquals("111", firstPrinting.getIdentifyingNumber()); // Check identifying number
     assertEquals("uncommon", firstPrinting.getRarity()); // Check rarity
     assertEquals("Every disaster holds mystery, for lack of a sane witness.",
         firstPrinting.getFlavorText()); // Check flavor text
-    assertEquals("Trevor Claxton", firstPrinting.getArtist()); // Check artist
+    assertEquals(1, artists.size()); // Check artist size
+    assertEquals("Trevor Claxton", artists.first()); // Check artist
   }
 
   // Single card from single expansion with two card relationship
   @DisplayName("Single card with two card relationship from single expansion")
   @Test
   public void singleCardTwoCardRelationshipSingleExpansion() throws SQLException {
-    cardQuery.byName("Beck", true);
-    cardQuery.byType("sorcery", true);
-    cardQuery.byColor("U", true);
-    cardQuery.byColor("G", true);
-    cardQuery.bySet("Dragon's Maze", true);
+    cardQuery.byName("Beck", SearchOption.MustInclude);
+    cardQuery.byType("sorcery", SearchOption.MustInclude);
+    cardQuery.byColor("U", SearchOption.MustInclude);
+    cardQuery.byColor("G", SearchOption.MustInclude);
+    cardQuery.bySet("Dragon's Maze", SearchOption.MustInclude);
     SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
 
     // Check size
@@ -523,20 +534,22 @@ public class CardRetrievalTest {
     assertEquals(1, cardPrintings.size());
 
     CardPrintingInfo firstPrinting = cardPrintings.first();
+    SortedSet<String> artists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
     assertEquals("Dragon's Maze", firstPrinting.getCardExpansion()); // Check expansion
     assertEquals("123", firstPrinting.getIdentifyingNumber()); // Check identifying number
     assertEquals("rare", firstPrinting.getRarity()); // Check rarity
     assertTrue(firstPrinting.getFlavorText().isEmpty()); // Check flavor text
-    assertEquals("Adam Paquette", firstPrinting.getArtist()); // Check artist
+    assertEquals(1, artists.first()); // Check artist size
+    assertEquals("Adam Paquette", artists.first()); // Check artist
   }
 
   // Single card from single expansion with three card relationship
   @DisplayName("Single card with three card relationship from single expansion")
   @Test
   public void singleCardThreeCardRelationshipSingleExpansion() throws SQLException {
-    cardQuery.byName("Graf", true);
-    cardQuery.byName("Rats", true);
+    cardQuery.byName("Graf", SearchOption.MustInclude);
+    cardQuery.byName("Rats", SearchOption.MustInclude);
     SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
 
     // Check size
@@ -605,11 +618,13 @@ public class CardRetrievalTest {
     assertEquals(1, cardPrintings.size());
 
     CardPrintingInfo firstPrinting = cardPrintings.first();
+    SortedSet<String> artists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
     assertEquals("Eldritch Moon", firstPrinting.getCardExpansion()); // Check expansion
     assertEquals("91a", firstPrinting.getIdentifyingNumber()); // Check identifying number
     assertEquals("common", firstPrinting.getRarity()); // Check rarity
     assertTrue(firstPrinting.getFlavorText().isEmpty()); // Check flavor text
-    assertEquals("Jason Felix", firstPrinting.getArtist()); // Check artist
+    assertEquals(1, artists.size());
+    assertEquals("Jason Felix", artists.first()); // Check artist
   }
 }

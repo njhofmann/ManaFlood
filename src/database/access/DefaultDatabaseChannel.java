@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -21,7 +22,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.BiFunction;
 import value_objects.card.Card;
 import value_objects.card.query.SearchOption;
 import value_objects.card.relationship.CardRelationship;
@@ -1450,6 +1450,12 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
    */
   private class DefaultCardQuery implements CardQuery {
 
+    private final Map<Stat, String> statTableNames;
+
+    private final Map<Stat, String> statValueColumnNames;
+
+    private final Map<Stat, String> statCardNameColumnNames;
+
     /**
      * List of parameters added to search by a card's name.
      */
@@ -1484,11 +1490,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * List of parameters added to search by a card's subtypes.
      */
     private final Map<SearchOption, Set<String>> subtypeParams;
-
-    /**
-     * List of parameters added to search by the blocks a card was printed in.
-     */
-    private final Map<SearchOption, Set<String>> blockParams;
 
     /**
      * List of parameters added to search by the expansions a card was printed in.
@@ -1538,53 +1539,34 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       supertypeParams = new HashMap<>();
       typeParams = new HashMap<>();
       subtypeParams = new HashMap<>();
-      blockParams = new HashMap<>();
       setParams = new HashMap<>();
       artistParams = new HashMap<>();
+      rarityParams = new HashMap<>();
       flavorTextParams = new HashMap<>();
       statParams = new ArrayList<>();
       statVersusStatParams = new ArrayList<>();
-      rarityParams = new HashMap<>();
       manaTypeParams = new ArrayList<>();
-    }
 
-    /**
-     * Function object for formatting a given String parameter into a SQL 'LIKE' statement with
-     * universal wildcard operators.
-     */
-    class BooleanToLike implements BiFunction<Boolean, String, String> {
+      // Initalize Stat info maps
+      statTableNames = new EnumMap<>(Stat.class);
+      statValueColumnNames = new EnumMap<>(Stat.class);
+      statCardNameColumnNames = new EnumMap<>(Stat.class);
 
-      /**
-       * Format the given String parameter as a SQL LIKE statement, where 'LIKE' or 'NOT LIKE'
-       * is determined by include parameter.
-       * @param include for formatted parameter to be 'LIKE' or 'NOT LIKE'
-       * @param parameter string parameter to format
-       * @return properly formatted parameter
-       */
-      @Override
-      public String apply(Boolean include, String parameter) {
-        String includeString = include ? "LIKE" : "NOT LIKE";
-        return String.format("%s '%%%s%%'", includeString, parameter);
-      }
-    }
+      statTableNames.put(Stat.CMC, "Card");
+      statValueColumnNames.put(Stat.CMC, "cmc");
+      statCardNameColumnNames.put(Stat.CMC, "name");
 
-    /**
-     * Function object for formatting a given String parameter into a SQL equality statement
-     */
-    class BooleanToEqual implements BiFunction<Boolean, String, String> {
+      statTableNames.put(Stat.LOYALTY, "Loyalty");
+      statValueColumnNames.put(Stat.LOYALTY, "loyalty_value");
+      statCardNameColumnNames.put(Stat.LOYALTY, "card_name");
 
-      /**
-       * Format the given String parameter as a SQL equality statement, where equality or
-       * inequality is determined by include parameter.
-       * @param include for formatted parameter to be equal or not equal
-       * @param parameter string parameter to format
-       * @return properly formatted parameter
-       */
-      @Override
-      public String apply(Boolean include, String parameter) {
-        String includeString = include ? "=" : "!=";
-        return String.format("%s '%s'", includeString, parameter);
-      }
+      statTableNames.put(Stat.POWER, "PowerToughness");
+      statValueColumnNames.put(Stat.POWER, "power_value");
+      statCardNameColumnNames.put(Stat.POWER, "card_name");
+
+      statTableNames.put(Stat.TOUGHNESS, "PowerToughness");
+      statValueColumnNames.put(Stat.TOUGHNESS, "toughness_value");
+      statCardNameColumnNames.put(Stat.TOUGHNESS, "card_name");
     }
 
     @Override
@@ -1603,7 +1585,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         throw new IllegalArgumentException("Given search for param can't be null!");
       }
       validWord(word);
-      word = formatWordToSQL(word);
       addSearchOptionParam(textParams, searchFor, word);
     }
 
@@ -1637,7 +1618,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       else if (!supertypes.contains(type)) {
         throw new IllegalArgumentException(String.format("Given supertype %s is not contained in the CDDB!", type));
       }
-      type = formatWordToSQL(type);
       addSearchOptionParam(supertypeParams, searchFor, type);
     }
 
@@ -1649,7 +1629,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       else if (!types.contains(type)) {
         throw new IllegalArgumentException(String.format("Given type %s is not contained in the CDDB!", type));
       }
-      type = formatWordToSQL(type);
       addSearchOptionParam(typeParams, searchFor, type);
     }
 
@@ -1661,7 +1640,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       else if (!subtypes.contains(type)) {
         throw new IllegalArgumentException(String.format("Given subtype %s is not contained in the CDDB!", type));
       }
-      type = formatWordToSQL(type);
       addSearchOptionParam(subtypeParams, searchFor, type);
     }
 
@@ -1673,7 +1651,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       else if (!sets.contains(set)) {
         throw new IllegalArgumentException(String.format("Given set %s is not contained in the CDDB!", set));
       }
-      set = formatWordToSQL(set);
       addSearchOptionParam(setParams, searchFor, set);
     }
 
@@ -1685,7 +1662,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       else if (!artists.contains(artist)) {
         throw new IllegalArgumentException(String.format("Given artist %s is not contained in the CDDB!", artist));
       }
-      artist = formatWordToSQL(artist);
       addSearchOptionParam(artistParams, searchFor, artist);
     }
 
@@ -1695,7 +1671,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         throw new IllegalArgumentException("Given params can't be null!");
       }
       validWord(word);
-      word = formatWordToSQL(word);
       addSearchOptionParam(flavorTextParams, searchFor, word);
     }
 
@@ -1719,7 +1694,20 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         throw new IllegalArgumentException(String.format("Given block %s is not contained in the CDDB!", block));
       }
       block = formatWordToSQL(block);
-      addSearchOptionParam(blockParams, searchFor, block);
+
+      String expansionsFromBlockQuery = "SELECT expansion FROM Block WHERE block = '?'";
+      try (Connection connection = connect();
+      PreparedStatement preparedStatement = connection.prepareStatement(expansionsFromBlockQuery)) {
+        preparedStatement.setString(1, block);
+        ResultSet resultSet = preparedStatement.executeQuery();
+        Set<String> expansions = setParams.get(searchFor);
+        while (resultSet.next()) {
+          expansions.add(resultSet.getString("expansion"));
+        }
+      }
+      catch (SQLException e) {
+       throw new IllegalArgumentException("Failed to add expansions from associated block!");
+      }
     }
 
     /**
@@ -1733,6 +1721,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       if (params == null || addUnder == null || paramToAdd == null) {
         throw new IllegalArgumentException("Given params can't be null!");
       }
+
+      paramToAdd = formatWordToSQL(paramToAdd);
 
       if (params.containsKey(addUnder)) {
         params.get(addUnder).add(paramToAdd);
@@ -1805,8 +1795,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private StringBuilder buildGenericCardQuery(Map<SearchOption, Set<String>> params, String conditionalColumn) {
       String table = "Card";
       String[] returnColumns = new String[]{"name"};
-      String[] joinColumns = new String[]{"name"};
-      return buildGenericQuery(params, table, returnColumns, joinColumns, conditionalColumn, new BooleanToLike());
+      String innerQueryColumn = "name";
+      return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn, false, false);
     }
 
     /**
@@ -1829,9 +1819,10 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     private StringBuilder buildGenericColorQuery(Map<SearchOption, Set<String>> params, String table) {
       String[] returnColumns = new String[]{"card_name"};
-      String[] joinColumns = new String[]{"card_name"};
+      String innerQueryColumn = "card_name";
       String conditionalColumn = "color";
-      return buildGenericQuery(params, table, returnColumns, joinColumns, conditionalColumn, new BooleanToLike());
+      return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn,
+          true, true);
     }
 
     /**
@@ -1863,9 +1854,10 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     private StringBuilder buildGenericTypeQuery(Map<SearchOption, Set<String>> params, String table) {
       String[] returnColumns = new String[]{"card_name"};
-      String[] joinColumns = new String[]{"card_name"};
+      String innerQueryColumn = "card_name";
       String conditionalColumn = "type";
-      return buildGenericQuery(params, table, returnColumns, joinColumns, conditionalColumn, new BooleanToEqual());
+      return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn,
+          true, true);
     }
 
     /**
@@ -1874,27 +1866,35 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @return part of this CardQuery dealing with block parameters as a StringBuilder
      */
     private StringBuilder buildExpansionQuery() {
-    }
-
-    /**
-     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
-     * block parameters entered so far.
-     * @return part of this CardQuery dealing with block parameters as a StringBuilder
-     */
-    private StringBuilder buildBlockQuery() {
-
+      String table = "CardExpansion";
+      String conditionalColumn = "expansion";
+      return buildGenericCardPrintingQeury(setParams, table, conditionalColumn);
     }
 
     private StringBuilder buildArtistQuery() {
-
+      String table = "Artist";
+      String conditionalColumn = "artist";
+      return buildGenericCardPrintingQeury(artistParams, table, conditionalColumn);
     }
 
     private StringBuilder buildRarityQuery() {
-
+      String table = "CardExpansion";
+      String conditionalColumn = "rarity";
+      return buildGenericCardPrintingQeury(rarityParams, table, conditionalColumn);
     }
 
     private StringBuilder buildFlavorTextQuery() {
+      String table = "CardExpansion";
+      String conditionalColumn = "flavor_text";
+      return buildGenericCardPrintingQeury(flavorTextParams, table, conditionalColumn);
+    }
 
+    private StringBuilder buildGenericCardPrintingQeury(Map<SearchOption, Set<String>> params,
+        String table, String conditionalColumn) {
+      String[] returnColumns = new String[]{"card_name", "expansion", "number"};
+      String innerQueryColumn = "card_name";
+      return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn,
+          false, true);
     }
 
     private StringBuilder buildGenericQuery(Map<SearchOption, Set<String>> params,
@@ -1912,21 +1912,17 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       if (hasMustInclude) {
         completeQuery.append(String.format("WITH %s AS (", tempTableName));
         Set<String> mustIncludeParams = params.get(SearchOption.MustInclude);
-        int numOfParams = mustIncludeParams.size();
 
         StringBuilder conditionals = inOrLike ?
-            stringCollectionToStringInList(conditionalColumn, mustIncludeParams, false, mergeCondAsWhere) :
-            stringCollectionToStringLikeList(conditionalColumn, mustIncludeParams, false, mergeCondAsWhere);
+            stringCollectionToStringInList(conditionalColumn, mustIncludeParams,
+                false, mergeCondAsWhere, false, innerQueryColumn) :
+            stringCollectionToStringLikeList(conditionalColumn, mustIncludeParams,
+                false, mergeCondAsWhere, false);
 
         String mustIncludeQuery =
-            String.format("SELECT %s FROM %s"
-                    + "%s"
-                    + " GROUP BY %s"
-                    + " HAVING COUNT(DISTINCT(%s)) = %d",
+            String.format("SELECT %s FROM %s %s",
                 innerQueryColumn, table,
-                conditionals.toString(),
-                innerQueryColumn,
-                conditionalColumn, numOfParams);
+                conditionals.toString());
 
         completeQuery.append(mustIncludeQuery);
         completeQuery.append(") ");
@@ -1946,10 +1942,10 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         Set<String> disallowParams = params.get(SearchOption.Disallow);
 
         StringBuilder conditionals = inOrLike ?
-            stringCollectionToStringInList(conditionalColumn, disallowParams, false,
-                mergeCondAsWhere) :
-            stringCollectionToStringLikeList(conditionalColumn, disallowParams, false,
-                mergeCondAsWhere);
+            stringCollectionToStringInList(conditionalColumn, disallowParams, true,
+                mergeCondAsWhere, false, innerQueryColumn) :
+            stringCollectionToStringLikeList(conditionalColumn, disallowParams, true,
+                mergeCondAsWhere, false);
 
         completeQuery.append(conditionals);
         mergeCondAsWhere = false;
@@ -1963,8 +1959,10 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         }
 
         StringBuilder conditionals = inOrLike ?
-            stringCollectionToStringInList(conditionalColumn, oneOfParams, false, mergeCondAsWhere) :
-            stringCollectionToStringLikeList(conditionalColumn, oneOfParams, false, mergeCondAsWhere);
+            stringCollectionToStringInList(conditionalColumn, oneOfParams, false,
+                mergeCondAsWhere, true, "") :
+            stringCollectionToStringLikeList(conditionalColumn, oneOfParams, false,
+                mergeCondAsWhere, true);
 
         completeQuery.append(conditionals);
       }
@@ -1973,20 +1971,30 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     private StringBuilder stringCollectionToStringInList(String columnName, Collection<String> strings,
-        boolean includeNot, boolean whereAsMergeCond) {
+        boolean includeNot, boolean whereAsMergeCond, boolean optionalOrRequired,
+        String requiredGroupingColumn) {
       String mergeCond = whereAsMergeCond ? "WHERE" : "AND";
       String includeNotFormat = includeNot ? " NOT" : "";
-      return new StringBuilder(String.format(" %s %s%s IN (%s)",
+      StringBuilder toReturn = new StringBuilder(String.format(" %s %s%s IN (%s)",
           mergeCond, columnName, includeNotFormat, stringCollectionToStringList(strings, true)));
+
+      if (!optionalOrRequired) {
+        int numOfParams = strings.size();
+        toReturn.append(String.format(" GROUP BY %s HAVING COUNT(DISTINCT(%s)) = %d",
+            requiredGroupingColumn, columnName, numOfParams));
+      }
+      return toReturn;
     }
 
     private StringBuilder stringCollectionToStringLikeList(String columnName, Collection<String> strings,
-        boolean includeNot, boolean whereAsMergeCond) {
+        boolean includeNot, boolean whereAsMergeCond, boolean optionalOrRequired) {
       String mergeCond = whereAsMergeCond ? "WHERE" : "AND";
       StringBuilder toReturn = new StringBuilder(String.format(" %s (", mergeCond));
 
       String includeNotFormat = includeNot ? " NOT" : "";
       String notLikeFormat = " %s" + includeNotFormat + " LIKE '%%%s%%'";
+
+      String optionalOrRequiredFormat = optionalOrRequired ? "OR" : "AND";
 
       boolean firstParam = true;
       for (String disallowParam : strings) {
@@ -1994,7 +2002,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
           firstParam = false;
         }
         else {
-          toReturn.append(", AND");
+
+          toReturn.append(String.format(", %s", optionalOrRequiredFormat));
         }
         toReturn.append(String.format(notLikeFormat, columnName, disallowParam));
       }
@@ -2014,7 +2023,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       boolean first = true;
       for (String string : strings) {
         if (first) {
-          first = true;
+          first = false;
         }
         else {
           toReturn.append(", ");
@@ -2025,28 +2034,45 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return toReturn;
     }
 
-    private StringBuilder buildGenericExpansionQuery(Map<SearchOption, Set<String>> params,
-        String table) {
-      String[] returnColumns = new String[]{"expansion"};
-      String[] joinColumn = new String[]{""};
-      String conditionalColumn = "expansion";
-      return buildGenericQuery(params, table, returnColumns, joinColumn,
-          conditionalColumn, new BooleanToEqual());
-    }
-
     /**
      * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
      * stat parameters entered so far.
      * @return part of this CardQuery dealing with color parameters as a StringBuilder
      */
     private StringBuilder buildStatQuery() {
-      List<Triple<String, Comparison, Integer>> convertedParams = new ArrayList<>();
-      for (Triple<Stat, Comparison, Integer> param : s) {
-        convertedParams.add(new Triple<>(param.getA().getValue(), param.getB(), param.getC()));
-      }
+      StringBuilder completeQuery = new StringBuilder();
+      StringBuilder conditions = new StringBuilder();
+      int i = 0;
+      String startingTable = "";
+      String startingTableCardNameColumn = "";
+      for (Triple<Stat, Comparison, Integer> conditional : statParams) {
+        Stat curStat = conditional.getA();
+        String comparison = conditional.getB().getValue();
+        String comparisonQuantity = conditional.getC().toString();
+        String curTable = statTableNames.get(curStat);
+        String curCardNameColumn = statCardNameColumnNames.get(curStat);
+        String curComparisonColumn = statValueColumnNames.get(curStat);
+        String cond = "WHERE";
+        String curTableShorthand = "t" + i;
+        if (i == 0) {
+          completeQuery.append(String.format("SELECT %s.%s FROM %s %s",
+              curTableShorthand, curCardNameColumn, curTable, curTableShorthand));
+          startingTable = curTableShorthand;
+          startingTableCardNameColumn = curCardNameColumn;
+        }
+        else {
+          completeQuery.append(String.format(" JOIN %s %s ON %s.%s = %s.%s",
+              curTable, curTableShorthand, startingTable, startingTableCardNameColumn,
+              curTableShorthand, curCardNameColumn));
+          cond = "AND";
+        }
 
-      return buildGenericComparisonToIntQuery("Stat", "card_name",
-          "category", "base_value", convertedParams);
+        conditions.append(String.format(" %s %s.%s %s %s",
+            cond, curTableShorthand, curComparisonColumn, comparison, comparisonQuantity));
+        i++;
+      }
+      completeQuery.append(conditions);
+      return completeQuery;
     }
 
     /**
@@ -2055,53 +2081,40 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @return part of this CardQuery dealing with mana symbol parameters as a StringBuilder
      */
     private StringBuilder buildManaTypeQuery() {
-      return buildGenericComparisonToIntQuery("Mana", "card_name",
-          "mana_type", "quantity", manaTypeParams);
-    }
-
-    /**
-     * Builds stat part of this {@link CardQuery} from given parameters.
-     * @param table table to draw stat info from
-     * @param tableMatchColumn what column to match tables on
-     * @param categoryColumn column determining type of each stat
-     * @param comparisonColumn column to compare stat values against
-     * @param conditionals stat  parameters user has entered so far
-     * @return StringBuilder of all the stat part of this CardQuery
-     */
-    private StringBuilder buildGenericComparisonToIntQuery(String table, String tableMatchColumn,
-        String categoryColumn, String comparisonColumn,
-        List<Triple<String, Comparison, Integer>> conditionals) {
-      StringBuilder query = new StringBuilder();
+      StringBuilder completeQuery = new StringBuilder();
       StringBuilder conditions = new StringBuilder();
+      String table = "Mana";
+      String categoryColumn = "mana_type";
+      String cardNameColumn = "card_name";
+      String comparisonColumn = "quantity";
       int i = 0;
       String startingTable = "";
-      for (Triple<String, Comparison, Integer> conditional : conditionals ) {
+      for (Triple<String, Comparison, Integer> conditional : manaTypeParams) {
         String curTable = "t" + i;
-        StringBuilder tableSelect = new StringBuilder();
         String cond;
         if (i == 0) {
-          tableSelect.append(String.format("SELECT %s.%s FROM %s %s",
-              curTable, tableMatchColumn, table, curTable));
+          completeQuery.append(String.format("SELECT %s.%s FROM %s %s",
+              curTable, cardNameColumn, table, curTable));
           cond = "WHERE";
           startingTable = curTable;
         }
         else {
-          tableSelect.append(String.format(" JOIN %s %s ON %s.%s = %s.%s",
-              table, curTable, startingTable, tableMatchColumn, curTable, tableMatchColumn));
+          completeQuery.append(String.format(" JOIN %s %s ON %s.%s = %s.%s",
+              table, curTable, startingTable, cardNameColumn, curTable, cardNameColumn));
           cond = "AND";
         }
 
         String categoryType = conditional.getA();
         String comparison = conditional.getB().getValue();
         String comparisonQuantity = conditional.getC().toString();
-        query.append(tableSelect);
         conditions.append(String.format(" %s %s.%s = '%s'",
             cond, curTable, categoryColumn, categoryType));
         conditions.append(String.format(" AND %s.%s %s %s",
             curTable, comparisonColumn, comparison, comparisonQuantity));
         i++;
       }
-      return query.append(conditions);
+      completeQuery.append(conditions);
+      return completeQuery;
     }
 
     /**
@@ -2110,61 +2123,66 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @return part of this CardQuery dealing with color parameters as a StringBuilder
      */
     private StringBuilder buildStatVersusStatQuery() {
-      return buildGenericComparisonToStatQuery("Stat", "card_name",
-          "category", "base_value", statVersusStatParams);
-    }
-
-    /**
-     * Builds stat vs stat part of this {@link CardQuery} from given parameters.
-     * @param table table to draw stat vs stat info from
-     * @param tableMatchColumn what column to match tables on
-     * @param categoryColumn column determining type of each stat
-     * @param comparisonColumn column to compare stat values against
-     * @param conditionals stat vs stat parameters user has entered so far
-     * @return StringBuilder of all the stat vs stat part of this CardQuery
-     */
-    private StringBuilder buildGenericComparisonToStatQuery(String table, String tableMatchColumn,
-        String categoryColumn, String comparisonColumn,
-        List<Triple<Stat, Comparison, Stat>> conditionals) {
-      StringBuilder query = new StringBuilder();
+      StringBuilder completeQuery = new StringBuilder();
       StringBuilder conditions = new StringBuilder();
       int i = 0;
       String startingTable = "";
-      for (Triple<Stat, Comparison, Stat> conditional : conditionals ) {
-        String cond = "";
-        String firstTable = "t" + i;
-        String secondTable = "t" + (i + 1);
-        String firstCategoryType = conditional.getA().getValue();
+      String startingTableCardNameColumn = "";
+      String cond = "WHERE";
+      for (Triple<Stat, Comparison, Stat> conditional : statVersusStatParams) {
+        Stat firstStat = conditional.getA();
         String comparison = conditional.getB().getValue();
-        String secondCategoryType = conditional.getC().getValue();
+        Stat secondStat = conditional.getC();
+
+        String firstTableShorthand = "t" + i;
+        String firstTable = statTableNames.get(firstStat);
+        String firstTableValueColumn = statValueColumnNames.get(firstStat);
+        String firstTableCardNameColumn = statCardNameColumnNames.get(firstStat);
+
+        String secondTableShorthand = "t" + (i + 1);
+        String secondTable = statTableNames.get(secondStat);
+        String secondTableValueColumn = statValueColumnNames.get(secondStat);
+        String secondTableCardNameColumn = statCardNameColumnNames.get(secondStat);;
+
         for (int j = 0; j < 2; j++) {
-          String curTable = j == 0 ? firstTable : secondTable;
-          String categoryType = j == 0 ? firstCategoryType : secondCategoryType;
-          if (i == 0) {
-            startingTable = firstTable;
-            query.append(String.format("SELECT %s.%s FROM %s %s",
-                startingTable, tableMatchColumn, table, startingTable));
-            cond = "WHERE";
+          String curTableShorthand;
+          String curTable;
+          String curCardNameColumn;
+          if (j == 0) {
+            curTableShorthand = firstTableShorthand;
+            curTable = firstTable;
+            curCardNameColumn = firstTableCardNameColumn;
           }
           else {
-              query.append(String.format(" JOIN %s %s ON %s.%s = %s.%s",
-                  table, curTable, startingTable, tableMatchColumn, curTable, tableMatchColumn));
+            curTableShorthand = secondTableShorthand;
+            curTable = secondTable;
+            curCardNameColumn = secondTableCardNameColumn;
+          }
+
+          if (i == 0) {
+            startingTable = firstTableShorthand;
+            completeQuery.append(String.format("SELECT %s.%s FROM %s %s",
+                startingTable, curCardNameColumn, curTable, startingTable));
+            startingTableCardNameColumn = curCardNameColumn;
+          }
+          else {
+            completeQuery.append(String.format(" JOIN %s %s ON %s.%s = %s.%s",
+                curTable, curTableShorthand,
+                startingTable, startingTableCardNameColumn, curTableShorthand, curCardNameColumn));
 
             if (i > 0) {
               cond = "AND";
             }
           }
-
-          conditions.append(String.format(" %s %s.%s = '%s'",
-              cond, curTable, categoryColumn, categoryType));
           i++;
         }
 
         // Compare
-        conditions.append(String.format(" AND %s.%s %s %s.%s",
-            firstTable, comparisonColumn, comparison, secondTable, comparisonColumn));
+        conditions.append(String.format(" %s %s.%s %s %s.%s",
+            cond, firstTableShorthand, firstTableValueColumn, comparison,
+            secondTableShorthand, secondTableValueColumn));
       }
-      return query.append(conditions);
+      return completeQuery.append(conditions);
     }
 
     private StringBuilder buildMergedCardQuery() {
@@ -2176,7 +2194,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     private StringBuilder buildMergedCardPrintingQuery() {
       StringBuilder[] queries = new StringBuilder[]{buildArtistQuery(), buildRarityQuery(),
-          buildFlavorTextQuery(), buildExpansionQuery(), buildBlockQuery()};
+          buildFlavorTextQuery(), buildExpansionQuery()};
       return buildGenericMergedQuery(queries);
     }
 
@@ -2196,7 +2214,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     @Override
     public String asQuery() {
-      StringBuilder completeQuery = new StringBuilder("SELECT card_name, expansion, number FROM CardExpansion");
+      StringBuilder completeQuery = new StringBuilder("SELECT card_name, expansion, number "
+          + "FROM CardExpansion");
 
       String mergeCond = "WHERE";
 
@@ -2215,7 +2234,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         completeQuery.append(String.format(" %s (card_name, expansion, number) IN (", mergeCond));
         completeQuery.append(mergedCardQueries);
         completeQuery.append(")");
-        mergeCond = "AND";
       }
 
       return completeQuery.toString();
@@ -2230,7 +2248,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       supertypes.clear();
       typeParams.clear();
       subtypes.clear();
-      blockParams.clear();
       setParams.clear();
       artistParams.clear();
       flavorTextParams .clear();

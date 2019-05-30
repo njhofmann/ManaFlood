@@ -769,12 +769,11 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
           preparedStatement.setString(3, number);
 
           String rarity = card.getString("rarity");
-
           preparedStatement.setString(4, rarity);
 
           String flavorText = card.has("flavorText") ? card.getString("flavorText") : "";
-
           preparedStatement.setString(5, flavorText);
+
           preparedStatement.executeUpdate();
         }
         catch (SQLException e) {
@@ -789,7 +788,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
           String artistInsertStatement
               = "INSERT INTO Artist(card_name,expansion,number,artist) "
               + "VALUES (?,?,?,?)";
-          try (PreparedStatement preparedStatement = connection.prepareStatement(cardExpansionInsertStatement)){
+          try (PreparedStatement preparedStatement = connection.prepareStatement(artistInsertStatement)){
             preparedStatement.setString(1, cardName);
             preparedStatement.setString(2, setName);
             preparedStatement.setString(3, number);
