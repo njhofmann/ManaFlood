@@ -1441,29 +1441,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
   }
 
-  private StringBuilder stringArrayToStringList(String[] strings, boolean includeQuotes) {
-    return stringCollectionToStringList(Arrays.asList(strings), includeQuotes);
-  }
-
-  private StringBuilder stringCollectionToStringList(Collection<String> strings, boolean includeQuotes) {
-    if (strings == null) {
-      throw new IllegalArgumentException("Given string array can't be null!");
-    }
-    StringBuilder toReturn = new StringBuilder();
-    boolean first = true;
-    for (String string : strings) {
-      if (first) {
-        first = true;
-      }
-      else {
-        toReturn.append(", ");
-      }
-      String toAppend = includeQuotes ? String.format("'%s'", string) : string;
-      toReturn.append(toAppend);
-    }
-    return toReturn;
-  }
-
   /**
    * Default implementation of the {@link CardQuery} interface, listed inside
    * {@link DefaultDatabaseChannel} due its tight coupling with it for purposes of determining
@@ -1922,25 +1899,60 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     private StringBuilder buildGenericQuery(Map<SearchOption, Set<String>> params,
         String table, String[] returnColumns, String conditionalColumn, String innerQueryColumn,
-        BiFunction<Boolean, String, String> conditionalColumnEquality, boolean noneAsOption) {
+        boolean inOrLike, boolean noneAsOption) {
       if (table == null || table.isEmpty()) {
         throw new IllegalArgumentException("Given table can't be null or empty!");
       }
 
-      StringBuilder completeQuery = new StringBuilder("SELECT ");
+      StringBuilder completeQuery = new StringBuilder();
+      String tempTableName = "MustIncludePrintings";
+      boolean mergeCondAsWhere = true;
+      boolean hasMustInclude = params.containsKey(SearchOption.MustInclude);
+
+      if (hasMustInclude) {
+        completeQuery.append(String.format("WITH %s AS (", tempTableName));
+        Set<String> mustIncludeParams = params.get(SearchOption.MustInclude);
+        int numOfParams = mustIncludeParams.size();
+
+        StringBuilder conditionals = inOrLike ?
+            stringCollectionToStringInList(conditionalColumn, mustIncludeParams, false, mergeCondAsWhere) :
+            stringCollectionToStringLikeList(conditionalColumn, mustIncludeParams, false, mergeCondAsWhere);
+
+        String mustIncludeQuery =
+            String.format("SELECT %s FROM %s"
+                    + "%s"
+                    + " GROUP BY %s"
+                    + " HAVING COUNT(DISTINCT(%s)) = %d",
+                innerQueryColumn, table,
+                conditionals.toString(),
+                innerQueryColumn,
+                conditionalColumn, numOfParams);
+
+        completeQuery.append(mustIncludeQuery);
+        completeQuery.append(") ");
+      }
+
+      completeQuery.append("SELECT ");
       completeQuery.append(stringArrayToStringList(returnColumns, false));
       completeQuery.append(String.format(" FROM %s", table));
 
-      String inclusionFormat = " %s %s IN (%s)";
-      String notInclusionFormat = " %s %s NOT IN (%s)";
-      String condAddOn = "WHERE";
-      boolean hasMustInclude = params.containsKey(SearchOption.MustInclude);
+      String mergeCond = mergeCondAsWhere ? "WHERE" : "AND";
+      if (hasMustInclude) {
+        completeQuery.append(String.format("%s %s IN %s", mergeCond, innerQueryColumn, tempTableName));
+        mergeCondAsWhere = false;
+      }
 
       if (params.containsKey(SearchOption.Disallow)) {
         Set<String> disallowParams = params.get(SearchOption.Disallow);
-        completeQuery.append(String.format(notInclusionFormat,
-            condAddOn, conditionalColumn, stringCollectionToStringList(disallowParams, true)));
-        condAddOn = "AND";
+
+        StringBuilder conditionals = inOrLike ?
+            stringCollectionToStringInList(conditionalColumn, disallowParams, false,
+                mergeCondAsWhere) :
+            stringCollectionToStringLikeList(conditionalColumn, disallowParams, false,
+                mergeCondAsWhere);
+
+        completeQuery.append(conditionals);
+        mergeCondAsWhere = false;
       }
 
       if (params.containsKey(SearchOption.OneOf)) {
@@ -1950,30 +1962,67 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
           oneOfParams.addAll(params.get(SearchOption.MustInclude));
         }
 
-        completeQuery.append(String.format(inclusionFormat,
-            condAddOn, conditionalColumn, stringCollectionToStringList(oneOfParams, true)));
+        StringBuilder conditionals = inOrLike ?
+            stringCollectionToStringInList(conditionalColumn, oneOfParams, false, mergeCondAsWhere) :
+            stringCollectionToStringLikeList(conditionalColumn, oneOfParams, false, mergeCondAsWhere);
 
-        condAddOn = "AND";
-      }
-
-      if (hasMustInclude) {
-        Set<String> mustIncludeParams = params.get(SearchOption.MustInclude);
-        int numOfParams = mustIncludeParams.size();
-
-        String mustIncludeQuery =
-            String.format("SELECT %s FROM %s "
-                + "WHERE %s IN (%s) "
-                + "GROUP BY %s "
-                + "HAVING COUNT(DISTINCT(%s)) = %s",
-                innerQueryColumn, table,
-                conditionalColumn, stringCollectionToStringList(mustIncludeParams, true),
-                innerQueryColumn,
-                conditionalColumn, numOfParams);
-
-        completeQuery.append(String.format(inclusionFormat, condAddOn, innerQueryColumn, mustIncludeQuery));
+        completeQuery.append(conditionals);
       }
 
       return completeQuery;
+    }
+
+    private StringBuilder stringCollectionToStringInList(String columnName, Collection<String> strings,
+        boolean includeNot, boolean whereAsMergeCond) {
+      String mergeCond = whereAsMergeCond ? "WHERE" : "AND";
+      String includeNotFormat = includeNot ? " NOT" : "";
+      return new StringBuilder(String.format(" %s %s%s IN (%s)",
+          mergeCond, columnName, includeNotFormat, stringCollectionToStringList(strings, true)));
+    }
+
+    private StringBuilder stringCollectionToStringLikeList(String columnName, Collection<String> strings,
+        boolean includeNot, boolean whereAsMergeCond) {
+      String mergeCond = whereAsMergeCond ? "WHERE" : "AND";
+      StringBuilder toReturn = new StringBuilder(String.format(" %s (", mergeCond));
+
+      String includeNotFormat = includeNot ? " NOT" : "";
+      String notLikeFormat = " %s" + includeNotFormat + " LIKE '%%%s%%'";
+
+      boolean firstParam = true;
+      for (String disallowParam : strings) {
+        if (firstParam) {
+          firstParam = false;
+        }
+        else {
+          toReturn.append(", AND");
+        }
+        toReturn.append(String.format(notLikeFormat, columnName, disallowParam));
+      }
+      toReturn.append(")");
+      return toReturn;
+    }
+
+    private StringBuilder stringArrayToStringList(String[] strings, boolean includeQuotes) {
+      return stringCollectionToStringList(Arrays.asList(strings), includeQuotes);
+    }
+
+    private StringBuilder stringCollectionToStringList(Collection<String> strings, boolean includeQuotes) {
+      if (strings == null) {
+        throw new IllegalArgumentException("Given string array can't be null!");
+      }
+      StringBuilder toReturn = new StringBuilder();
+      boolean first = true;
+      for (String string : strings) {
+        if (first) {
+          first = true;
+        }
+        else {
+          toReturn.append(", ");
+        }
+        String toAppend = includeQuotes ? String.format("'%s'", string) : string;
+        toReturn.append(toAppend);
+      }
+      return toReturn;
     }
 
     private StringBuilder buildGenericExpansionQuery(Map<SearchOption, Set<String>> params,

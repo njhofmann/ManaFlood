@@ -1,5 +1,5 @@
 -Retrieve card by given expansions and card numbers
--Finish card query updates
+-Finish card query updates - LIKE VS IN
 -Redo card query tests
 -Add Scryfall image url
 -Add name, expansions, and name-expansion checks to DefaultCard constructor
