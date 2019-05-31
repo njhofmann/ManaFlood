@@ -503,7 +503,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       throw new IllegalArgumentException("Given cardQuery can't be null!");
     }
 
-    Map<String, Set<String>> cardNameToExpansions = new HashMap<>();
+    Map<String, Map<String, Set<String>>> cardNameToExpansionsToNumbers = new HashMap<>();
     String query = cardQuery.asQuery();
     try (Connection connection = connect();
     PreparedStatement preparedStatement = connection.prepareStatement(query);
@@ -513,15 +513,25 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         String cardName = cardQueryResults.getString("card_name");
         // Replace single quotes with doubled up single quotes for SQL
         String expansion = cardQueryResults.getString("expansion");
+        String number = cardQueryResults.getString("number");
 
-        if (cardNameToExpansions.containsKey(cardName)) {
-          cardNameToExpansions.get(cardName).add(expansion);
+        // Card name and expansion info defaults
+        Map<String, Set<String>> expansionInfo = new HashMap<>();
+        expansionInfo.put(expansion, new TreeSet<>());
+
+        // Check that card name and expansion info are added
+        if (cardNameToExpansionsToNumbers.containsKey(cardName) ) {
+          expansionInfo = cardNameToExpansionsToNumbers.get(cardName);
+          if (!expansionInfo.containsKey(expansion)) {
+            expansionInfo.put(expansion, new TreeSet<>());
+          }
         }
         else {
-          Set<String> value = new TreeSet<>();
-          value.add(expansion);
-          cardNameToExpansions.put(cardName, value);
+          cardNameToExpansionsToNumbers.put(cardName, expansionInfo);
         }
+
+        // Add number info
+        cardNameToExpansionsToNumbers.get(cardName).get(expansion).add(cardName);
       }
     }
     catch (SQLException e) {
@@ -530,8 +540,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     SortedSet<Card> cards = new TreeSet<>();
-    for (String cardName : cardNameToExpansions.keySet()) {
-      Set<String> expansions = cardNameToExpansions.get(cardName);
+    for (String cardName : cardNameToExpansionsToNumbers.keySet()) {
+      Map<String, Set<String>> expansions = cardNameToExpansionsToNumbers.get(cardName);
       Card toAdd = new DefaultCard(cardName, expansions);
       cards.add(toAdd);
     }
@@ -830,13 +840,13 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * Builds a {@link DefaultCard} from a given card name and list of associated expansions from
      * which the card was printed - make up its associated {@link CardPrintingInfo}s.
      * @param name name of card to associate with
-     * @param expansions expansions card was printed in to associate with
+     * @param expansions expansions card was printed in to associate with, with associated numbers
      * @throws SQLException if there is a failure in retrieving any of the card's associated info
      * @throws IllegalArgumentException if any given parameters are null, given set of expansions
      * is empty, if given name is not a card name in the CDDB, or if expansions contain an expansion
      * not within the CDDB.
      */
-    protected DefaultCard(String name, Set<String> expansions) throws SQLException,
+    protected DefaultCard(String name, Map<String, Set<String>> expansions) throws SQLException,
         IllegalArgumentException {
       if (name == null) {
         throw new IllegalArgumentException("Given name can't be null!");
@@ -845,7 +855,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         throw new IllegalArgumentException("Given expansions can't be null nor empty!");
       }
 
-      for (String expansion : expansions) {
+      for (String expansion : expansions.keySet()) {
         if (!sets.contains(expansion)) {
           throw new IllegalArgumentException(String.format("Database doesn't contain printing "
               + "for card %s from expansion %s!", expansion, name));
@@ -1198,7 +1208,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * For a set of expansions this {@link Card } was printed in, retrieves the unique information
      * associated with each card printing.
      * @param connection connection to the CDDB to use for retrieving data
-     * @param expansions set of expansions associated card was printed in to retrieve data from
+     * @param expansions set of expansions associated card was printed in to retrieve data from,
+     * with associated numbers
      * @param cardName name of card to retrieve data for
      * @return set of CardPrintingInfo for the expansions given t
      * @throws SQLException if there is an error in retrieving data from the CDDB
@@ -1206,7 +1217,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * closed, or if given set of expansions is null
      */
     private SortedSet<CardPrintingInfo> setCardPrintings(Connection connection,
-        Set<String> expansions, String cardName) throws SQLException {
+        Map<String, Set<String>> expansions, String cardName) throws SQLException {
 
       if (connection == null || expansions == null || cardName == null) {
         throw new IllegalArgumentException("Given parameters can't be null!");
@@ -1218,57 +1229,49 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         throw new IllegalArgumentException("Given set of expansions can't be empty!");
       }
 
-      StringBuilder expansionsIn = new StringBuilder("(");
-      boolean afterFirst = false;
-      for (String expansion : expansions) {
-        if (afterFirst) {
-          expansionsIn.append(", ");
-        }
-        else {
-          afterFirst = true;
-        }
-        expansionsIn.append(String.format("'%s'", formatWordToSQL(expansion)));
-      }
-      expansionsIn.append(")");
-
       SortedSet<CardPrintingInfo> cardPrintingInfo = new TreeSet<>();
-      String expansion, number, rarity, flavor_text;
-      String cardExpansionQuery = String.format("SELECT * FROM CardExpansion "
-          + "WHERE card_name = '%s' AND expansion IN %s", cardName, expansionsIn.toString());
-      try (PreparedStatement preparedStatement = connection.prepareStatement(cardExpansionQuery);
-          ResultSet resultSet = preparedStatement.executeQuery()) {
-        while (resultSet.next()) {
-          expansion = resultSet.getString("expansion");
-          number = resultSet.getString("number");
-          rarity = resultSet.getString("rarity");
-          flavor_text = resultSet.getString("flavor_text");
+      for (String expansion : expansions.keySet()) {
+        for (String number : expansions.get(expansion)) {
+          String formattedExpansion = formatWordToSQL(expansion);
+          String cardExpansionQuery = String.format("SELECT * FROM CardExpansion "
+                  + "WHERE card_name = '%s' AND expansion = '%s' AND number = '%s'",
+              cardName, formattedExpansion, number);
+          try (PreparedStatement preparedStatement = connection.prepareStatement(cardExpansionQuery);
+              ResultSet resultSet = preparedStatement.executeQuery()) {
+            assert resultSet.next(); // SHould only have one row
+            expansion = resultSet.getString("expansion");
+            number = resultSet.getString("number");
+            String rarity = resultSet.getString("rarity");
+            String flavor_text = resultSet.getString("flavor_text");
+            assert !resultSet.next(); // Should return false
 
-          // Get artists
-          String artistsQuery = String.format("SELECT artist FROM Artist WHERE card_name = '%s' "
-              + "AND expansion = '%s' AND number = '%s'", cardName, expansion, number);
-          SortedSet<String> artists = new TreeSet<>();
-          try (PreparedStatement preparedStatement1 = connection.prepareStatement(artistsQuery);
-          ResultSet resultSet1 = preparedStatement1.executeQuery()) {
-            while (resultSet1.next()) {
-              artists.add(resultSet1.getString("artist"));
+            // Get artists
+            String artistsQuery = String.format("SELECT artist FROM Artist WHERE card_name = '%s' "
+                + "AND expansion = '%s' AND number = '%s'", cardName, expansion, number);
+            SortedSet<String> artists = new TreeSet<>();
+            try (PreparedStatement preparedStatement1 = connection.prepareStatement(artistsQuery);
+                ResultSet artistResultSet = preparedStatement1.executeQuery()) {
+              while (artistResultSet.next()) {
+                artists.add(artistResultSet.getString("artist"));
+              }
             }
-          }
-          catch (SQLException e) {
-            throw new IllegalArgumentException(String.format("Failed to find artists for "
-                + "card printing %s, %s, %s!", cardName, expansion, number));
-          }
+            catch (SQLException e) {
+              throw new IllegalArgumentException(String.format("Failed to find artists for "
+                  + "card printing %s, %s, %s!", cardName, formattedExpansion, number));
+            }
 
-          cardPrintingInfo.add(new DefaultCardPrintingInfo(cardName, expansion, number,
-              artists, flavor_text, rarity));
+            cardPrintingInfo.add(new DefaultCardPrintingInfo(cardName, expansion, number,
+                artists, flavor_text, rarity));
+
+          } catch (SQLException e) {
+            System.out.println(cardExpansionQuery);
+            throw new SQLException(e.getMessage() +
+                String.format("Failed to retrieve card expansion info for card %s from database!",
+                    cardName));
+          }
         }
-        return cardPrintingInfo;
       }
-      catch (SQLException e) {
-        System.out.println(cardExpansionQuery);
-        throw new SQLException(e.getMessage() +
-            String.format("Failed to retrieve card expansion info for card %s from database!",
-                cardName));
-      }
+      return cardPrintingInfo;
     }
 
     /**
@@ -1459,57 +1462,57 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     /**
      * List of parameters added to search by a card's name.
      */
-    private final Map<SearchOption, Set<String>> nameParams;
+    private final Map<SearchOption, SortedSet<String>> nameParams;
 
     /**
      * List of parameters added to search by a card's text.
      */
-    private final Map<SearchOption, Set<String>> textParams;
+    private final Map<SearchOption, SortedSet<String>> textParams;
 
     /**
      * List of parameters added to search by a card's colors.
      */
-    private final Map<SearchOption, Set<String>> colorParams;
+    private final Map<SearchOption, SortedSet<String>> colorParams;
 
     /**
      * List of parameters added to search by a card's color identity.
      */
-    private final Map<SearchOption, Set<String>> colorIdentityParams;
+    private final Map<SearchOption, SortedSet<String>> colorIdentityParams;
 
     /**
      * List of parameters added to search by a card's supertypes.
      */
-    private final Map<SearchOption, Set<String>> supertypeParams;
+    private final Map<SearchOption, SortedSet<String>> supertypeParams;
 
     /**
      * List of parameters added to search by a card's types.
      */
-    private final Map<SearchOption, Set<String>> typeParams;
+    private final Map<SearchOption, SortedSet<String>> typeParams;
 
     /**
      * List of parameters added to search by a card's subtypes.
      */
-    private final Map<SearchOption, Set<String>> subtypeParams;
+    private final Map<SearchOption, SortedSet<String>> subtypeParams;
 
     /**
      * List of parameters added to search by the expansions a card was printed in.
      */
-    private final Map<SearchOption, Set<String>> setParams;
+    private final Map<SearchOption, SortedSet<String>> setParams;
 
     /**
      * List of parameters added to search by the artists who painted a card.
      */
-    private final Map<SearchOption, Set<String>> artistParams;
+    private final Map<SearchOption, SortedSet<String>> artistParams;
 
     /**
      * List of parameters added to search by the rarities a card has been printed with.
      */
-    private final Map<SearchOption, Set<String>> rarityParams;
+    private final Map<SearchOption, SortedSet<String>> rarityParams;
 
     /**
      * List of parameters added to search by the flavor text a card has been printed with.
      */
-    private final Map<SearchOption, Set<String>> flavorTextParams;
+    private final Map<SearchOption, SortedSet<String>> flavorTextParams;
 
     /**
      * List of parameters added to search by the stats of a card compared to a given quantity.
@@ -1717,7 +1720,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @param paramToAdd
      * @throws IllegalArgumentException if any given parameter is null
      */
-    private void addSearchOptionParam(Map<SearchOption, Set<String>> params, SearchOption addUnder, String paramToAdd) {
+    private void addSearchOptionParam(Map<SearchOption, SortedSet<String>> params, SearchOption addUnder, String paramToAdd) {
       if (params == null || addUnder == null || paramToAdd == null) {
         throw new IllegalArgumentException("Given params can't be null!");
       }
@@ -1728,7 +1731,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         params.get(addUnder).add(paramToAdd);
       }
       else {
-        Set<String> newParamList = new HashSet<>();
+        SortedSet<String> newParamList = new TreeSet<>();
         newParamList.add(paramToAdd);
         params.put(addUnder, newParamList);
       }
@@ -1792,7 +1795,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return buildGenericCardQuery(textParams, "text");
     }
 
-    private StringBuilder buildGenericCardQuery(Map<SearchOption, Set<String>> params, String conditionalColumn) {
+    private StringBuilder buildGenericCardQuery(Map<SearchOption, SortedSet<String>> params, String conditionalColumn) {
       String table = "Card";
       String[] returnColumns = new String[]{"name"};
       String innerQueryColumn = "name";
@@ -1817,7 +1820,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return buildGenericColorQuery(colorIdentityParams, "ColorIdentity");
     }
 
-    private StringBuilder buildGenericColorQuery(Map<SearchOption, Set<String>> params, String table) {
+    private StringBuilder buildGenericColorQuery(Map<SearchOption, SortedSet<String>> params, String table) {
       String[] returnColumns = new String[]{"card_name"};
       String innerQueryColumn = "card_name";
       String conditionalColumn = "color";
@@ -1852,7 +1855,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return buildGenericTypeQuery(subtypeParams, "Subtype");
     }
 
-    private StringBuilder buildGenericTypeQuery(Map<SearchOption, Set<String>> params, String table) {
+    private StringBuilder buildGenericTypeQuery(Map<SearchOption, SortedSet<String>> params, String table) {
       String[] returnColumns = new String[]{"card_name"};
       String innerQueryColumn = "card_name";
       String conditionalColumn = "type";
@@ -1889,7 +1892,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return buildGenericCardPrintingQeury(flavorTextParams, table, conditionalColumn);
     }
 
-    private StringBuilder buildGenericCardPrintingQeury(Map<SearchOption, Set<String>> params,
+    private StringBuilder buildGenericCardPrintingQeury(Map<SearchOption, SortedSet<String>> params,
         String table, String conditionalColumn) {
       String[] returnColumns = new String[]{"card_name", "expansion", "number"};
       String innerQueryColumn = "card_name";
@@ -1897,9 +1900,14 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
           false, true);
     }
 
-    private StringBuilder buildGenericQuery(Map<SearchOption, Set<String>> params,
+    private StringBuilder buildGenericQuery(Map<SearchOption, SortedSet<String>> params,
         String table, String[] returnColumns, String conditionalColumn, String innerQueryColumn,
         boolean inOrLike, boolean noneAsOption) {
+
+      if (params.isEmpty()) {
+        return new StringBuilder();
+      }
+
       if (table == null || table.isEmpty()) {
         throw new IllegalArgumentException("Given table can't be null or empty!");
       }
@@ -1934,7 +1942,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
       String mergeCond = mergeCondAsWhere ? "WHERE" : "AND";
       if (hasMustInclude) {
-        completeQuery.append(String.format("%s %s IN %s", mergeCond, innerQueryColumn, tempTableName));
+        completeQuery.append(String.format(" %s %s IN %s", mergeCond, innerQueryColumn, tempTableName));
         mergeCondAsWhere = false;
       }
 
@@ -1992,7 +2000,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       StringBuilder toReturn = new StringBuilder(String.format(" %s (", mergeCond));
 
       String includeNotFormat = includeNot ? " NOT" : "";
-      String notLikeFormat = " %s" + includeNotFormat + " LIKE '%%%s%%'";
+      String notLikeFormat = "%s" + includeNotFormat + " LIKE '%%%s%%'";
 
       String optionalOrRequiredFormat = optionalOrRequired ? "OR" : "AND";
 
@@ -2003,7 +2011,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         }
         else {
 
-          toReturn.append(String.format(", %s", optionalOrRequiredFormat));
+          toReturn.append(String.format(", %s ", optionalOrRequiredFormat));
         }
         toReturn.append(String.format(notLikeFormat, columnName, disallowParam));
       }
@@ -2204,7 +2212,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       }
       StringBuilder completeQuery = new StringBuilder();
       for (StringBuilder query : queries) {
-        if (!isStringBuilderEmpty(completeQuery)) {
+        if (!isStringBuilderEmpty(completeQuery) && !isStringBuilderEmpty(query)) {
           completeQuery.append(" INTERSECT ");
         }
         completeQuery.append(query);

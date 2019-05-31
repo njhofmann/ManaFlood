@@ -77,43 +77,66 @@ class CardQueryTest {
     @DisplayName("Must include single name parameter")
     @Test
     public void includeSingleName() {
-
+      String result = "";
+      cardQuery.byName("cabal", SearchOption.MustInclude);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Must include multiple name parameters")
     @Test
     public void includeMultipleName() {
-
+      String result = "";
+      cardQuery.byName("bi", SearchOption.MustInclude);
+      cardQuery.byName("rd", SearchOption.MustInclude);
+      cardQuery.byName("re", SearchOption.MustInclude);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow single name parameter")
     @Test
     public void disallowSingleName() {
-
+      String result = "";
+      cardQuery.byName("woke", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow multiple name parameters")
     @Test
     public void disallowMultipleName() {
-
+      String result = "";
+      cardQuery.byName("ao", SearchOption.Disallow);
+      cardQuery.byName("kl", SearchOption.Disallow);
+      cardQuery.byName("po", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("One of single name parameter")
     @Test
     public void oneOfSingleName() {
-
+      String result = "";
+      cardQuery.byName("gy", SearchOption.OneOf);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("One of multiple name parameters")
     @Test
     public void oneOfMultipleName() {
-
+      String result = "";
+      cardQuery.byName("io", SearchOption.OneOf);
+      cardQuery.byName("wj", SearchOption.OneOf);
+      cardQuery.byName("ui", SearchOption.OneOf);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Mixed multiple name parameters")
     @Test
     public void mixedMultipleName() {
-
+      String result = "";
+      cardQuery.byName("gh", SearchOption.OneOf);
+      cardQuery.byName("yu", SearchOption.OneOf);
+      cardQuery.byName("re", SearchOption.MustInclude);
+      cardQuery.byName("rt", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
