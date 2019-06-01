@@ -736,7 +736,7 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
    *         given card
    */
   private void addSetCardInfo(JSONObject card, Connection connection, String setName) throws SQLException {
-    if (card.has("artist") && card.has("rarity")) {
+    if (card.has("artist") && card.has("rarity") && card.has("scryfallId")) {
       String cardName = card.getString("name");
       boolean cardSetAdded;
       String checkStatement = "SELECT card_name, expansion, number FROM CardExpansion "
@@ -761,8 +761,8 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
       if (!cardSetAdded) {
         String number = card.getString("number");
         String cardExpansionInsertStatement
-            = "INSERT INTO CardExpansion(card_name,expansion,number,rarity,flavor_text) "
-            + "VALUES (?,?,?,?,?)";
+            = "INSERT INTO CardExpansion(card_name,expansion,number,rarity,flavor_text,scryfall_id) "
+            + "VALUES (?,?,?,?,?,?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(cardExpansionInsertStatement)){
           preparedStatement.setString(1, cardName);
           preparedStatement.setString(2, setName);
@@ -773,6 +773,8 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
 
           String flavorText = card.has("flavorText") ? card.getString("flavorText") : "";
           preparedStatement.setString(5, flavorText);
+
+          preparedStatement.setString(6, card.getString("scryfallId"));
 
           preparedStatement.executeUpdate();
         }

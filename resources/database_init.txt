@@ -69,6 +69,7 @@ CREATE TABLE CardExpansion (
   number TEXT,
   rarity TEXT NOT NULL,
   flavor_text TEXT NOT NULL,
+  scryfall_id TEXT NOT NULL,
   PRIMARY KEY(card_name, expansion, number),
   FOREIGN KEY(card_name) REFERENCES Card(name),
   FOREIGN KEY(expansion) REFERENCES Expansion(expansion)

@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import value_objects.deck.Deck;
 import value_objects.card.printing.CardPrinting;
 
@@ -29,12 +31,12 @@ public class DefaultDeckInstance implements DeckInstance {
   /**
    * The set of cards that make up this DeckInstance, without quantities.
    */
-  private final Set<String> cards;
+  private final SortedSet<String> cards;
 
   /**
    * Mapping of categories in this DeckInstance to the cards that are apart of them.
    */
-  private final Map<String, Set<String>> categoryContents;
+  private final Map<String, SortedSet<String>> categoryContents;
 
   /**
    * Mapping of specific card printings to their quantities in this deck instance.
@@ -54,7 +56,7 @@ public class DefaultDeckInstance implements DeckInstance {
    *         {@param categoryContents}, or if any parameter is null
    */
   public DefaultDeckInstance(int parentDeckID, LocalDateTime creation,
-      Map<String, Set<String>> categoryContents,
+      Map<String, SortedSet<String>> categoryContents,
       Map<CardPrinting, Integer> cardQuantities) {
     if (creation == null) {
       throw new IllegalArgumentException("Give date and time of creation can't be null!");
@@ -67,7 +69,7 @@ public class DefaultDeckInstance implements DeckInstance {
           + "be null!");
     }
 
-    Set<String> cards = new HashSet<>();
+    SortedSet<String> cards = new TreeSet<>();
     for (Set<String> categoryContent : categoryContents.values()) {
       for (String card : categoryContent) {
         if (!cards.contains(card)) {
@@ -92,7 +94,7 @@ public class DefaultDeckInstance implements DeckInstance {
 
     this.parentDeckID = parentDeckID;
     this.creation = creation;
-    this.cards = Collections.unmodifiableSet(cards);
+    this.cards = Collections.unmodifiableSortedSet(cards);
     this.categoryContents = Collections.unmodifiableMap(categoryContents);
     this.cardPrintingQuantities = Collections.unmodifiableMap(cardQuantities);
   }
@@ -124,23 +126,23 @@ public class DefaultDeckInstance implements DeckInstance {
   }
 
   @Override
-  public Map<String, Set<String>> getCardsByCategory() {
+  public Map<String, SortedSet<String>> getCardsByCategory() {
     return categoryContents;
   }
 
   @Override
-  public Set<CardPrinting> getCardPrintings() {
-    return Collections.unmodifiableSet(cardPrintingQuantities.keySet());
+  public SortedSet<CardPrinting> getCardPrintings() {
+    return Collections.unmodifiableSortedSet(new TreeSet<>(cardPrintingQuantities.keySet()));
   }
 
   @Override
-  public Set<String> getCategories() {
-    return Collections.unmodifiableSet(categoryContents.keySet());
+  public SortedSet<String> getCategories() {
+    return Collections.unmodifiableSortedSet(new TreeSet<>(categoryContents.keySet()));
   }
 
   @Override
-  public Set<String> getCards() {
-    return cards;
+  public SortedSet<String> getCards() {
+    return Collections.unmodifiableSortedSet(cards);
   }
 
   @Override

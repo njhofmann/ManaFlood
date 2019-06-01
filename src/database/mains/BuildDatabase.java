@@ -16,7 +16,7 @@ public class BuildDatabase {
    * @throws SQLException if there is a failure in initializing the database
    */
   public static void main(String[] args) throws SQLException {
-    Path pathToDatabase = Paths.get("resources\\test.db").toAbsolutePath();
+    Path pathToDatabase = Paths.get("resources\\cddb.db").toAbsolutePath();
     Path pathToInitFile = Paths.get("resources\\database_init.txt");
     DatabasePort port = new DatabasePort(pathToDatabase, pathToInitFile);
   }

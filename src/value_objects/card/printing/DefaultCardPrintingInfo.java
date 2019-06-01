@@ -19,14 +19,16 @@ public class DefaultCardPrintingInfo implements CardPrintingInfo {
 
   private final String rarity;
 
+  private final String scryfallId;
+
   public DefaultCardPrintingInfo(String cardName, String cardExpansion, String identifyingNumber,
-      SortedSet<String> artists, String flavorText, String rarity) {
+      SortedSet<String> artists, String flavorText, String rarity, String scryFallId) {
     this(new DefaultCardPrinting(cardName, cardExpansion, identifyingNumber),
-        artists, flavorText, rarity);
+        artists, flavorText, rarity, scryFallId);
   }
 
   public DefaultCardPrintingInfo(CardPrinting cardPrinting, SortedSet<String> artists,
-      String flavorText, String rarity) {
+      String flavorText, String rarity, String scryfallID) {
 
     if (artists == null || artists.isEmpty()) {
       throw new IllegalArgumentException("Given artists set can't be null or empty!");
@@ -40,11 +42,15 @@ public class DefaultCardPrintingInfo implements CardPrintingInfo {
     else if (cardPrinting == null) {
       throw new IllegalArgumentException("Given CardPrinting can't be null!");
     }
+    else if (scryfallID == null) {
+      throw new IllegalArgumentException("Given scryfall ID is null!");
+    }
 
     this.artists = artists;
     this.flavorText = flavorText;
     this.rarity = rarity;
     this.cardPrinting = cardPrinting;
+    this.scryfallId = scryfallID;
   }
 
   @Override
@@ -60,6 +66,11 @@ public class DefaultCardPrintingInfo implements CardPrintingInfo {
   @Override
   public String getRarity() {
     return rarity;
+  }
+
+  @Override
+  public String getScryfallID() {
+    return scryfallId;
   }
 
   @Override

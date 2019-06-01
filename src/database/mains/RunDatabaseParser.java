@@ -12,9 +12,8 @@ import java.sql.SQLException;
 public class RunDatabaseParser {
 
   public static void main(String[] arg) throws SQLException {
-    Path pathToDatabase = Paths.get("resources\\test.db").toAbsolutePath();
+    Path pathToDatabase = Paths.get("resources\\cddb.db").toAbsolutePath();
     DatabaseParser parser = new DefaultDatabaseParser(pathToDatabase);
-
 
     Path pathToJSON = Paths.get("resources\\AllSets.json").toAbsolutePath();
     parser.parseAllSets(pathToJSON);

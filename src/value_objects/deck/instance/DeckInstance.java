@@ -3,6 +3,7 @@ package value_objects.deck.instance;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import value_objects.card.Card;
 import value_objects.card.printing.CardPrinting;
 import value_objects.deck.Deck;
@@ -39,25 +40,25 @@ public interface DeckInstance extends Comparable<DeckInstance> {
    * apart of that category.
    * @return uncategorized list of cards (by name)
    */
-  Map<String, Set<String>> getCardsByCategory();
+  Map<String, SortedSet<String>> getCardsByCategory();
 
   /**
    * Returns set of {@link CardPrinting} in this {@link DeckInstance}
    * @return card printings in this instance
    */
-  Set<CardPrinting> getCardPrintings();
+  SortedSet<CardPrinting> getCardPrintings();
 
   /**
    * Returns set of categories of cards that are in this {@link DeckInstance}.
    * @return set of categories that cards can be in
    */
-  Set<String> getCategories();
+  SortedSet<String> getCategories();
 
   /**
    * Returns set of card names that are in this {@link DeckInstance}
    * @return set of cards in this instance
    */
-  Set<String> getCards();
+  SortedSet<String> getCards();
 
   /**
    * Returns mapping of specific card printings that are apart of this {@link DeckInstance}, to the

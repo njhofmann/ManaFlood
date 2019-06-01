@@ -8,7 +8,7 @@ import value_objects.deck.instance.DeckInstance;
  * Represents the "history" of a specific deck of {@link Card}s as stored in the Card & Deck
  * Database (CDDB).
  */
-public interface Deck {
+public interface Deck extends Comparable<Deck> {
 
   /**
    * Returns the unique deck ID of this {@link Deck}.
@@ -34,4 +34,26 @@ public interface Deck {
    * @return sorted set of {@link DeckInstance} that make up this deck
    */
   SortedSet<DeckInstance> getHistory();
+
+  /**
+   * Compares this {@link Deck} with another Deck for order based their ids. Returns a negative int if
+   * this Deck's name comes after inputted Deck's name alphabetically, and a positive int if this
+   * Card's name comes before the inputted Card's name alphabetically. If names are the sames,
+   * checks for equality off of deck instances included within each deck. Returns 0 if and only
+   * if this Deck and given Deck have the same deck instances.
+   * @param other another Deck to compare this Deck to
+   * @return int representing ordering of this Deck and given Deck
+   * @throws IllegalArgumentException if given Deck is null
+   */
+  @Override
+  int compareTo(Deck other) throws IllegalArgumentException;
+
+  /**
+   * Returns if given object is equal to this {@link Deck} if and only if it is a Deck itself, has
+   * the same id as this card, and the same deck instances as this card
+   * @param other object to compare to
+   * @return if this given object equals this Deck
+   */
+  @Override
+  boolean equals(Object other);
 }

@@ -170,7 +170,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     // Build deck instances,
     SortedSet<DeckInstance> deckInstances = new TreeSet<>();
-    Map<String, Set<String>> categoryContents = new HashMap<>();
+    Map<String, SortedSet<String>> categoryContents = new HashMap<>();
     Map<CardPrinting, Integer> cardPrintingQuantities = new HashMap<>();
     for (LocalDateTime creation : deckInstanceKeys) {
       // Get categories
@@ -205,7 +205,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
             preparedStatement.setString(3, currentCategory);
             cardsInCategory = preparedStatement.executeQuery();
 
-            Set<String> cardsToAdd = new HashSet<>();
+            SortedSet<String> cardsToAdd = new TreeSet<>();
             while (cardsInCategory.next()) {
               String cardToAdd = cardsInCategory.getString("card_name");
               if (cardsToAdd.contains(cardToAdd)) {
@@ -409,7 +409,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     // Add cards in categories
-    Map<String, Set<String>> cardCategories = deck.getCardsByCategory();
+    Map<String, SortedSet<String>> cardCategories = deck.getCardsByCategory();
     for (String category : cardCategories.keySet()) {
       Set<String> categoryCards = cardCategories.get(category);
       for (String card : categoryCards) {
@@ -502,6 +502,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     if (cardQuery == null) {
       throw new IllegalArgumentException("Given cardQuery can't be null!");
     }
+    System.out.println(cardQuery.asQuery());
 
     Map<String, Map<String, Set<String>>> cardNameToExpansionsToNumbers = new HashMap<>();
     String query = cardQuery.asQuery();
@@ -531,7 +532,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         }
 
         // Add number info
-        cardNameToExpansionsToNumbers.get(cardName).get(expansion).add(cardName);
+        cardNameToExpansionsToNumbers.get(cardName).get(expansion).add(number);
       }
     }
     catch (SQLException e) {
@@ -661,7 +662,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     ResultSet queryResult = preparedStatement.executeQuery()) {
 
       while (queryResult.next()) {
-        toReturn.add(queryResult.getString(columnName));
+        String result = queryResult.getString(columnName);
+        toReturn.add(result);
       }
     }
     catch (SQLException e) {
@@ -858,7 +860,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       for (String expansion : expansions.keySet()) {
         if (!sets.contains(expansion)) {
           throw new IllegalArgumentException(String.format("Database doesn't contain printing "
-              + "for card %s from expansion %s!", expansion, name));
+              + "for card %s from expansion %s!", name, expansion));
         }
       }
 
@@ -901,7 +903,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * closed
      */
     private String setText(Connection connection, String cardName) throws SQLException {
-      return getCardInfo(connection,"card_text", "card text", cardName);
+      return getCardInfo(connection,"text", "card text", cardName);
     }
 
     /**
@@ -1059,7 +1061,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * Retrieves types associated with this {@link Card}, for a given category of type (supertype,
      * type, subtype).
      * @param connection connection to the CDDB to use for retrieving data
-     * @table table to retrieve data from
+     * @param table to retrieve data from
      * @param type category of type to retrieve
      * @param cardName name of card to retrieve data for
      * @return set of given category of type associated with this card
@@ -1238,11 +1240,12 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
               cardName, formattedExpansion, number);
           try (PreparedStatement preparedStatement = connection.prepareStatement(cardExpansionQuery);
               ResultSet resultSet = preparedStatement.executeQuery()) {
-            assert resultSet.next(); // SHould only have one row
+            assert resultSet.next(); // Should only have one row
             expansion = resultSet.getString("expansion");
             number = resultSet.getString("number");
             String rarity = resultSet.getString("rarity");
             String flavor_text = resultSet.getString("flavor_text");
+            String scryfallId = resultSet.getString("scryfall_id");
             assert !resultSet.next(); // Should return false
 
             // Get artists
@@ -1261,10 +1264,9 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
             }
 
             cardPrintingInfo.add(new DefaultCardPrintingInfo(cardName, expansion, number,
-                artists, flavor_text, rarity));
+                artists, flavor_text, rarity, scryfallId));
 
           } catch (SQLException e) {
-            System.out.println(cardExpansionQuery);
             throw new SQLException(e.getMessage() +
                 String.format("Failed to retrieve card expansion info for card %s from database!",
                     cardName));
@@ -1285,7 +1287,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      */
     private int setCMC(Connection connection, String cardName) throws SQLException {
       Map<String, String> conditions = new HashMap<>();
-      conditions.put("card_name", cardName);
+      conditions.put("name", cardName);
       Set<String> singleResult = retrieveSingleColumn(connection, "Card", "cmc",
           conditions, true, "converted mana cost", cardName);
       return Integer.parseInt(singleItemSetToString(singleResult));
@@ -1578,7 +1580,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         throw new IllegalArgumentException("Given search for param can't be null!");
       }
       validWord(word);
-      word = formatWordToSQL(word);
       addSearchOptionParam(nameParams, searchFor, word);
     }
 
@@ -1720,7 +1721,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @param paramToAdd
      * @throws IllegalArgumentException if any given parameter is null
      */
-    private void addSearchOptionParam(Map<SearchOption, SortedSet<String>> params, SearchOption addUnder, String paramToAdd) {
+    private void addSearchOptionParam(Map<SearchOption, SortedSet<String>> params,
+        SearchOption addUnder, String paramToAdd) {
       if (params == null || addUnder == null || paramToAdd == null) {
         throw new IllegalArgumentException("Given params can't be null!");
       }
@@ -1871,28 +1873,28 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private StringBuilder buildExpansionQuery() {
       String table = "CardExpansion";
       String conditionalColumn = "expansion";
-      return buildGenericCardPrintingQeury(setParams, table, conditionalColumn);
+      return buildGenericCardPrintingQuery(setParams, table, conditionalColumn);
     }
 
     private StringBuilder buildArtistQuery() {
       String table = "Artist";
       String conditionalColumn = "artist";
-      return buildGenericCardPrintingQeury(artistParams, table, conditionalColumn);
+      return buildGenericCardPrintingQuery(artistParams, table, conditionalColumn);
     }
 
     private StringBuilder buildRarityQuery() {
       String table = "CardExpansion";
       String conditionalColumn = "rarity";
-      return buildGenericCardPrintingQeury(rarityParams, table, conditionalColumn);
+      return buildGenericCardPrintingQuery(rarityParams, table, conditionalColumn);
     }
 
     private StringBuilder buildFlavorTextQuery() {
       String table = "CardExpansion";
       String conditionalColumn = "flavor_text";
-      return buildGenericCardPrintingQeury(flavorTextParams, table, conditionalColumn);
+      return buildGenericCardPrintingQuery(flavorTextParams, table, conditionalColumn);
     }
 
-    private StringBuilder buildGenericCardPrintingQeury(Map<SearchOption, SortedSet<String>> params,
+    private StringBuilder buildGenericCardPrintingQuery(Map<SearchOption, SortedSet<String>> params,
         String table, String conditionalColumn) {
       String[] returnColumns = new String[]{"card_name", "expansion", "number"};
       String innerQueryColumn = "card_name";
@@ -1907,8 +1909,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       if (params.isEmpty()) {
         return new StringBuilder();
       }
-
-      if (table == null || table.isEmpty()) {
+      else if (table == null || table.isEmpty()) {
         throw new IllegalArgumentException("Given table can't be null or empty!");
       }
 
@@ -1928,7 +1929,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
                 false, mergeCondAsWhere, false);
 
         String mustIncludeQuery =
-            String.format("SELECT %s FROM %s %s",
+            String.format("SELECT %s FROM %s%s",
                 innerQueryColumn, table,
                 conditionals.toString());
 
@@ -2011,7 +2012,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         }
         else {
 
-          toReturn.append(String.format(", %s ", optionalOrRequiredFormat));
+          toReturn.append(String.format(" %s ", optionalOrRequiredFormat));
         }
         toReturn.append(String.format(notLikeFormat, columnName, disallowParam));
       }
@@ -2253,9 +2254,9 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       textParams.clear();
       colorParams.clear();
       colorIdentityParams.clear();
-      supertypes.clear();
+      supertypeParams.clear();
       typeParams.clear();
-      subtypes.clear();
+      subtypeParams.clear();
       setParams.clear();
       artistParams.clear();
       flavorTextParams .clear();

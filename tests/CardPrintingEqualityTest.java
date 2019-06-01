@@ -24,6 +24,8 @@ public class CardPrintingEqualityTest {
 
     cardPrintingA = new DefaultCardPrinting(name, expansion, number);
     cardPrintingB = new DefaultCardPrinting(name, expansion, number);
+
+    assertEquals(cardPrintingA.hashCode(), cardPrintingB.hashCode());
     assertEquals(0, cardPrintingA.compareTo(cardPrintingB));
     assertEquals(0, cardPrintingB.compareTo(cardPrintingA));
     assertEquals(cardPrintingA, cardPrintingB);

@@ -1,8 +1,10 @@
 package value_objects.deck;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.SortedSet;
+import value_objects.card.printing.CardPrintingInfo;
 import value_objects.deck.instance.DeckInstance;
 
 /**
@@ -82,15 +84,78 @@ public class DefaultDeck implements Deck {
   }
 
   @Override
+  public int compareTo(Deck other) throws IllegalArgumentException {
+    if (other == null) {
+      throw new IllegalArgumentException("Given deck can't be null!");
+    }
+
+    int otherDeckId = other.getDeckID();
+    if (deckID < otherDeckId) {
+      return deckID - otherDeckId;
+    }
+    else if (deckID > otherDeckId) {
+      return otherDeckId - deckID;
+    }
+
+// Neither should be empty
+    SortedSet<DeckInstance> otherExpansions = other.getHistory();
+    assert !getHistory().isEmpty() && !otherExpansions.isEmpty();
+
+    boolean thisIsShorter;
+    SortedSet<DeckInstance> shorterExpansions;
+    SortedSet<DeckInstance> longerExpansions;
+    if (getHistory().size() < otherExpansions.size()) {
+      thisIsShorter = true;
+      shorterExpansions = getHistory();
+      longerExpansions = otherExpansions;
+    }
+    else {
+      thisIsShorter = false;
+      shorterExpansions = otherExpansions;
+      longerExpansions = getHistory();
+    }
+
+    Iterator<DeckInstance> shortExpansionsIterator = shorterExpansions.iterator();
+    Iterator<DeckInstance> longerExpansionsIterator = longerExpansions.iterator();
+    while (shortExpansionsIterator.hasNext()) {
+      DeckInstance curShorterExpansionsItem = shortExpansionsIterator.next();
+      DeckInstance curLongerExpansionItem = longerExpansionsIterator.next();
+      int curComparison = thisIsShorter ?
+          curShorterExpansionsItem.compareTo(curLongerExpansionItem) :
+          curLongerExpansionItem.compareTo(curShorterExpansionsItem);
+
+      if (curComparison != 0) {
+        return curComparison;
+      }
+    }
+
+    int remainingDifference = 0;
+    while (longerExpansionsIterator.hasNext()) {
+      longerExpansionsIterator.next();
+
+      if (thisIsShorter) {
+        remainingDifference--;
+      }
+      else {
+        remainingDifference++;
+      }
+    }
+
+    // If remaining difference is 0, should be the exact same card with exact same printings
+    return remainingDifference;
+  }
+
+  @Override
   public boolean equals(Object other) {
     if (other instanceof Deck) {
-      return ((Deck) other).getDeckID() == this.getDeckID();
+      Deck otherDeck = (Deck) other;
+      return otherDeck.getDeckID() == deckID && history.equals(otherDeck.getHistory());
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(deckID, deckName, desp, history);
+    return Objects.hash(deckID, history);
   }
 }

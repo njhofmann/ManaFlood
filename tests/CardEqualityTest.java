@@ -31,7 +31,7 @@ public class CardEqualityTest {
 
   @BeforeAll
   public static void init() throws SQLException {
-    Path pathToDatabase = Paths.get("resources\\test.db").toAbsolutePath();
+    Path pathToDatabase = Paths.get("resources\\cddb.db").toAbsolutePath();
     cardChannel = new DefaultDatabaseChannel(pathToDatabase);
     cardQuery = cardChannel.getQuery();
   }
@@ -141,7 +141,7 @@ public class CardEqualityTest {
 
     cardQuery.byColor("R", SearchOption.MustInclude);
     cardQuery.byColor("W", SearchOption.MustInclude);
-    cardQuery.byType("instant", SearchOption.MustInclude);
+    cardQuery.byType("Instant", SearchOption.MustInclude);
     cardQuery.byStat(Stat.CMC, Comparison.EQUAL, 2);
     cardQuery.byText("indestructible", SearchOption.MustInclude);
     cardQueryResult = cardChannel.queryCards(cardQuery);
@@ -150,6 +150,7 @@ public class CardEqualityTest {
     cardB = cardQueryResult.first();
 
     assertEquals(cardA, cardB);
+    assertEquals(cardA.hashCode(), cardB.hashCode());
     assertEquals(0, cardA.compareTo(cardB));
     assertEquals(0, cardB.compareTo(cardA));
   }
@@ -231,7 +232,6 @@ public class CardEqualityTest {
     assertNotEquals(cardA, cardB);
     assertNotEquals(cardA, cardC);
     assertNotEquals(cardB, cardC);
-
 
     assertTrue(cardA.compareTo(cardB) < 0);
     assertTrue(cardB.compareTo(cardA) > 0);
@@ -318,7 +318,6 @@ public class CardEqualityTest {
     assertNotEquals(cardA, cardB);
     assertNotEquals(cardA, cardC);
     assertNotEquals(cardB, cardC);
-
 
     assertTrue(cardA.compareTo(cardB) < 0);
     assertTrue(cardB.compareTo(cardA) > 0);

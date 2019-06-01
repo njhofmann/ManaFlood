@@ -1,12 +1,13 @@
 -Redo card query tests
--Add Scryfall image url
--Redo connection, statement openings and closing (old style) in parser
--Update text and types on cards option (errata)
--Get card option
--Card relationship equality testing
+-Documentation
+-Add hashcode, compare, and equals override methods to interface of value objects
 -Finish card retrieval tests (multiple artists tests, others)
--Add hashcode to equality tests
+-Double check equality and hashcodes for custom objects, add hashcode tests, - Card relationship equality testing
 -Deck object testing
+-Update text and types on cards option (errata)
+-View interface
+-Get card printing
+-Get card option
 -Terminal view
 -GUI View
 -Documentation updates

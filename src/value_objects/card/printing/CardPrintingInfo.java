@@ -25,4 +25,11 @@ public interface CardPrintingInfo extends CardPrinting {
    * @return rarity for this CardPrinting
    */
   String getRarity();
+
+  /**
+   * Returns the Scryfall id of this specific card printing, used to retrieve specific data not
+   * stored in the CDDB such as card images and rulings.
+   * @return Scryfall ID of this card
+   */
+  String getScryfallID();
 }
