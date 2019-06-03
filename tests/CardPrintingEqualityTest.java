@@ -18,12 +18,8 @@ public class CardPrintingEqualityTest {
   @DisplayName("Equal card printings")
   @Test
   public void equalCardPrintings() {
-    String name = "foo";
-    String expansion = "bar";
-    String number = "four";
-
-    cardPrintingA = new DefaultCardPrinting(name, expansion, number);
-    cardPrintingB = new DefaultCardPrinting(name, expansion, number);
+    cardPrintingA = new DefaultCardPrinting("foo", "bar", "four");
+    cardPrintingB = new DefaultCardPrinting("foo", "bar", "four");
 
     assertEquals(cardPrintingA.hashCode(), cardPrintingB.hashCode());
     assertEquals(0, cardPrintingA.compareTo(cardPrintingB));
@@ -34,11 +30,8 @@ public class CardPrintingEqualityTest {
   @DisplayName("Equal name, equal expansion, before number")
   @Test
   public void beforeNumber() {
-    String name = "man";
-    String expansion = "lop";
-
-    cardPrintingA = new DefaultCardPrinting(name, expansion, "four");
-    cardPrintingB = new DefaultCardPrinting(name, expansion, "six");
+    cardPrintingA = new DefaultCardPrinting("man", "lop", "four");
+    cardPrintingB = new DefaultCardPrinting("man", "lop", "six");
     assertTrue(cardPrintingA.compareTo(cardPrintingB) < 0);
     assertTrue(cardPrintingB.compareTo(cardPrintingA) > 0);
     assertNotEquals(cardPrintingA, cardPrintingB);
@@ -47,11 +40,8 @@ public class CardPrintingEqualityTest {
   @DisplayName("Equal name, equal expansion, after number")
   @Test
   public void afterNumber() {
-    String name = "pop";
-    String expansion = "tio";
-
-    cardPrintingA = new DefaultCardPrinting(name, expansion, "hero");
-    cardPrintingB = new DefaultCardPrinting(name, expansion, "food");
+    cardPrintingA = new DefaultCardPrinting("pop", "tio", "hero");
+    cardPrintingB = new DefaultCardPrinting("pop", "tio", "food");
     assertTrue(cardPrintingA.compareTo(cardPrintingB) > 0);
     assertTrue(cardPrintingB.compareTo(cardPrintingA) < 0);
     assertNotEquals(cardPrintingA, cardPrintingB);
@@ -60,10 +50,8 @@ public class CardPrintingEqualityTest {
   @DisplayName("Equal name, before expansion")
   @Test
   public void beforeExpansion() {
-    String name = "nero";
-
-    cardPrintingA = new DefaultCardPrinting(name, "retu", "what");
-    cardPrintingB = new DefaultCardPrinting(name, "zebr", "ever");
+    cardPrintingA = new DefaultCardPrinting("nero", "retu", "what");
+    cardPrintingB = new DefaultCardPrinting("nero", "zebr", "ever");
     assertTrue(cardPrintingA.compareTo(cardPrintingB) < 0);
     assertTrue(cardPrintingB.compareTo(cardPrintingA) > 0);
     assertNotEquals(cardPrintingA, cardPrintingB);
@@ -72,10 +60,8 @@ public class CardPrintingEqualityTest {
   @DisplayName("Equal name, after expansion")
   @Test
   public void afterExpansion() {
-    String name = "were";
-
-    cardPrintingA = new DefaultCardPrinting(name, "xlk", "what");
-    cardPrintingB = new DefaultCardPrinting(name, "iop", "ever");
+    cardPrintingA = new DefaultCardPrinting("were", "xlk", "what");
+    cardPrintingB = new DefaultCardPrinting("were", "iop", "ever");
     assertTrue(cardPrintingA.compareTo(cardPrintingB) > 0);
     assertTrue(cardPrintingB.compareTo(cardPrintingA) < 0);
     assertNotEquals(cardPrintingA, cardPrintingB);
@@ -104,11 +90,8 @@ public class CardPrintingEqualityTest {
   @DisplayName("Transitive tests")
   @Test
   public void transitiveTests() {
-    String name = "james";
-    String expansion = "tony";
-
-    cardPrintingA = new DefaultCardPrinting(name, expansion, "foo");
-    cardPrintingB = new DefaultCardPrinting(name, expansion, "three");
+    cardPrintingA = new DefaultCardPrinting("james", "tony", "foo");
+    cardPrintingB = new DefaultCardPrinting("james", "tony", "three");
     CardPrinting cardPrintingC = new DefaultCardPrinting("alex", "rub", "six");
 
     assertNotEquals(cardPrintingA, cardPrintingB);

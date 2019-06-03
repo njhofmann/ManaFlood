@@ -1,8 +1,7 @@
 -Redo card query tests
 -Documentation
--Add hashcode, compare, and equals override methods to interface of value objects
 -Finish card retrieval tests (multiple artists tests, others)
--Double check equality and hashcodes for custom objects, add hashcode tests, - Card relationship equality testing
+-Double check equality and hashcodes for custom objects, add hashcode tests,
 -Deck object testing
 -Update text and types on cards option (errata)
 -View interface

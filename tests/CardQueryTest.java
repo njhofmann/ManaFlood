@@ -28,7 +28,7 @@ class CardQueryTest {
 
   @BeforeAll
   public static void init() throws SQLException {
-    Path pathToDatabase = Paths.get("resources\\test.db").toAbsolutePath();
+    Path pathToDatabase = Paths.get("resources\\cddb.db").toAbsolutePath();
     DefaultDatabaseChannel defaultChannel = new DefaultDatabaseChannel(pathToDatabase);
     cardChannel = defaultChannel;
     cardQuery = defaultChannel.getQuery();
@@ -42,7 +42,7 @@ class CardQueryTest {
   @DisplayName("No parameters")
   @Test
   public void noParameters() {
-    String result = "SELECT t0.card_name card_name, t0.expansion expansion FROM CardExpansion t0";
+    String result = "SELECT card_name, expansion, number FROM CardExpansion";
     assertEquals(result, cardQuery.asQuery());
   }
 
@@ -78,11 +78,10 @@ class CardQueryTest {
     @Test
     public void includeSingleName() {
       String result = "SELECT card_name, expansion, number FROM CardExpansion "
-          + "WHERE card_name IN ("
-          + "WITH MustIncludePrintings AS ("
-          + "SELECT name FROM Card WHERE (name LIKE '%cabal%')) "
-          + "SELECT name FROM Card "
-          + "WHERE name IN MustIncludePrintings)";
+          + "WHERE card_name IN (SELECT name FROM Card "
+          + "WHERE name IN (SELECT name FROM Card "
+          + "WHERE (name LIKE '%cabal%')) "
+          + "AND (name LIKE '%cabal%'))";
       cardQuery.byName("cabal", SearchOption.MustInclude);
       assertEquals(result, cardQuery.asQuery());
     }
@@ -91,12 +90,10 @@ class CardQueryTest {
     @Test
     public void includeMultipleName() {
       String result = "SELECT card_name, expansion, number FROM CardExpansion "
-          + "WHERE card_name IN ("
-          + "WITH MustIncludePrintings AS ("
-          + "SELECT name FROM Card "
+          + "WHERE card_name IN (SELECT name FROM Card "
+          + "WHERE name IN (SELECT name FROM Card "
           + "WHERE (name LIKE '%bi%' AND name LIKE '%rd%' AND name LIKE '%re%')) "
-          + "SELECT name FROM Card "
-          + "WHERE name IN MustIncludePrintings)";
+          + "AND (name LIKE '%bi%' OR name LIKE '%rd%' OR name LIKE '%re%'))";
       cardQuery.byName("bi", SearchOption.MustInclude);
       cardQuery.byName("re", SearchOption.MustInclude);
       cardQuery.byName("rd", SearchOption.MustInclude);
@@ -155,13 +152,12 @@ class CardQueryTest {
     @Test
     public void mixedMultipleName() {
       String result = "SELECT card_name, expansion, number FROM CardExpansion "
-          + "WHERE card_name IN ("
-          + "WITH MustIncludePrintings AS ("
-          + "SELECT name FROM Card WHERE (name LIKE '%ah%' AND name LIKE '%re%')) "
-          + "SELECT name FROM Card "
-          + "WHERE name IN MustIncludePrintings "
-          + "AND (name NOT LIKE '%jk%' AND name NOT LIKE '%rt%') "
-          + "AND (name LIKE '%gh%' OR name LIKE '%yu%'))";
+          + "WHERE card_name IN (SELECT name FROM Card "
+          + "WHERE (name NOT LIKE '%jk%' AND name NOT LIKE '%rt%') "
+          + "AND (name LIKE '%gh%' OR name LIKE '%yu%') "
+          + "AND name IN (SELECT name FROM Card "
+          + "WHERE (name LIKE '%ah%' AND name LIKE '%re%')) "
+          + "AND (name LIKE '%ah%' OR name LIKE '%re%'))";
       cardQuery.byName("ah", SearchOption.MustInclude);
       cardQuery.byName("gh", SearchOption.OneOf);
       cardQuery.byName("yu", SearchOption.OneOf);
@@ -203,31 +199,99 @@ class CardQueryTest {
     @DisplayName("Include single text parameter")
     @Test
     public void includeSingleText() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN "
+          + "(SELECT name FROM Card "
+          + "WHERE name IN ("
+          + "SELECT name FROM Card WHERE (text LIKE '%flying%')) "
+          + "AND (text LIKE '%flying%'))";
+      cardQuery.byText("flying", SearchOption.MustInclude);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Include multiple text parameters")
     @Test
     public void includeMultipleText() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN "
+          + "(SELECT name FROM Card "
+          + "WHERE name IN ("
+          + "SELECT name FROM Card "
+          + "WHERE (text LIKE '%island%' AND text LIKE '%mer%' AND text LIKE '%walk%')) "
+          + "AND (text LIKE '%island%' OR text LIKE '%mer%' OR text LIKE '%walk%'))";
+      cardQuery.byText("island", SearchOption.MustInclude);
+      cardQuery.byText("walk", SearchOption.MustInclude);
+      cardQuery.byText("mer", SearchOption.MustInclude);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow single text parameter")
     @Test
     public void disallowSingleText() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN "
+          + "(SELECT name FROM Card "
+          + "WHERE (text NOT LIKE '%haste%'))";
+      cardQuery.byText("haste", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow multiple text parameters")
     @Test
     public void disallowMultipleText() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN "
+          + "(SELECT name FROM Card "
+          + "WHERE (text NOT LIKE '%men%' AND text NOT LIKE '%raid%' AND text NOT LIKE '%trample%'))";
+      cardQuery.byText("men", SearchOption.Disallow);
+      cardQuery.byText("trample", SearchOption.Disallow);
+      cardQuery.byText("raid", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
+    }
 
+    @DisplayName("Disallow single text parameter")
+    @Test
+    public void oneOfSingleText() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN "
+          + "(SELECT name FROM Card "
+          + "WHERE (text LIKE '%star%'))";
+      cardQuery.byText("star", SearchOption.OneOf);
+      assertEquals(result, cardQuery.asQuery());
+    }
+
+    @DisplayName("Disallow multiple text parameters")
+    @Test
+    public void oneOfMultipleText() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN "
+          + "(SELECT name FROM Card "
+          + "WHERE (text LIKE '%jump%' OR text LIKE '%load%' OR text LIKE '%over%'))";
+      cardQuery.byText("over", SearchOption.OneOf);
+      cardQuery.byText("load", SearchOption.OneOf);
+      cardQuery.byText("jump", SearchOption.OneOf);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Mixed multiple text parameters")
     @Test
     public void mixedMultipleText() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN "
+          + "(SELECT name FROM Card "
+          + "WHERE (text NOT LIKE '%ar%' AND text NOT LIKE '%ma%') "
+          + "AND (text LIKE '%er%' OR text LIKE '%io%') "
+          + "AND name IN ("
+          + "SELECT name FROM Card "
+          + "WHERE (text LIKE '%fl%' AND text LIKE '%im%')) "
+          + "AND (text LIKE '%fl%' OR text LIKE '%im%'))";
+      cardQuery.byText("fl", SearchOption.MustInclude);
+      cardQuery.byText("im", SearchOption.MustInclude);
+      cardQuery.byText("er", SearchOption.OneOf);
+      cardQuery.byText("io", SearchOption.OneOf);
+      cardQuery.byText("ma", SearchOption.Disallow);
+      cardQuery.byText("ar", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
@@ -254,7 +318,16 @@ class CardQueryTest {
     @DisplayName("Include single color parameter")
     @Test
     public void includeSingleColor() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN ("
+          + "SELECT card_name FROM Color "
+          + "WHERE card_name IN "
+          + "(SELECT card_name FROM Color "
+          + "WHERE color IN ('R') "
+          + "GROUP BY card_name HAVING COUNT(DISTINCT(color)) = 1) "
+          + "AND color IN ('R'))";
+      cardQuery.byColor("R", SearchOption.MustInclude);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Include multiple color parameters")
@@ -272,6 +345,18 @@ class CardQueryTest {
     @DisplayName("Disallow multiple color parameters")
     @Test
     public void disallowMultipleColor() {
+
+    }
+
+    @DisplayName("One of single color parameter")
+    @Test
+    public void oneOfSingleColor() {
+
+    }
+
+    @DisplayName("ONe of multiple color parameters")
+    @Test
+    public void oneOfMultipleColor() {
 
     }
 
@@ -568,11 +653,6 @@ class CardQueryTest {
     @DisplayName("Include single flavor text parameter")
     @Test
     public void includeSingleFlavorText() {
-      String result = "SELECT t0.card_name card_name, t0.expansion expansion "
-          + "FROM CardExpansion t0 "
-          + "WHERE t0.flavor_text LIKE '%foo%'";
-      cardQuery.byFlavorText("foo", SearchOption.MustInclude);
-      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Include multiple flavor text parameters")

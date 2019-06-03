@@ -92,4 +92,14 @@ public class DefaultCardPrintingInfo implements CardPrintingInfo {
   public int compareTo(CardPrinting o) {
     return cardPrinting.compareTo(o);
   }
+
+  @Override
+  public boolean equals(Object other) {
+    return cardPrinting.equals(other);
+  }
+
+  @Override
+  public int hashCode() {
+    return cardPrinting.hashCode();
+  }
 }

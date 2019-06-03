@@ -5,12 +5,15 @@ import database.access.DefaultDatabaseChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Iterator;
 import java.util.SortedSet;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import value_objects.card.Card;
+import value_objects.card.printing.CardPrinting;
+import value_objects.card.printing.CardPrintingInfo;
 import value_objects.card.query.CardQuery;
 import value_objects.card.query.Comparison;
 import value_objects.card.query.SearchOption;
@@ -391,8 +394,9 @@ public class CardEqualityTest {
     cardQuery.clear();
 
     cardQuery.byName("Counterspell", SearchOption.MustInclude);
-    cardQuery.bySet("Conspiracy", SearchOption.MustInclude);
+    cardQuery.bySet("Classic Sixth Edition", SearchOption.MustInclude);
     cardQuery.bySet("Masters 25", SearchOption.MustInclude);
+    System.out.println(cardQuery.asQuery());
     cardQueryResult = cardChannel.queryCards(cardQuery);
 
     assertEquals(1, cardQueryResult.size());
