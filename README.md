@@ -1,9 +1,7 @@
- # ManaFlood
- 
- <img src="https://ibb.co/XFZRghJ" width="256" height="256" title="Github Logo">
- 
-<a href="https://imgbb.com/"><img src="https://i.ibb.co/c2cnHGT/Mana-Flood-Blur.jpg" width="256" height="256" alt="Mana-Flood-Blur" border="0"></a>
- 
+<a href="https://imgbb.com/"><img src="https://i.ibb.co/c2cnHGT/Mana-Flood-Blur.jpg" width="286" height="150" alt="Mana-Flood-Blur" border="0"></a> 
+
+# ManaFlood
+
 Desktop application for deck building, deck testing, card querying, etc. for the Magic: The Gathering TCG.
 
 Focused on covered "main" MTG sets - not silver bordered sets like Unhinged. This functionality might be supported in the future, but as of now they are not.
