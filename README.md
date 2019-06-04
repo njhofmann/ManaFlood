@@ -1,6 +1,6 @@
  # ManaFlood
  
- <img src="https://pasteboard.co/IhUP6XN.jpg" width="256" height="256" title="Github Logo">
+ <img src="https://ibb.co/XFZRghJ" width="256" height="256" title="Github Logo">
  
 Desktop application for deck building, deck testing, card querying, etc. for the Magic: The Gathering TCG.
 
