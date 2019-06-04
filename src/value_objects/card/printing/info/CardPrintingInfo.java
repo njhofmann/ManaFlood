@@ -1,6 +1,7 @@
-package value_objects.card.printing;
+package value_objects.card.printing.info;
 
 import java.util.SortedSet;
+import value_objects.card.printing.CardPrinting;
 
 /**
  * Represents a additional info specific printing of a MTG card in the CDDB, a card associated with

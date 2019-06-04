@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.SortedSet;
-import value_objects.card.printing.CardPrintingInfo;
 import value_objects.deck.instance.DeckInstance;
 
 /**
@@ -47,7 +46,7 @@ public class DefaultDeck implements Deck {
     if (deckName == null) {
       throw new IllegalArgumentException("Given deck name can't be null!");
     }
-    else if (deckName == null) {
+    else if (desp == null) {
       throw new IllegalArgumentException("Given deck description can't be null!");
     }
     else if (history == null) {
@@ -97,7 +96,7 @@ public class DefaultDeck implements Deck {
       return otherDeckId - deckID;
     }
 
-// Neither should be empty
+    // Neither should be empty
     SortedSet<DeckInstance> otherExpansions = other.getHistory();
     assert !getHistory().isEmpty() && !otherExpansions.isEmpty();
 

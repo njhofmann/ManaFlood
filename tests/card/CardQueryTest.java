@@ -1,3 +1,5 @@
+package card;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import database.access.CardChannel;

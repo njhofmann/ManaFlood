@@ -4,8 +4,7 @@ import java.util.SortedSet;
 import value_objects.card.relationship.CardRelationship;
 
 import java.util.Map;
-import java.util.Set;
-import value_objects.card.printing.CardPrintingInfo;
+import value_objects.card.printing.info.CardPrintingInfo;
 
 /**
  * Represents all info of an individual card in the Card and Deck Database (CDDB). Uniqueness is

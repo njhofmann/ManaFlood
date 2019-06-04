@@ -1,6 +1,9 @@
-package value_objects.card.printing;
+package value_objects.card.printing.info;
 
 import java.util.SortedSet;
+import value_objects.card.printing.CardPrinting;
+import value_objects.card.printing.DefaultCardPrinting;
+import value_objects.card.printing.info.CardPrintingInfo;
 
 /**
  * Default implementation of {@link CardPrintingInfo}, represents additional info for a given

@@ -50,7 +50,7 @@ public interface Deck extends Comparable<Deck> {
 
   /**
    * Returns if given object is equal to this {@link Deck} if and only if it is a Deck itself, has
-   * the same id as this card, and the same deck instances as this card
+   * the same id as this card, and the same deck instances as this Deck
    * @param other object to compare to
    * @return if this given object equals this Deck
    */

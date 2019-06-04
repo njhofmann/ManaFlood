@@ -1,3 +1,5 @@
+package card;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import database.access.CardChannel;
@@ -12,13 +14,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane.SystemMenuBar;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import value_objects.card.Card;
-import value_objects.card.printing.CardPrintingInfo;
+import value_objects.card.printing.info.CardPrintingInfo;
 import value_objects.card.query.CardQuery;
 import value_objects.card.query.SearchOption;
 import value_objects.card.relationship.CardRelationship;
@@ -36,7 +37,7 @@ public class CardRetrievalTest {
 
   @BeforeAll
   public static void init() throws SQLException {
-    Path pathToDatabase = Paths.get("resources\\test.db").toAbsolutePath();
+    Path pathToDatabase = Paths.get("resources\\cddb.db").toAbsolutePath();
     cardChannel = new DefaultDatabaseChannel(pathToDatabase);
     cardQuery = cardChannel.getQuery();
     cardQueryResult = new TreeSet<>();
@@ -90,13 +91,13 @@ public class CardRetrievalTest {
 
     // Check types
     Set<String> types = new HashSet<>();
-    types.add("creature");
+    types.add("Creature");
     assertEquals(types, soleResult.getTypes());
 
     // Check subtypes
-    Set<String> subtypes = new HashSet<>();
-    subtypes.add("human");
-    subtypes.add("soldier");
+    SortedSet<String> subtypes = new TreeSet<>();
+    subtypes.add("Human");
+    subtypes.add("Soldier");
     assertEquals(subtypes, soleResult.getSubtypes());
 
     // Check extra stats
@@ -170,17 +171,17 @@ public class CardRetrievalTest {
 
     // Check supertypes
     Set<String> supertypes = new HashSet<>();
-    supertypes.add("legendary");
+    supertypes.add("Legendary");
     assertEquals(supertypes, soleResult.getSupertypes());
 
     // Check types
     Set<String> types = new HashSet<>();
-    types.add("planeswalker");
+    types.add("Planeswalker");
     assertEquals(types, soleResult.getTypes());
 
     // Check subtypes
     Set<String> subtypes = new HashSet<>();
-    subtypes.add("ajani");
+    subtypes.add("Ajani");
     assertEquals(subtypes, soleResult.getSubtypes());
 
     // Check extra stats
@@ -257,18 +258,18 @@ public class CardRetrievalTest {
 
     // Check supertypes
     Set<String> supertypes = new HashSet<>();
-    supertypes.add("legendary");
+    supertypes.add("Legendary");
     assertEquals(supertypes, soleResult.getSupertypes());
 
     // Check types
     Set<String> types = new HashSet<>();
-    types.add("creature");
+    types.add("Creature");
     assertEquals(types, soleResult.getTypes());
 
     // Check subtypes
-    Set<String> subtypes = new HashSet<>();
-    subtypes.add("human");
-    subtypes.add("wizard");
+    SortedSet<String> subtypes = new TreeSet<>();
+    subtypes.add("Human");
+    subtypes.add("Wizard");
     assertEquals(subtypes, soleResult.getSubtypes());
 
     // Check extra stats
@@ -358,7 +359,7 @@ public class CardRetrievalTest {
 
     // Check types
     Set<String> types = new HashSet<>();
-    types.add("sorcery");
+    types.add("Sorcery");
     assertEquals(types, soleResult.getTypes());
 
     // Check subtypes
@@ -389,76 +390,29 @@ public class CardRetrievalTest {
   @DisplayName("Multiple cards with no relationship from single expansion")
   @Test
   public void multipleCardsNoRelationshipSingleExpansion() throws SQLException {
-    cardQuery.byType("instant", SearchOption.MustInclude);
+    cardQuery.byType("Instant", SearchOption.MustInclude);
     cardQuery.byColor("G", SearchOption.MustInclude);
     cardQuery.byColor("B", SearchOption.MustInclude);
-    cardQuery.byBlock("Return to Ravnica", SearchOption.MustInclude);
+    cardQuery.bySet("Return to Ravnica", SearchOption.MustInclude);
     SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
 
     // Check size
-    assertEquals(4, queryResult.size());
+    assertEquals(3, queryResult.size());
 
-    Card soleResult = queryResult.first();
+    Iterator<Card> queryResultIterator = queryResult.iterator();
 
-    // Check name
-    assertEquals("Drastic Revelation", soleResult.getName());
+    Card firstCard = queryResultIterator.next();
+    Card secondCard = queryResultIterator.next();
+    Card thirdCard = queryResultIterator.next();
 
-    // Check cmc
-    assertEquals(5, soleResult.getConvertedManaCost());
+    // First card
+    assertEquals("Abrupt Decay", firstCard.getName());
 
-    // Check mana cost
-    Map<String, Integer> expectedManaCost = new HashMap<>();
-    expectedManaCost.put("{1}", 2);
-    expectedManaCost.put("{R}", 1);
-    expectedManaCost.put("{B}", 1);
-    expectedManaCost.put("{U}", 1);
-    assertEquals(expectedManaCost, soleResult.getManaCost());
+    // Second card
+    assertEquals("Golgari Charm", secondCard.getName());
 
-    Set<String> colors = new HashSet<>();
-    colors.add("R");
-    colors.add("U");
-    colors.add("B");
-    // Check colors
-    assertEquals(colors, soleResult.getColors());
-
-    // Check color identity
-    assertEquals(colors, soleResult.getColorIdentity());
-
-    // Check text
-    String expectedText = "Discard your hand. Draw seven cards, then discard three cards at random.";
-    assertEquals(expectedText, soleResult.getText());
-
-    // Check supertypes
-    assertTrue(soleResult.getSupertypes().isEmpty());
-
-    // Check types
-    Set<String> types = new HashSet<>();
-    types.add("sorcery");
-    assertEquals(types, soleResult.getTypes());
-
-    // Check subtypes
-    assertTrue(soleResult.getSubtypes().isEmpty());
-
-    // Check extra stats
-    assertTrue(soleResult.getExtraStats().isEmpty());
-
-    // Check relationship
-    assertFalse(soleResult.getRelationships().hasRelationship());
-
-    // Check card printings
-    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
-    assertEquals(1, cardPrintings.size());
-
-    CardPrintingInfo firstPrinting = cardPrintings.first();
-    SortedSet<String> artists = firstPrinting.getArtists();
-    assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
-    assertEquals("Alara Reborn", firstPrinting.getCardExpansion()); // Check expansion
-    assertEquals("111", firstPrinting.getIdentifyingNumber()); // Check identifying number
-    assertEquals("uncommon", firstPrinting.getRarity()); // Check rarity
-    assertEquals("Every disaster holds mystery, for lack of a sane witness.",
-        firstPrinting.getFlavorText()); // Check flavor text
-    assertEquals(1, artists.size()); // Check artist size
-    assertEquals("Trevor Claxton", artists.first()); // Check artist
+    // Third card
+    assertEquals("Grisly Salvage", thirdCard.getName());
   }
 
   // Single card from single expansion with two card relationship
@@ -466,7 +420,7 @@ public class CardRetrievalTest {
   @Test
   public void singleCardTwoCardRelationshipSingleExpansion() throws SQLException {
     cardQuery.byName("Beck", SearchOption.MustInclude);
-    cardQuery.byType("sorcery", SearchOption.MustInclude);
+    cardQuery.byType("Sorcery", SearchOption.MustInclude);
     cardQuery.byColor("U", SearchOption.MustInclude);
     cardQuery.byColor("G", SearchOption.MustInclude);
     cardQuery.bySet("Dragon's Maze", SearchOption.MustInclude);
@@ -510,7 +464,7 @@ public class CardRetrievalTest {
 
     // Check types
     Set<String> types = new HashSet<>();
-    types.add("sorcery");
+    types.add("Sorcery");
     assertEquals(types, soleResult.getTypes());
 
     // Check subtypes
@@ -540,7 +494,7 @@ public class CardRetrievalTest {
     assertEquals("123", firstPrinting.getIdentifyingNumber()); // Check identifying number
     assertEquals("rare", firstPrinting.getRarity()); // Check rarity
     assertTrue(firstPrinting.getFlavorText().isEmpty()); // Check flavor text
-    assertEquals(1, artists.first()); // Check artist size
+    assertEquals(1, artists.size()); // Check artist size
     assertEquals("Adam Paquette", artists.first()); // Check artist
   }
 
@@ -588,12 +542,12 @@ public class CardRetrievalTest {
 
     // Check types
     Set<String> types = new HashSet<>();
-    types.add("creature");
+    types.add("Creature");
     assertEquals(types, soleResult.getTypes());
 
     // Check subtypes
     Set<String> subtypes = new HashSet<>();
-    subtypes.add("rat");
+    subtypes.add("Rat");
     assertEquals(subtypes, soleResult.getSubtypes());
 
     // Check extra stats
@@ -626,5 +580,81 @@ public class CardRetrievalTest {
     assertTrue(firstPrinting.getFlavorText().isEmpty()); // Check flavor text
     assertEquals(1, artists.size());
     assertEquals("Jason Felix", artists.first()); // Check artist
+  }
+
+  @DisplayName("Single card with two artists, single expansion")
+  @Test
+  public void singleCardTwoArtists() throws SQLException {
+    cardQuery.byName("Wound", SearchOption.MustInclude);
+    cardQuery.byName("Reflection", SearchOption.MustInclude);
+    cardQuery.bySet("Shadowmoor", SearchOption.MustInclude);
+    SortedSet<Card> queryResult = cardChannel.queryCards(cardQuery);
+
+    // Check size
+    assertEquals(1, queryResult.size());
+
+    Card soleResult = queryResult.first();
+
+    // Check name
+    assertEquals("Wound Reflection", soleResult.getName());
+
+    // Check cmc
+    assertEquals(6, soleResult.getConvertedManaCost());
+
+    // Check mana cost
+    Map<String, Integer> expectedManaCost = new HashMap<>();
+    expectedManaCost.put("{B}", 1);
+    expectedManaCost.put("{1}", 5);
+    assertEquals(expectedManaCost, soleResult.getManaCost());
+
+    Set<String> colors = new HashSet<>();
+    colors.add("B");
+    // Check colors
+    assertEquals(colors, soleResult.getColors());
+
+    // Check color identity
+    assertEquals(colors, soleResult.getColorIdentity());
+
+    // Check text
+    String expectedText = "At the beginning of each end step, each opponent loses life equal to "
+        + "the life they lost this turn. (Damage causes loss of life.)";
+    assertEquals(expectedText, soleResult.getText());
+
+    // Check supertypes
+    assertTrue(soleResult.getSupertypes().isEmpty());
+
+    // Check types
+    Set<String> types = new HashSet<>();
+    types.add("Enchantment");
+    assertEquals(types, soleResult.getTypes());
+
+    // Check subtypes
+    assertTrue(soleResult.getSubtypes().isEmpty());
+
+    // Check extra stats
+    assertTrue(soleResult.getExtraStats().isEmpty());
+
+    // Check relationship
+    assertFalse(soleResult.getRelationships().hasRelationship());
+
+    // Check card printings
+    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
+    assertEquals(1, cardPrintings.size());
+
+    CardPrintingInfo solePrinting = cardPrintings.first();
+    SortedSet<String> artists = solePrinting.getArtists();
+    assertEquals(soleResult.getName(), solePrinting.getCardName()); // Check name
+    assertEquals("Shadowmoor", solePrinting.getCardExpansion()); // Check expansion
+    assertEquals("81", solePrinting.getIdentifyingNumber()); // Check identifying number
+    assertEquals("rare", solePrinting.getRarity()); // Check rarity
+    assertEquals("The mission of the Nighthearth, Illulia's cult of murderous cinders, "
+        + "is to intensify every pain suffered in Shadowmoor.",
+        solePrinting.getFlavorText()); // Check flavor text
+    assertEquals(2, artists.size()); // Check artist size
+
+    // Check artists
+    Iterator<String> artistsIterator = artists.iterator();
+    assertEquals("Ron Spencer", artistsIterator.next());
+    assertEquals("Terese Nielsen", artistsIterator.next());
   }
 }

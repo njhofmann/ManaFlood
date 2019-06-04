@@ -14,7 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +25,8 @@ import value_objects.card.Card;
 import value_objects.card.query.SearchOption;
 import value_objects.card.relationship.CardRelationship;
 import value_objects.card.relationship.DefaultCardRelationship;
-import value_objects.card.printing.CardPrintingInfo;
-import value_objects.card.printing.DefaultCardPrintingInfo;
+import value_objects.card.printing.info.CardPrintingInfo;
+import value_objects.card.printing.info.DefaultCardPrintingInfo;
 import value_objects.card.query.CardQuery;
 import value_objects.card.printing.CardPrinting;
 import value_objects.card.printing.DefaultCardPrinting;
@@ -536,8 +535,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
     catch (SQLException e) {
       System.out.println(cardQuery.asQuery());
-      throw new SQLException(e.getMessage() +
-          String.format("\nFailed to query for given card query!"));
+      throw new SQLException(e.getMessage() + "\nFailed to query for given card query!");
     }
 
     SortedSet<Card> cards = new TreeSet<>();
@@ -671,50 +669,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
           String.format("\nFailed to query for column %s from table %s!", columnName, tableName));
     }
     return Collections.unmodifiableSortedSet(toReturn);
-  }
-
-  /**
-   * Returns {@link ResultSet} of all the information stored under table of the given name from the
-   * CDDB.
-   * @param tableName name of table to retrieve
-   * @return ResultSet of all info is in the database
-   * @throws SQLException failure to query info from the database
-   * @throws IllegalStateException if connection to the database is closed or not working
-   */
-  private ResultSet retrieveTableInfo(String tableName) throws SQLException {
-    if (tableName == null) {
-      throw new IllegalArgumentException("Given table name can't be null!");
-    }
-
-    // Check if table exists, then retrieve info
-    String checkQuery = "SELECT name FROM sqlite_master WHERE name='?'";
-    try (Connection connection = connect();
-        PreparedStatement preparedStatement = connection.prepareStatement(checkQuery);) {
-      preparedStatement.setString(1, tableName);
-      ResultSet checkQueryResult = preparedStatement.executeQuery();
-
-      // Should only have one resulting row if table exists
-      if (!checkQueryResult.next()) {
-        throw new IllegalArgumentException("Table matching given table name doesn't exist in "
-            + "database!");
-      }
-      else if (!checkQueryResult.next()) { // Now should return false, passed first and only row
-        String query = "SELECT * FROM %s";
-        query = String.format(query, tableName);
-        PreparedStatement preparedStatementRetrieval = connection.prepareStatement(query);
-        ResultSet queryResult = preparedStatementRetrieval.executeQuery();
-        closeResultSet(queryResult);
-        return queryResult;
-      }
-      else {
-        throw new IllegalArgumentException("Database returned multiple tables matching given table"
-            + " name, should only return zero or one tables!");
-      }
-    }
-    catch (SQLException e) {
-      throw new SQLException(e.getMessage() +
-          String.format("\nFailed to query for table %s!", tableName));
-    }
   }
 
   @Override
@@ -1187,14 +1141,14 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       // When constructing variables, call after initiating types
       Map<String, String> additionalInfo = new HashMap<>();
       Map<String, String> conditions = new HashMap<>();
-      if (types.contains("planeswalker")) {
+      if (types.contains("Planeswalker")) {
         String loyalty = "loyalty";
         conditions.put("card_name", cardName);
         Set<String> result = retrieveSingleColumn(connection, "Loyalty", loyalty,
             conditions, true, loyalty, cardName);
         additionalInfo.put(loyalty, singleItemSetToString(result));
       }
-      else if (types.contains("creature") || subtypes.contains("vehicle")) {
+      else if (types.contains("Creature") || subtypes.contains("Vehicle")) {
         String[] powerToughness = new String[]{"power", "toughness"};
         for (String category : powerToughness) {
           conditions.put("card_name", cardName);
@@ -1250,7 +1204,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
             // Get artists
             String artistsQuery = String.format("SELECT artist FROM Artist WHERE card_name = '%s' "
-                + "AND expansion = '%s' AND number = '%s'", cardName, expansion, number);
+                + "AND expansion = '%s' AND number = '%s'", cardName, formattedExpansion, number);
             SortedSet<String> artists = new TreeSet<>();
             try (PreparedStatement preparedStatement1 = connection.prepareStatement(artistsQuery);
                 ResultSet artistResultSet = preparedStatement1.executeQuery()) {
@@ -1455,10 +1409,20 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
    */
   private class DefaultCardQuery implements CardQuery {
 
+    /**
+     * Specific table names to use for each type of {@link Stat}.
+     */
     private final Map<Stat, String> statTableNames;
 
+    /**
+     * Specific column names to use for each type of {@link Stat} to retrieve actual data from.
+     */
     private final Map<Stat, String> statValueColumnNames;
 
+    /**
+     * Specific column names to use for each type of {@link Stat} to retrieve the name of the
+     * associated card.
+     */
     private final Map<Stat, String> statCardNameColumnNames;
 
     /**
@@ -1699,14 +1663,12 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       }
       block = formatWordToSQL(block);
 
-      String expansionsFromBlockQuery = "SELECT expansion FROM Block WHERE block = '?'";
+      String expansionsFromBlockQuery = String.format("SELECT expansion FROM Block WHERE block = '%s'", block);
       try (Connection connection = connect();
       PreparedStatement preparedStatement = connection.prepareStatement(expansionsFromBlockQuery)) {
-        preparedStatement.setString(1, block);
         ResultSet resultSet = preparedStatement.executeQuery();
-        Set<String> expansions = setParams.get(searchFor);
         while (resultSet.next()) {
-          expansions.add(resultSet.getString("expansion"));
+          addSearchOptionParam(setParams, searchFor, resultSet.getString("expansion"));
         }
       }
       catch (SQLException e) {
@@ -1715,10 +1677,11 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     /**
-     *
-     * @param params
-     * @param addUnder
-     * @param paramToAdd
+     * Given a set of parameters in the form of Map<SearchOption, SortedSet<String>>, adds given
+     * {@param addUnder} to the under the SortedSet associated with the given {@link SearchOption}.
+     * @param params set of parameters to add info to
+     * @param addUnder SearchOption to add given parameter under
+     * @param paramToAdd parameter to add
      * @throws IllegalArgumentException if any given parameter is null
      */
     private void addSearchOptionParam(Map<SearchOption, SortedSet<String>> params,
@@ -1797,11 +1760,19 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return buildGenericCardQuery(textParams, "text");
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet given set
+     * of parameters, where the given set of parameters relate to a "core" part of the card - name
+     * or text - tat are independent of printing or card type.
+     * @param params set of parameters to draw from
+     * @param conditionalColumn column in Card table to compare info against
+     * @return part of this CardQuery dealing with color identity parameters as a StringBuilder
+     */
     private StringBuilder buildGenericCardQuery(Map<SearchOption, SortedSet<String>> params, String conditionalColumn) {
       String table = "Card";
       String[] returnColumns = new String[]{"name"};
       String innerQueryColumn = "name";
-      return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn, false, false);
+      return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn, false);
     }
 
     /**
@@ -1822,12 +1793,18 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return buildGenericColorQuery(colorIdentityParams, "ColorIdentity");
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet given set
+     * of parameters, where the given set of parameters relate to some part of a card's color or
+     * color identity.
+     * @param table table to compare info to
+     * @return part of this CardQuery dealing with color identity parameters as a StringBuilder
+     */
     private StringBuilder buildGenericColorQuery(Map<SearchOption, SortedSet<String>> params, String table) {
       String[] returnColumns = new String[]{"card_name"};
       String conditionalColumn = "color";
       String innerQueryColumn = "card_name";
-      return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn,
-          true, true);
+      return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn, true);
     }
 
     /**
@@ -1857,18 +1834,24 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return buildGenericTypeQuery(subtypeParams, "Subtype");
     }
 
+    /**
+     * Builds a query for a given set of type parameters, as per the given table to use in query.
+     * Type of types are supertypes, types, and subtypes.
+     * @param params type params to use in query
+     * @param table table to draw type info from
+     * @return part of this CardQuery dealing with given type parameters as a StringBuilder
+     */
     private StringBuilder buildGenericTypeQuery(Map<SearchOption, SortedSet<String>> params, String table) {
       String[] returnColumns = new String[]{"card_name"};
       String conditionalColumn = "type";
       String innerQueryColumn = "card_name";
-      return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn,
-          true, true);
+      return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn, true);
     }
 
     /**
      * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
      * expansion parameters entered so far.
-     * @return part of this CardQuery dealing with block parameters as a StringBuilder
+     * @return part of this CardQuery dealing with expansion parameters as a StringBuilder
      */
     private StringBuilder buildExpansionQuery() {
       String table = "CardExpansion";
@@ -1876,35 +1859,70 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return buildGenericCardPrintingQuery(setParams, table, conditionalColumn, true);
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * artist parameters entered so far.
+     * @return part of this CardQuery dealing with artist parameters as a StringBuilder
+     */
     private StringBuilder buildArtistQuery() {
       String table = "Artist";
       String conditionalColumn = "artist";
       return buildGenericCardPrintingQuery(artistParams, table, conditionalColumn, true);
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * rarity parameters entered so far.
+     * @return part of this CardQuery dealing with rarity parameters as a StringBuilder
+     */
     private StringBuilder buildRarityQuery() {
       String table = "CardExpansion";
       String conditionalColumn = "rarity";
       return buildGenericCardPrintingQuery(rarityParams, table, conditionalColumn, true);
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * flavor text parameters entered so far.
+     * @return part of this CardQuery dealing with flavor text parameters as a StringBuilder
+     */
     private StringBuilder buildFlavorTextQuery() {
       String table = "CardExpansion";
       String conditionalColumn = "flavor_text";
       return buildGenericCardPrintingQuery(flavorTextParams, table, conditionalColumn, false);
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet the
+     * a given set of parameters related to a card's printing - such as artist, rarity, etc.
+     * @return part of this CardQuery dealing with a set of given card printing parameters
+     * as a StringBuilder
+     */
     private StringBuilder buildGenericCardPrintingQuery(Map<SearchOption, SortedSet<String>> params,
         String table, String conditionalColumn, boolean inOrLike) {
       String[] returnColumns = new String[]{"card_name", "expansion", "number"};
       String innerQueryColumn = "card_name";
       return buildGenericQuery(params, table, returnColumns, conditionalColumn, innerQueryColumn,
-          inOrLike, true);
+          inOrLike);
     }
 
+    /**
+     * Builds a part of this {@link CardQuery} concered with querying cards that meet the given
+     * set of parameters, as per given query specific info
+     * @param params set of parameters to use in this query
+     * @param table table to draw info from
+     * @param returnColumns columns to return from the query
+     * @param conditionalColumn column in given table to check parameters against
+     * @param innerQueryColumn name of column to use for inner "MustInclude" query, for returning
+     * and grouping
+     * @param inOrLike whether to compare given parameters in form of "IN (x, y, ..., z)" or
+     * "(x LIKE "%a%" AND x LIKE "%b%" AND ... AND x LIKE "%y%")
+     * @return part of this CardQuery built for the given parameters and query specific info as
+     * a StringBuilder
+     */
     private StringBuilder buildGenericQuery(Map<SearchOption, SortedSet<String>> params,
         String table, String[] returnColumns, String conditionalColumn, String innerQueryColumn,
-        boolean inOrLike, boolean noneAsOption) {
+        boolean inOrLike) {
 
       if (params.isEmpty()) {
         return new StringBuilder();
@@ -1917,7 +1935,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       boolean mergeCondAsWhere = true;
 
       completeQuery.append("SELECT ");
-      completeQuery.append(stringArrayToStringList(returnColumns, false, false));
+      completeQuery.append(stringArrayToStringList(returnColumns, false));
       completeQuery.append(String.format(" FROM %s", table));
 
       if (params.containsKey(SearchOption.Disallow)) {
@@ -1977,13 +1995,28 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return completeQuery;
     }
 
+    /**
+     * Turns the given collection of Strings into a "in" list formatted for SQL in the form of
+     * "WHERE/AND columnName IN ('x', 'y', ...,'z').
+     * @param columnName column name to compare against
+     * @param strings collection of Strings to use as parameters to compare column name against
+     * @param includeNot whether or not to include "NOT" before "IN", "IN" --> "NOT IN"
+     * @param whereAsMergeCond whether to use "WHERE" or "AND"
+     * @param optionalOrRequired whether column being compared meet one or all the parameters, if
+     * required (false) will add condition "GROUP BY columnName HAVING
+     * COUNT(DISTINCT(groupingColumn)) = x" where x is the number of given parameters
+     * @param requiredGroupingColumn column to group results by if {@param requiredGroupingColumn}
+     * is false
+     * @return StringBuilder in form describe above, as per given parameters
+     */
     private StringBuilder stringCollectionToStringInList(String columnName, Collection<String> strings,
         boolean includeNot, boolean whereAsMergeCond, boolean optionalOrRequired,
         String requiredGroupingColumn) {
       String mergeCond = whereAsMergeCond ? "WHERE" : "AND";
       String includeNotFormat = includeNot ? " NOT" : "";
       StringBuilder toReturn = new StringBuilder(String.format(" %s %s%s IN (%s)",
-          mergeCond, columnName, includeNotFormat, stringCollectionToStringList(strings, true, false)));
+          mergeCond, columnName, includeNotFormat,
+          stringCollectionToStringList(strings, true)));
 
       if (!optionalOrRequired) {
         int numOfParams = strings.size();
@@ -1993,6 +2026,17 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return toReturn;
     }
 
+    /**
+     * Turns the given collection of Strings into a "like" list formatted for SQL in the form of
+     * "WHERE/AND (columnName LIKE '%x%' AND/OR ... AND/OR columnName LKE '%z%').
+     * @param columnName column name to compare against
+     * @param strings collection of Strings to use as parameters to compare column name against
+     * @param includeNot whether or not to include "NOT" before every "LIKE", "LIKE" --> "NOT LIKE"
+     * @param whereAsMergeCond whether to use "WHERE" or "AND"
+     * @param optionalOrRequired whether to use "OR" (optional) or "AND" (required), should column
+     * being compared meet one or all the parameters
+     * @return StringBuilder in form describe above, as per given parameters
+     */
     private StringBuilder stringCollectionToStringLikeList(String columnName, Collection<String> strings,
         boolean includeNot, boolean whereAsMergeCond, boolean optionalOrRequired) {
       String mergeCond = whereAsMergeCond ? "WHERE" : "AND";
@@ -2018,19 +2062,29 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return toReturn;
     }
 
-    private StringBuilder stringArrayToStringList(String[] strings, boolean includeQuotes, boolean includeParans) {
-      return stringCollectionToStringList(Arrays.asList(strings), includeQuotes, includeParans);
+    /**
+     * Turns given array of Strings into a single StringBuilder "list" in the form of "x, y, ..., z"
+     * or "'x', 'y', ...,'z'" if {@param includeQuote} is true.
+     * @param strings array of strings to work with
+     * @param includeQuote whether or not to include quotes around each String
+     * @return "list" of given Strings as a StringBuilder
+     */
+    private StringBuilder stringArrayToStringList(String[] strings, boolean includeQuote) {
+      return stringCollectionToStringList(Arrays.asList(strings), includeQuote);
     }
 
-    private StringBuilder stringCollectionToStringList(Collection<String> strings, boolean includeQuotes, boolean includeParans) {
+    /**
+     * Turns given collection of Strings into a single StringBuilder "list" in the form of "x, y, ..., z"
+     * or "'x', 'y', ...,'z'" if {@param includeQuote} is true.
+     * @param strings collection of strings to work with
+     * @param includeQuotes whether or not to include quotes around each String
+     * @return "list" of given Strings as a StringBuilder
+     */
+    private StringBuilder stringCollectionToStringList(Collection<String> strings, boolean includeQuotes) {
       if (strings == null) {
         throw new IllegalArgumentException("Given string array can't be null!");
       }
       StringBuilder toReturn = new StringBuilder();
-
-      if (includeParans) {
-        toReturn.append("(");
-      }
 
       boolean first = true;
       for (String string : strings) {
@@ -2042,10 +2096,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         }
         String toAppend = includeQuotes ? String.format("'%s'", string) : string;
         toReturn.append(toAppend);
-      }
-
-      if (includeParans) {
-        toReturn.append(")");
       }
 
       return toReturn;
@@ -2202,6 +2252,11 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return completeQuery.append(conditions);
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet parameters
+     * that deal with parts specific to a card name, text, cmc, etc.
+     * @return part of this CardQuery dealing with card parameters as a StringBuilder
+     */
     private StringBuilder buildMergedCardQuery() {
       StringBuilder[] queries = new StringBuilder[]{buildNameQuery(), buildTextQuery(),
       buildTypeQuery(), buildSubtypeQuery(), buildColorIdentityQuery(), buildColorQuery(),
@@ -2209,12 +2264,24 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       return buildGenericMergedQuery(queries);
     }
 
+    /**
+     * Builds the part of this {@link CardQuery} concerned with querying cards that meet parameters
+     * that deal with parts specific to a card artists, expansion, etc.
+     * @return part of this CardQuery dealing with card printing parameters as a StringBuilder
+     */
     private StringBuilder buildMergedCardPrintingQuery() {
       StringBuilder[] queries = new StringBuilder[]{buildArtistQuery(), buildRarityQuery(),
           buildFlavorTextQuery(), buildExpansionQuery()};
       return buildGenericMergedQuery(queries);
     }
 
+    /**
+     * Given an array of StringBuilders, or subqueries), merges them into a single StringBuilder
+     * in the order they are given, given a StringBuilder included is not empty. Adds " INTERSECT "
+     * between each StringBuilder
+     * @param queries queries to merge
+     * @return StringBuilder of merged queries
+     */
     private StringBuilder buildGenericMergedQuery(StringBuilder[] queries) {
       if (queries == null) {
         throw new IllegalArgumentException("Given array of queries can't be null!");

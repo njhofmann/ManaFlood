@@ -1,8 +1,8 @@
--Redo card query tests
 -Documentation
+-Redo card query tests
 -Finish card retrieval tests (multiple artists tests, others)
--Double check equality and hashcodes for custom objects, add hashcode tests,
--Deck object testing
+-Deck creation testing
+-Deck instance creation testing
 -Update text and types on cards option (errata)
 -View interface
 -Get card printing
