@@ -30,7 +30,7 @@ class CardQueryTest {
 
   @BeforeAll
   public static void init() throws SQLException {
-    Path pathToDatabase = Paths.get("resources\\cddb.db").toAbsolutePath();
+    Path pathToDatabase = Paths.get("tests\\test_cddb.db").toAbsolutePath();
     DefaultDatabaseChannel defaultChannel = new DefaultDatabaseChannel(pathToDatabase);
     cardChannel = defaultChannel;
     cardQuery = defaultChannel.getQuery();

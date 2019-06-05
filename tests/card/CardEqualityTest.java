@@ -33,7 +33,7 @@ public class CardEqualityTest {
 
   @BeforeAll
   public static void init() throws SQLException {
-    Path pathToDatabase = Paths.get("resources\\cddb.db").toAbsolutePath();
+    Path pathToDatabase = Paths.get("tests\\test_cddb.db").toAbsolutePath();
     cardChannel = new DefaultDatabaseChannel(pathToDatabase);
     cardQuery = cardChannel.getQuery();
   }

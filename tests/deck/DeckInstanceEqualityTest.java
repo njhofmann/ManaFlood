@@ -20,7 +20,7 @@ public class DeckInstanceEqualityTest {
   DeckInstance deckInstanceB;
   DeckInstance deckInstanceC;
 
-  @DisplayName("Equal deck instances")
+  @DisplayName("Equal oldDeck instances")
   @Test
   public void equalDeckInstances() {
     deckInstanceDateTime = LocalDateTime.of(1999, 7, 23, 5, 30);
@@ -35,7 +35,7 @@ public class DeckInstanceEqualityTest {
     assertEquals(deckInstanceA.hashCode(), deckInstanceB.hashCode());
   }
 
-  @DisplayName("Same parent deck, before creation date")
+  @DisplayName("Same parent oldDeck, before creation date")
   @Test
   public void sameParentBeforeDate() {
     deckInstanceDateTime = LocalDateTime.of(2010, 1, 4, 6, 24);
@@ -51,7 +51,7 @@ public class DeckInstanceEqualityTest {
     assertTrue(deckInstanceB.compareTo(deckInstanceA) > 0);
   }
 
-  @DisplayName("Same parent deck, after creation date")
+  @DisplayName("Same parent oldDeck, after creation date")
   @Test
   public void sameParentAfterDate() {
     deckInstanceDateTime = LocalDateTime.of(2005, 10, 10, 5, 3);
@@ -67,7 +67,7 @@ public class DeckInstanceEqualityTest {
     assertTrue(deckInstanceA.compareTo(deckInstanceB) > 0);
   }
 
-  @DisplayName("Same parent deck, transitive test")
+  @DisplayName("Same parent oldDeck, transitive test")
   @Test
   public void sameParentTransitive() {
     deckInstanceDateTime = LocalDateTime.of(2004, 10, 10, 5, 3);
@@ -93,7 +93,7 @@ public class DeckInstanceEqualityTest {
     assertTrue(deckInstanceC.compareTo(deckInstanceA) > 0);
   }
 
-  @DisplayName("Different parent deck, before")
+  @DisplayName("Different parent oldDeck, before")
   @Test
   public void diffParentBefore() {
     deckInstanceDateTime = LocalDateTime.of(2010, 1, 4, 6, 24);
@@ -109,7 +109,7 @@ public class DeckInstanceEqualityTest {
     assertTrue(deckInstanceB.compareTo(deckInstanceA) > 0);
   }
 
-  @DisplayName("Different parent deck, after")
+  @DisplayName("Different parent oldDeck, after")
   @Test
   public void diffParentAfter() {
     deckInstanceDateTime = LocalDateTime.of(2005, 10, 10, 5, 3);
@@ -126,7 +126,7 @@ public class DeckInstanceEqualityTest {
 
   }
 
-  @DisplayName("Different parent deck, transitive")
+  @DisplayName("Different parent oldDeck, transitive")
   @Test
   public void diffParentTransitive() {
     deckInstanceDateTime = LocalDateTime.of(2004, 10, 10, 5, 3);

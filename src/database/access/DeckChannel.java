@@ -2,6 +2,7 @@ package database.access;
 
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Map;
 import value_objects.deck.Deck;
 import value_objects.deck.instance.DeckInstance;
 
@@ -16,7 +17,7 @@ public interface DeckChannel {
    * @return collection of deck IDs to deck names of all decks in the CDDB
    * @throws SQLException if there is a failure to query the CDDB for the decks info
    */
-  HashMap<Integer, String> getDecks() throws SQLException;
+  Map<Integer, String> getDecks() throws SQLException;
 
   /**
    * Returns {@link Deck} in the CDDB with the corresponding unique ID.

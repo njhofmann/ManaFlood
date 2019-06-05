@@ -23,6 +23,11 @@ public interface DatabaseView {
    */
   void acceptInfo(String infoType, SortedSet<String> info) throws IllegalArgumentException;
 
+  /**
+   * Returns a {@link CardQuery} the user has interacted with in order to find {@link Card}s that
+   * meet the parameters entered into the CardQuery from the CDDB
+   * @return CardQuery the user has interacted with
+   */
   CardQuery getCardQuery();
 
   /**
@@ -33,27 +38,39 @@ public interface DatabaseView {
   void acceptCards(SortedSet<Card> cards);
 
   /**
-   * Returns the integer ID of a Deck the user wishes to retrieve info about from the CDDB in the
-   * form of a {@link Deck}.
+   * Returns the integer ID of a {@link Deck} the user wishes to retrieve info about from the CDDB
+   * in the form of a Deck.
    * @return ID of Deck to retrieve info about
    */
   int deckToRetrieveInfo();
 
   /**
-   * Returns the integer ID of a Deck the user wishes to delete from the CDDB.
+   * Returns the integer ID of a {@link Deck} the user wishes to delete from the CDDB.
    * @return ID of Deck to delete from the CDDB
    */
   int deckToDelete();
 
   /**
-   *
-   * @return
+   * Retrieves a new {@link Deck} the user has created to add to the CDDB.
+   * @return Deck to add to the CDDB
    */
   Deck getDeck();
 
+  /**
+   * Retrieves a new {@link DeckInstance} the user has created to add to the CDDB.
+   * @return DeckInstance to add to the CDDB
+   */
   DeckInstance getDeckInstance();
 
+  /**
+   * Returns a pairing of a {@link Deck} ID and a new name for the Deck associated with the ID.
+   * @return pairing of a Deck ID and new Deck name
+   */
   Pair<Integer, String> getNewDeckName();
 
+  /**
+   * Returns a pairing of a {@link Deck} ID and a new description for the Deck associated with the ID.
+   * @return pairing of a Deck ID and new Deck name
+   */
   Pair<Integer, String> getNewDeckDesp();
 }

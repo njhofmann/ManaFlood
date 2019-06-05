@@ -20,19 +20,19 @@ public class DeckEqualityTest {
 
   }
 
-  @DisplayName("Same deck id, before deck instances")
+  @DisplayName("Same oldDeck id, before oldDeck instances")
   @Test
   public void test() {
 
   }
 
-  @DisplayName("Same deck id, after deck instances")
+  @DisplayName("Same oldDeck id, after oldDeck instances")
   @Test
   public void sameIdDAfterInstances() {
 
   }
 
-  @DisplayName("Same deck id, transitive deck instances")
+  @DisplayName("Same oldDeck id, transitive oldDeck instances")
   @Test
   public void sameIdDiffInstances() {
 

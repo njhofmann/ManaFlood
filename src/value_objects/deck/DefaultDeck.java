@@ -53,7 +53,7 @@ public class DefaultDeck implements Deck {
       throw new IllegalArgumentException("Given deck history can't be null!");
     }
     else if (history.isEmpty()) {
-      throw new IllegalArgumentException("A deck must have at least one deck instance in its"
+      throw new IllegalArgumentException("A deck must have at least one deck instance in its "
           + "history!");
     }
     this.deckID = deckID;

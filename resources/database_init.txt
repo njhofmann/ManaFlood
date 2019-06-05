@@ -160,7 +160,7 @@ CREATE TABLE DeckInstCard (
   deck_inst_creation TIMESTAMP,
   card_name TEXT NOT NULL,
   PRIMARY KEY(deck_id, deck_inst_creation, card_name),
-  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation) ON DELETE CASCADE
+  FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation) ON DELETE CASCADE,
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );
 
@@ -174,7 +174,7 @@ CREATE TABLE DeckInstCardExpansion (
   quantity INTEGER NOT NULL CHECK(quantity > 0),
   PRIMARY KEY(deck_id, deck_inst_creation, card_name, expansion, card_number),
   FOREIGN KEY(deck_id, deck_inst_creation) REFERENCES DeckInstance(deck_id, creation) ON DELETE CASCADE,
-  FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, creation, card_name) ON DELETE CASCADE,
+  FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, deck_inst_creation, card_name) ON DELETE CASCADE,
   FOREIGN KEY(card_name) REFERENCES Card(name),
   FOREIGN KEY(expansion) REFERENCES Expansion(expansion),
   FOREIGN KEY(card_name, expansion, card_number) REFERENCES CardExpansion(card_name, expansion, number)
@@ -187,7 +187,7 @@ CREATE TABLE DeckInstCardCategory (
   card_name TEXT NOT NULL,
   category TEXT NOT NULL,
   PRIMARY KEY(deck_id, deck_inst_creation, card_name, category),
-  FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, creation, card_name) ON DELETE CASCADE,
-  FOREIGN KEY(deck_id, deck_inst_creation, category) REFERENCES DeckInstCategory(deck_id, creation, category) ON DELETE CASCADE,
+  FOREIGN KEY(deck_id, deck_inst_creation, card_name) REFERENCES DeckInstCard(deck_id, deck_inst_creation, card_name) ON DELETE CASCADE,
+  FOREIGN KEY(deck_id, deck_inst_creation, category) REFERENCES DeckInstCategory(deck_id, deck_inst_creation, category) ON DELETE CASCADE,
   FOREIGN KEY(card_name) REFERENCES Card(name)
 );

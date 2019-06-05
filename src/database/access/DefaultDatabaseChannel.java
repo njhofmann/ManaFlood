@@ -112,12 +112,12 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
   }
 
   @Override
-  public HashMap<Integer, String> getDecks() throws SQLException {
+  public Map<Integer, String> getDecks() throws SQLException {
     String deckQuery = "SELECT id, name FROM Deck";
     try (Connection connection = connect();
         PreparedStatement preparedStatement = connection.prepareStatement(deckQuery);
         ResultSet result = preparedStatement.executeQuery()){
-      HashMap<Integer, String> decksInfo = new HashMap<>();
+      Map<Integer, String> decksInfo = new HashMap<>();
       while (result.next()) {
         int currentDeckID = result.getInt("id");
         String currentDeckName = result.getString("name");
@@ -137,22 +137,30 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     Connection connection = connect();
 
-    // Query for info of all deck instances related to current deck
-    ResultSet deckInstancesInfo;
-    String deckInstanceInfoQuery = "SELECT * FROM DeckInstance WHERE deck_id=?";
-    try (PreparedStatement preparedStatement = connection.prepareStatement(deckInstanceInfoQuery);) {
+    String deckName;
+    String deckDesp;
+    // Query for deck info
+    String deckInfoQuery = "SELECT * FROM Deck WHERE id=?";
+    try (PreparedStatement preparedStatement = connection.prepareStatement(deckInfoQuery);) {
       preparedStatement.setInt(1, deckID);
-      deckInstancesInfo = preparedStatement.executeQuery();
+      ResultSet deckInstancesInfo = preparedStatement.executeQuery();
+      deckName = deckInstancesInfo.getString("name");
+      deckDesp = deckInstancesInfo.getString("desp");
     }
     catch (SQLException e) {
       throw new SQLException(e.getMessage() +
-          String.format("\nFailed to query for info of deck instances"
-          + " related to deck %d!", deckID));
+          String.format("\nFailed to query for info related to deck %d!", deckID));
     }
 
-    // Get datetimes from deck instances, retrieve as TimeStamp --> LocalDateTime
+
+    // Query for info of all deck instances related to current deck
     List<LocalDateTime> deckInstanceKeys = new ArrayList<>();
-    try {
+    String deckInstanceInfoQuery = "SELECT * FROM DeckInstance WHERE deck_id=?";
+    try (PreparedStatement preparedStatement = connection.prepareStatement(deckInstanceInfoQuery);) {
+      preparedStatement.setInt(1, deckID);
+      ResultSet deckInstancesInfo = preparedStatement.executeQuery();
+
+      // Get datetimes from deck instances, retrieve as TimeStamp --> LocalDateTime
       while (deckInstancesInfo.next()) {
         Timestamp timestamp = deckInstancesInfo.getTimestamp("creation");
         LocalDateTime toAdd = timestamp.toLocalDateTime();
@@ -161,11 +169,10 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
     catch (SQLException e) {
       throw new SQLException(e.getMessage() +
-          "\nFailed to query for deck instance creations date & times!");
+          String.format("\nFailed to query for info of deck instances"
+          + " related to deck %d!", deckID));
     }
-    finally {
-      closeResultSet(deckInstancesInfo);
-    }
+
 
     // Build deck instances,
     SortedSet<DeckInstance> deckInstances = new TreeSet<>();
@@ -270,24 +277,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       deckInstances.add(toAdd);
     }
 
-    String deckName = "";
-    try {
-      deckName = deckInstancesInfo.getString("name");
-    }
-    catch (SQLException e) {
-      throw new SQLException(e.getMessage() +
-          String.format("\nFailed to query for name of deck with id %d!", deckID));
-    }
-
-    String deckDesp = "";
-    try {
-      deckDesp = deckInstancesInfo.getString("desp");
-    }
-    catch (SQLException e) {
-      throw new SQLException(e.getMessage() +
-          String.format("\nFailed to query for description of deck with id %d!", deckID));
-    }
-
     disconnect(connection);
 
     return new DefaultDeck(deckID, deckName, deckDesp, deckInstances);
@@ -343,8 +332,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
     catch (SQLException e){
       throw new SQLException(e.getMessage() +
-          String.format("\nFailed to add deck instance %d, %s!", deck,
-          creationInfo.toString()));
+          String.format("\nFailed to add deck instance %s, %d!", creationInfo.toString(),
+          deckID));
     }
 
     // Add categories

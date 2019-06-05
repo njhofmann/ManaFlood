@@ -17,11 +17,5 @@ public class RunDatabaseParser {
 
     Path pathToJSON = Paths.get("resources\\AllSets.json").toAbsolutePath();
     parser.parseAllSets(pathToJSON);
-
-    /*
-    //src/database/creation/cddb.db"
-    Path pathToJSON = Paths.get("resources\\AllSets.json").toAbsolutePath();
-    parser.parseAllSets(pathToJSON);
-     */
   }
 }
