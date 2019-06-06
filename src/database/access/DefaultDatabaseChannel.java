@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -152,7 +153,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
           String.format("\nFailed to query for info related to deck %d!", deckID));
     }
 
-
     // Query for info of all deck instances related to current deck
     List<LocalDateTime> deckInstanceKeys = new ArrayList<>();
     String deckInstanceInfoQuery = "SELECT * FROM DeckInstance WHERE deck_id=?";
@@ -179,31 +179,30 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     Map<String, SortedSet<String>> categoryContents = new HashMap<>();
     Map<CardPrinting, Integer> cardPrintingQuantities = new HashMap<>();
     for (LocalDateTime creation : deckInstanceKeys) {
+      Set<String> categories = new HashSet<>();
       // Get categories
-      List<String> categories = new ArrayList<>();
-      ResultSet categoriesResult= null;
-      String categoriesQuery = "SELECT * FROM DeckInstCategory WHERE deck_id=? "
+      String categoriesQuery = "SELECT category FROM DeckInstCategory WHERE deck_id=? "
           + "AND deck_inst_creation=?";
       try (PreparedStatement preparedStatement = connection.prepareStatement(categoriesQuery);) {
         preparedStatement.setInt(1, deckID);
         preparedStatement.setTimestamp(2, Timestamp.valueOf(creation));
-        categoriesResult = preparedStatement.executeQuery();
+        ResultSet categoriesResult = preparedStatement.executeQuery();
+        while (categoriesResult.next()) {
+          categories.add(categoriesResult.getString("category"));
+        }
       }
       catch (SQLException e) {
         throw new SQLException(e.getMessage() +
             String.format("\nFailed to query for categories for deck with"
             + " ID %d!", deckID));
       }
-      finally {
-        closeResultSet(categoriesResult);
-      }
 
       // Get category cards
       try {
-        while (categoriesResult.next()) {
-          String currentCategory = categoriesResult.getString("category");
+        for (String currentCategory : categories) {
           String categoryQuery = "SELECT * FROM DeckInstCardCategory WHERE deck_id=? "
               + "AND deck_inst_creation=? AND category=?";
+
           ResultSet cardsInCategory = null;
           try (PreparedStatement preparedStatement = connection.prepareStatement(categoryQuery);) {
             preparedStatement.setInt(1, deckID);
@@ -402,7 +401,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       Set<String> categoryCards = cardCategories.get(category);
       for (String card : categoryCards) {
         insertStatement = "INSERT INTO DeckInstCardCategory(deck_id, deck_inst_creation, "
-            + "card_name, cateogry) VALUES (?,?,?,?)";
+            + "card_name, category) VALUES (?,?,?,?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(insertStatement)){
           preparedStatement.setInt(1, deckID);
           preparedStatement.setTimestamp(2, creationTimestamp);
@@ -523,7 +522,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       }
     }
     catch (SQLException e) {
-      System.out.println(cardQuery.asQuery());
       throw new SQLException(e.getMessage() + "\nFailed to query for given card query!");
     }
 

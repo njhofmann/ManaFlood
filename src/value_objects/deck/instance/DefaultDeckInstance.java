@@ -71,20 +71,22 @@ public class DefaultDeckInstance implements DeckInstance {
 
     SortedSet<String> cards = new TreeSet<>();
     for (Set<String> categoryContent : categoryContents.values()) {
-      for (String card : categoryContent) {
-        if (!cards.contains(card)) {
-          cards.add(card);
-        }
-      }
+      cards.addAll(categoryContent);
     }
 
+    // Check that every card printing has an associated card
+    SortedSet<String> cardPrintingNames = new TreeSet<>();
     for (CardPrinting cardPrinting : cardQuantities.keySet()) {
-      if (cards.contains(cardPrinting.getCardName())) {
-        throw new IllegalArgumentException("Given mapping of card printing to quantities contains"
-            + " a card not in given mapping of categories to card!");
-      }
+      String cardPrintingName = cardPrinting.getCardName();
+      cardPrintingNames.add(cardPrintingName);
     }
 
+    // Check every card has associated card printing and every card printing an associated card
+    if (!cardPrintingNames.equals(cards)) {
+      throw new IllegalArgumentException("");
+    }
+
+    // Check for nonpositive card printing quantities
     for (int quantity : cardQuantities.values()) {
       if (quantity < 1) {
         throw new IllegalArgumentException("Given mapping of card printings to quantities contains"
