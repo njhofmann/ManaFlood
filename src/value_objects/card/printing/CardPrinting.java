@@ -24,4 +24,13 @@ public interface CardPrinting extends Comparable<CardPrinting> {
    */
   String getIdentifyingNumber();
 
+  @Override
+  boolean equals(Object other);
+
+  @Override
+  int hashCode();
+
+  @Override
+  int compareTo(CardPrinting cardPrinting);
+
 }

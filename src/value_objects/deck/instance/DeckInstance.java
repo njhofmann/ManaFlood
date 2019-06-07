@@ -67,6 +67,12 @@ public interface DeckInstance extends Comparable<DeckInstance> {
    */
   Map<CardPrinting, Integer> getCardPrintingQuantities();
 
+  @Override
+  boolean equals(Object other);
+
+  @Override
+  int hashCode();
+
   /**
    * Compares this DeckInstance with another DeckInstance for order based on their creation date &
    * time. Returns a zero if their creation times are the same, a negative int if this DeckInstance

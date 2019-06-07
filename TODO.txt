@@ -1,12 +1,16 @@
--Documentation
--Redo card query tests
+-Finish card query tests
+-InformativeDeckInstance
+-Mock deck for testing into separate class
+-Equality for deck instances and informative deck instances
+-Redo relevant testing
+-Finish card query tests
+-Documentation clean up and adding
+
 -Finish card retrieval tests (multiple artists tests, others)
--Deck creation testing
--Deck instance creation testing
+
+
 -Update text and types on cards option (errata)
 -View interface
--Get card printing
--Get card option
 -Terminal view
 -GUI View
 -Documentation updates

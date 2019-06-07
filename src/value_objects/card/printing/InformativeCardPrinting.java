@@ -1,4 +1,4 @@
-package value_objects.card.printing.info;
+package value_objects.card.printing;
 
 import java.util.SortedSet;
 import value_objects.card.printing.CardPrinting;
@@ -7,7 +7,7 @@ import value_objects.card.printing.CardPrinting;
  * Represents a additional info specific printing of a MTG card in the CDDB, a card associated with
  * a specific expansion and identifying number (from that expansion).
  */
-public interface CardPrintingInfo extends CardPrinting {
+public interface InformativeCardPrinting extends CardPrinting {
 
   /**
    * Retrieves the flavor text for the printings of this {@link CardPrinting}.

@@ -47,6 +47,20 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
   }
 
   /**
+   * Creates a new CDDB at the path given by {@param pathToDatabase} using the information drawn
+   * from the {@param initalizationPath} to use for parsing.
+   * @param pathToDatabase path to CDDB to create
+   * @param initalizationPath info to add to the new CDDB
+   * @throws IllegalArgumentException if any given path doesn't exist
+   * @throws SQLException if there is a failure to insert info from the given initalization path,
+   * should only occur if trying to create a new database
+   */
+  public DefaultDatabaseParser(Path pathToDatabase, Path initalizationPath) throws SQLException {
+    super(pathToDatabase, initalizationPath);
+  }
+
+
+  /**
    * Given a {@link Path} to a JSON file of one or more MTG sets from MTGJSON, attempts to create
    * a {@link JSONObject} from that file.
    * @param path path to JSON file to parse

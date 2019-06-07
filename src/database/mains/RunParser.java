@@ -9,7 +9,7 @@ import java.sql.SQLException;
 /**
  * Used to add JSON files of MTG sets from MTGJSON to the Card & Deck Database.
  */
-public class RunDatabaseParser {
+public class RunParser {
 
   public static void main(String[] arg) throws SQLException {
     Path pathToDatabase = Paths.get("resources\\cddb.db").toAbsolutePath();

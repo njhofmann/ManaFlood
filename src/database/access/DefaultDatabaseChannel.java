@@ -23,11 +23,10 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import value_objects.card.Card;
+import value_objects.card.printing.InformativeCardPrinting;
 import value_objects.card.query.SearchOption;
 import value_objects.card.relationship.CardRelationship;
 import value_objects.card.relationship.DefaultCardRelationship;
-import value_objects.card.printing.info.CardPrintingInfo;
-import value_objects.card.printing.info.DefaultCardPrintingInfo;
 import value_objects.card.query.CardQuery;
 import value_objects.card.printing.CardPrinting;
 import value_objects.card.printing.DefaultCardPrinting;
@@ -772,7 +771,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     /**
      * Sorted set of all the card printings associated with this Card
      */
-    private final SortedSet<CardPrintingInfo> cardPrintings;
+    private final SortedSet<InformativeCardPrinting> cardPrintings;
 
     /**
      * Any additional info of the Card as it appears in the CDDB.
@@ -781,7 +780,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
     /**
      * Builds a {@link DefaultCard} from a given card name and list of associated expansions from
-     * which the card was printed - make up its associated {@link CardPrintingInfo}s.
+     * which the card was printed - make up its associated {@link InformativeCardPrinting}s.
      * @param name name of card to associate with
      * @param expansions expansions card was printed in to associate with, with associated numbers
      * @throws SQLException if there is a failure in retrieving any of the card's associated info
@@ -1154,12 +1153,12 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * @param expansions set of expansions associated card was printed in to retrieve data from,
      * with associated numbers
      * @param cardName name of card to retrieve data for
-     * @return set of CardPrintingInfo for the expansions given t
+     * @return set of InformativeCardPrinting for the expansions given t
      * @throws SQLException if there is an error in retrieving data from the CDDB
      * @throws IllegalArgumentException if any given parameter is null, if given connection is
      * closed, or if given set of expansions is null
      */
-    private SortedSet<CardPrintingInfo> setCardPrintings(Connection connection,
+    private SortedSet<InformativeCardPrinting> setCardPrintings(Connection connection,
         Map<String, Set<String>> expansions, String cardName) throws SQLException {
 
       if (connection == null || expansions == null || cardName == null) {
@@ -1172,49 +1171,15 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         throw new IllegalArgumentException("Given set of expansions can't be empty!");
       }
 
-      SortedSet<CardPrintingInfo> cardPrintingInfo = new TreeSet<>();
+      SortedSet<InformativeCardPrinting> informativeCardPrinting = new TreeSet<>();
       for (String expansion : expansions.keySet()) {
         for (String number : expansions.get(expansion)) {
-          String formattedExpansion = formatWordToSQL(expansion);
-          String cardExpansionQuery = String.format("SELECT * FROM CardExpansion "
-                  + "WHERE card_name = '%s' AND expansion = '%s' AND number = '%s'",
-              cardName, formattedExpansion, number);
-          try (PreparedStatement preparedStatement = connection.prepareStatement(cardExpansionQuery);
-              ResultSet resultSet = preparedStatement.executeQuery()) {
-            assert resultSet.next(); // Should only have one row
-            expansion = resultSet.getString("expansion");
-            number = resultSet.getString("number");
-            String rarity = resultSet.getString("rarity");
-            String flavor_text = resultSet.getString("flavor_text");
-            String scryfallId = resultSet.getString("scryfall_id");
-            assert !resultSet.next(); // Should return false
+          informativeCardPrinting
+              .add(new DefaultInformativeCardPrinting(connection, cardName, expansion, number));
 
-            // Get artists
-            String artistsQuery = String.format("SELECT artist FROM Artist WHERE card_name = '%s' "
-                + "AND expansion = '%s' AND number = '%s'", cardName, formattedExpansion, number);
-            SortedSet<String> artists = new TreeSet<>();
-            try (PreparedStatement preparedStatement1 = connection.prepareStatement(artistsQuery);
-                ResultSet artistResultSet = preparedStatement1.executeQuery()) {
-              while (artistResultSet.next()) {
-                artists.add(artistResultSet.getString("artist"));
-              }
-            }
-            catch (SQLException e) {
-              throw new IllegalArgumentException(String.format("Failed to find artists for "
-                  + "card printing %s, %s, %s!", cardName, formattedExpansion, number));
-            }
-
-            cardPrintingInfo.add(new DefaultCardPrintingInfo(cardName, expansion, number,
-                artists, flavor_text, rarity, scryfallId));
-
-          } catch (SQLException e) {
-            throw new SQLException(e.getMessage() +
-                String.format("Failed to retrieve card expansion info for card %s from database!",
-                    cardName));
-          }
         }
       }
-      return cardPrintingInfo;
+      return informativeCardPrinting;
     }
 
     /**
@@ -1299,7 +1264,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     @Override
-    public SortedSet<CardPrintingInfo> getCardPrintings() {
+    public SortedSet<InformativeCardPrinting> getCardPrintings() {
       return Collections.unmodifiableSortedSet(cardPrintings);
     }
 
@@ -1325,12 +1290,12 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       }
 
       // Neither should be empty
-      SortedSet<CardPrintingInfo> otherExpansions = other.getCardPrintings();
+      SortedSet<InformativeCardPrinting> otherExpansions = other.getCardPrintings();
       assert !getCardPrintings().isEmpty() && !otherExpansions.isEmpty();
 
       boolean thisIsShorter;
-      SortedSet<CardPrintingInfo> shorterExpansions;
-      SortedSet<CardPrintingInfo> longerExpansions;
+      SortedSet<InformativeCardPrinting> shorterExpansions;
+      SortedSet<InformativeCardPrinting> longerExpansions;
       if (getCardPrintings().size() < otherExpansions.size()) {
         thisIsShorter = true;
         shorterExpansions = getCardPrintings();
@@ -1342,11 +1307,11 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         longerExpansions = getCardPrintings();
       }
 
-      Iterator<CardPrintingInfo> shortExpansionsIterator = shorterExpansions.iterator();
-      Iterator<CardPrintingInfo> longerExpansionsIterator = longerExpansions.iterator();
+      Iterator<InformativeCardPrinting> shortExpansionsIterator = shorterExpansions.iterator();
+      Iterator<InformativeCardPrinting> longerExpansionsIterator = longerExpansions.iterator();
       while (shortExpansionsIterator.hasNext()) {
-        CardPrintingInfo curShorterExpansionsItem = shortExpansionsIterator.next();
-        CardPrintingInfo curLongerExpansionItem = longerExpansionsIterator.next();
+        InformativeCardPrinting curShorterExpansionsItem = shortExpansionsIterator.next();
+        InformativeCardPrinting curLongerExpansionItem = longerExpansionsIterator.next();
         int curComparison = thisIsShorter ?
             curShorterExpansionsItem.compareTo(curLongerExpansionItem) :
             curLongerExpansionItem.compareTo(curShorterExpansionsItem);
@@ -1384,6 +1349,126 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     @Override
     public int hashCode() {
       return Objects.hash(name, cardPrintings);
+    }
+  }
+
+  /**
+   * Default implementation of {@link InformativeCardPrinting}, represents additional info for a given
+   * {@link CardPrinting} such as artists, rarity, etc.
+   */
+  public class DefaultInformativeCardPrinting implements InformativeCardPrinting {
+
+    /**
+     * Card Printing this {@link InformativeCardPrinting} represents.
+     */
+    private final CardPrinting cardPrinting;
+
+    private final SortedSet<String> artists;
+
+    private final String flavorText;
+
+    private final String rarity;
+
+    private final String scryfallId;
+
+    public DefaultInformativeCardPrinting(Connection connection, String cardName,
+        String cardExpansion, String identifyingNumber) throws SQLException {
+      if (connection == null || connection.isClosed()) {
+        throw new IllegalArgumentException("Given connection can't be null or closed!");
+      }
+      this.cardPrinting = new DefaultCardPrinting(cardName, cardExpansion, identifyingNumber);
+
+      String formattedExpansion = formatWordToSQL(cardExpansion);
+      String cardExpansionQuery = String.format("SELECT * FROM CardExpansion "
+              + "WHERE card_name = '%s' AND expansion = '%s' AND number = '%s'",
+          cardName, formattedExpansion, identifyingNumber);
+      try (PreparedStatement preparedStatement = connection.prepareStatement(cardExpansionQuery);
+          ResultSet resultSet = preparedStatement.executeQuery()) {
+        assert resultSet.next(); // Should only have one row
+        this.rarity = resultSet.getString("rarity");
+        this.flavorText = resultSet.getString("flavor_text");
+        this.scryfallId = resultSet.getString("scryfall_id");
+        assert !resultSet.next(); // Should return false
+
+      } catch (SQLException e) {
+        throw new SQLException(e.getMessage() +
+            String.format("Failed to retrieve card expansion info for card %s from database!",
+                cardName));
+      }
+
+      this.artists = setArtists(connection);
+    }
+
+    private SortedSet<String> setArtists(Connection connection) {
+      String cardName = cardPrinting.getCardName();
+      String expansion = cardPrinting.getCardExpansion();
+      String number = cardPrinting.getIdentifyingNumber();
+
+      String artistsQuery = String.format("SELECT artist FROM Artist WHERE card_name = '%s' "
+          + "AND expansion = '%s' AND number = '%s'",
+          cardName, formatWordToSQL(expansion), number);
+      SortedSet<String> artists = new TreeSet<>();
+      try (PreparedStatement preparedStatement1 = connection.prepareStatement(artistsQuery);
+          ResultSet artistResultSet = preparedStatement1.executeQuery()) {
+        while (artistResultSet.next()) {
+          artists.add(artistResultSet.getString("artist"));
+        }
+      }
+      catch (SQLException e) {
+        throw new IllegalArgumentException(String.format("Failed to find artists for "
+            + "card printing %s, %s, %s!", cardName, expansion, number));
+      }
+      return artists;
+    }
+
+    @Override
+    public String getFlavorText() {
+      return flavorText;
+    }
+
+    @Override
+    public SortedSet<String> getArtists() {
+      return artists;
+    }
+
+    @Override
+    public String getRarity() {
+      return rarity;
+    }
+
+    @Override
+    public String getScryfallID() {
+      return scryfallId;
+    }
+
+    @Override
+    public String getCardName() {
+      return cardPrinting.getCardName();
+    }
+
+    @Override
+    public String getCardExpansion() {
+      return cardPrinting.getCardExpansion();
+    }
+
+    @Override
+    public String getIdentifyingNumber() {
+      return cardPrinting.getIdentifyingNumber();
+    }
+
+    @Override
+    public int compareTo(CardPrinting o) {
+      return cardPrinting.compareTo(o);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return cardPrinting.equals(other);
+    }
+
+    @Override
+    public int hashCode() {
+      return cardPrinting.hashCode();
     }
   }
 
@@ -1938,8 +2023,17 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         mergeCondAsWhere = false;
       }
 
-      if (params.containsKey(SearchOption.OneOf)) {
-        Set<String> oneOfParams = params.get(SearchOption.OneOf);
+      boolean hasMustInclude = params.containsKey(SearchOption.MustInclude);
+      boolean hasOneOf = params.containsKey(SearchOption.OneOf);
+      if ((inOrLike && hasMustInclude) || hasOneOf) {
+        Set<String> oneOfParams = new TreeSet<>();
+        if (inOrLike && hasMustInclude) {
+          oneOfParams.addAll(params.get(SearchOption.MustInclude));
+        }
+
+        if (hasOneOf) {
+          oneOfParams.addAll(params.get(SearchOption.OneOf));
+        }
 
         StringBuilder conditionals = inOrLike ?
             stringCollectionToStringInList(conditionalColumn, oneOfParams, false,
@@ -1951,32 +2045,27 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
         mergeCondAsWhere = false;
       }
 
-      if (params.containsKey(SearchOption.MustInclude)) {
-        String mergeCond = mergeCondAsWhere ? "WHERE" : "AND";
-        completeQuery.append(String.format(" %s %s IN (", mergeCond, innerQueryColumn));
-
+      if (hasMustInclude) {
         Set<String> mustIncludeParams = params.get(SearchOption.MustInclude);
+        if (inOrLike) {
+          String mergeCond = mergeCondAsWhere ? "WHERE" : "AND";
+          completeQuery.append(String.format(" %s %s IN (", mergeCond, innerQueryColumn));
 
-        StringBuilder conditionals = inOrLike ?
-            stringCollectionToStringInList(conditionalColumn, mustIncludeParams,
-                false, true, false, innerQueryColumn) :
-            stringCollectionToStringLikeList(conditionalColumn, mustIncludeParams,
-                false, true, false);
+          StringBuilder conditionals = stringCollectionToStringInList(conditionalColumn, mustIncludeParams,
+                  false, true, false, innerQueryColumn);
 
-        String mustIncludeQuery =
-            String.format("SELECT %s FROM %s%s",
-                innerQueryColumn, table,
-                conditionals.toString());
+          String mustIncludeQuery =
+              String.format("SELECT %s FROM %s%s",
+                  innerQueryColumn, table,
+                  conditionals.toString());
 
-        completeQuery.append(mustIncludeQuery);
-        completeQuery.append(")");
-
-        completeQuery.append(inOrLike ?
-            stringCollectionToStringInList(conditionalColumn, mustIncludeParams, false,
-                false, true, innerQueryColumn) :
-            stringCollectionToStringLikeList(conditionalColumn, mustIncludeParams, false,
-                false, true));
-
+          completeQuery.append(mustIncludeQuery);
+          completeQuery.append(")");
+        }
+        else {
+          completeQuery.append(stringCollectionToStringLikeList(conditionalColumn, mustIncludeParams,
+              false, mergeCondAsWhere, false));
+        }
       }
 
       return completeQuery;
@@ -2005,7 +2094,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
           mergeCond, columnName, includeNotFormat,
           stringCollectionToStringList(strings, true)));
 
-      if (!optionalOrRequired) {
+      if (!optionalOrRequired && !includeNot) {
         int numOfParams = strings.size();
         toReturn.append(String.format(" GROUP BY %s HAVING COUNT(DISTINCT(%s)) = %d",
             requiredGroupingColumn, columnName, numOfParams));

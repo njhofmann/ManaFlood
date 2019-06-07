@@ -19,7 +19,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import value_objects.card.Card;
-import value_objects.card.printing.info.CardPrintingInfo;
+import value_objects.card.printing.InformativeCardPrinting;
 import value_objects.card.query.CardQuery;
 import value_objects.card.query.SearchOption;
 import value_objects.card.relationship.CardRelationship;
@@ -110,10 +110,10 @@ public class CardRetrievalTest {
     assertFalse(soleResult.getRelationships().hasRelationship());
 
     // Check card printings
-    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
+    SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
     assertEquals(1, cardPrintings.size());
 
-    CardPrintingInfo solePrinting = cardPrintings.first();
+    InformativeCardPrinting solePrinting = cardPrintings.first();
     SortedSet<String> artists = solePrinting.getArtists();
     assertEquals(soleResult.getName(), solePrinting.getCardName()); // Check name
     assertEquals("Theros", solePrinting.getCardExpansion()); // Check expansion
@@ -193,10 +193,10 @@ public class CardRetrievalTest {
     assertFalse(soleResult.getRelationships().hasRelationship());
 
     // Check card printings
-    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
+    SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
     assertEquals(1, cardPrintings.size());
 
-    CardPrintingInfo solePrinting = cardPrintings.first();
+    InformativeCardPrinting solePrinting = cardPrintings.first();
     SortedSet<String> artists = solePrinting.getArtists();
     assertEquals(soleResult.getName(), solePrinting.getCardName()); // Check name
     assertEquals("Aether Revolt", solePrinting.getCardExpansion()); // Check expansion
@@ -282,12 +282,12 @@ public class CardRetrievalTest {
     assertFalse(soleResult.getRelationships().hasRelationship());
 
     // Check card printings
-    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
+    SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
     assertEquals(2, cardPrintings.size());
 
-    Iterator<CardPrintingInfo> iterator = cardPrintings.iterator();
+    Iterator<InformativeCardPrinting> iterator = cardPrintings.iterator();
 
-    CardPrintingInfo firstPrinting = iterator.next();
+    InformativeCardPrinting firstPrinting = iterator.next();
     SortedSet<String> firstArtists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
     assertEquals("Dominaria", firstPrinting.getCardExpansion()); // Check expansion
@@ -299,7 +299,7 @@ public class CardRetrievalTest {
     assertEquals(1, firstArtists.size()); // Check artist size
     assertEquals("Yongjae Choi", firstArtists.first()); // Check artist
 
-    CardPrintingInfo secondPrinting = iterator.next();
+    InformativeCardPrinting secondPrinting = iterator.next();
     SortedSet<String> secondArtists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), secondPrinting.getCardName()); // Check name
     assertEquals("Dominaria Promos", secondPrinting.getCardExpansion()); // Check expansion
@@ -372,10 +372,10 @@ public class CardRetrievalTest {
     assertFalse(soleResult.getRelationships().hasRelationship());
 
     // Check card printings
-    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
+    SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
     assertEquals(1, cardPrintings.size());
 
-    CardPrintingInfo firstPrinting = cardPrintings.first();
+    InformativeCardPrinting firstPrinting = cardPrintings.first();
     SortedSet<String> artists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
     assertEquals("Alara Reborn", firstPrinting.getCardExpansion()); // Check expansion
@@ -484,10 +484,10 @@ public class CardRetrievalTest {
     assertEquals(cardRelationship, soleResult.getRelationships());
 
     // Check card printings
-    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
+    SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
     assertEquals(1, cardPrintings.size());
 
-    CardPrintingInfo firstPrinting = cardPrintings.first();
+    InformativeCardPrinting firstPrinting = cardPrintings.first();
     SortedSet<String> artists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
     assertEquals("Dragon's Maze", firstPrinting.getCardExpansion()); // Check expansion
@@ -568,10 +568,10 @@ public class CardRetrievalTest {
     assertEquals(cardRelationship, soleResult.getRelationships());
 
     // Check card printings
-    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
+    SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
     assertEquals(1, cardPrintings.size());
 
-    CardPrintingInfo firstPrinting = cardPrintings.first();
+    InformativeCardPrinting firstPrinting = cardPrintings.first();
     SortedSet<String> artists = firstPrinting.getArtists();
     assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
     assertEquals("Eldritch Moon", firstPrinting.getCardExpansion()); // Check expansion
@@ -638,10 +638,10 @@ public class CardRetrievalTest {
     assertFalse(soleResult.getRelationships().hasRelationship());
 
     // Check card printings
-    SortedSet<CardPrintingInfo> cardPrintings = soleResult.getCardPrintings();
+    SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
     assertEquals(1, cardPrintings.size());
 
-    CardPrintingInfo solePrinting = cardPrintings.first();
+    InformativeCardPrinting solePrinting = cardPrintings.first();
     SortedSet<String> artists = solePrinting.getArtists();
     assertEquals(soleResult.getName(), solePrinting.getCardName()); // Check name
     assertEquals("Shadowmoor", solePrinting.getCardExpansion()); // Check expansion

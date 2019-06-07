@@ -16,7 +16,7 @@ import org.sqlite.SQLiteConfig;
  * Provides methods for opening and closing a connection to the Card & Deck Database (CDDB),
  * creating a new CDDB, and utility methods for querying and inserting info into the CDDB.
  */
-public class DatabasePort {
+public abstract class DatabasePort {
 
   /**
    * Path to the CDDB.

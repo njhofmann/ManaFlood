@@ -4,7 +4,7 @@ import java.util.SortedSet;
 import value_objects.card.relationship.CardRelationship;
 
 import java.util.Map;
-import value_objects.card.printing.info.CardPrintingInfo;
+import value_objects.card.printing.InformativeCardPrinting;
 
 /**
  * Represents all info of an individual card in the Card and Deck Database (CDDB). Uniqueness is
@@ -68,11 +68,11 @@ public interface Card extends Comparable<Card> {
   SortedSet<String> getSubtypes();
 
   /**
-   * Returns a sorted set of all card printings that this Card is associated with - based on
-   * specific set of expansions and printing numbers.
+   * Returns a sorted set of all {@link InformativeCardPrinting} that this Card is associated with
+   * - based on specific set of expansions and printing numbers.
    * @return set of card printings this card is associated with
    */
-  SortedSet<CardPrintingInfo> getCardPrintings();
+  SortedSet<InformativeCardPrinting> getCardPrintings();
 
   /**
    * If this {@link Card} has either power or toughness, or loyalty, returns that info in a

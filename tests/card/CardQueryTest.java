@@ -80,10 +80,7 @@ class CardQueryTest {
     @Test
     public void includeSingleName() {
       String result = "SELECT card_name, expansion, number FROM CardExpansion "
-          + "WHERE card_name IN (SELECT name FROM Card "
-          + "WHERE name IN (SELECT name FROM Card "
-          + "WHERE (name LIKE '%cabal%')) "
-          + "AND (name LIKE '%cabal%'))";
+          + "WHERE card_name IN (SELECT name FROM Card WHERE (name LIKE '%cabal%'))";
       cardQuery.byName("cabal", SearchOption.MustInclude);
       assertEquals(result, cardQuery.asQuery());
     }
@@ -93,9 +90,7 @@ class CardQueryTest {
     public void includeMultipleName() {
       String result = "SELECT card_name, expansion, number FROM CardExpansion "
           + "WHERE card_name IN (SELECT name FROM Card "
-          + "WHERE name IN (SELECT name FROM Card "
-          + "WHERE (name LIKE '%bi%' AND name LIKE '%rd%' AND name LIKE '%re%')) "
-          + "AND (name LIKE '%bi%' OR name LIKE '%rd%' OR name LIKE '%re%'))";
+          + "WHERE (name LIKE '%bi%' AND name LIKE '%rd%' AND name LIKE '%re%'))";
       cardQuery.byName("bi", SearchOption.MustInclude);
       cardQuery.byName("re", SearchOption.MustInclude);
       cardQuery.byName("rd", SearchOption.MustInclude);
@@ -157,9 +152,7 @@ class CardQueryTest {
           + "WHERE card_name IN (SELECT name FROM Card "
           + "WHERE (name NOT LIKE '%jk%' AND name NOT LIKE '%rt%') "
           + "AND (name LIKE '%gh%' OR name LIKE '%yu%') "
-          + "AND name IN (SELECT name FROM Card "
-          + "WHERE (name LIKE '%ah%' AND name LIKE '%re%')) "
-          + "AND (name LIKE '%ah%' OR name LIKE '%re%'))";
+          + "AND (name LIKE '%ah%' AND name LIKE '%re%'))";
       cardQuery.byName("ah", SearchOption.MustInclude);
       cardQuery.byName("gh", SearchOption.OneOf);
       cardQuery.byName("yu", SearchOption.OneOf);
@@ -204,9 +197,7 @@ class CardQueryTest {
       String result = "SELECT card_name, expansion, number FROM CardExpansion "
           + "WHERE card_name IN "
           + "(SELECT name FROM Card "
-          + "WHERE name IN ("
-          + "SELECT name FROM Card WHERE (text LIKE '%flying%')) "
-          + "AND (text LIKE '%flying%'))";
+          + "WHERE (text LIKE '%flying%'))";
       cardQuery.byText("flying", SearchOption.MustInclude);
       assertEquals(result, cardQuery.asQuery());
     }
@@ -215,12 +206,8 @@ class CardQueryTest {
     @Test
     public void includeMultipleText() {
       String result = "SELECT card_name, expansion, number FROM CardExpansion "
-          + "WHERE card_name IN "
-          + "(SELECT name FROM Card "
-          + "WHERE name IN ("
-          + "SELECT name FROM Card "
-          + "WHERE (text LIKE '%island%' AND text LIKE '%mer%' AND text LIKE '%walk%')) "
-          + "AND (text LIKE '%island%' OR text LIKE '%mer%' OR text LIKE '%walk%'))";
+          + "WHERE card_name IN (SELECT name FROM Card "
+          + "WHERE (text LIKE '%island%' AND text LIKE '%mer%' AND text LIKE '%walk%'))";
       cardQuery.byText("island", SearchOption.MustInclude);
       cardQuery.byText("walk", SearchOption.MustInclude);
       cardQuery.byText("mer", SearchOption.MustInclude);
@@ -283,10 +270,7 @@ class CardQueryTest {
           + "(SELECT name FROM Card "
           + "WHERE (text NOT LIKE '%ar%' AND text NOT LIKE '%ma%') "
           + "AND (text LIKE '%er%' OR text LIKE '%io%') "
-          + "AND name IN ("
-          + "SELECT name FROM Card "
-          + "WHERE (text LIKE '%fl%' AND text LIKE '%im%')) "
-          + "AND (text LIKE '%fl%' OR text LIKE '%im%'))";
+          + "AND (text LIKE '%fl%' AND text LIKE '%im%'))";
       cardQuery.byText("fl", SearchOption.MustInclude);
       cardQuery.byText("im", SearchOption.MustInclude);
       cardQuery.byText("er", SearchOption.OneOf);
@@ -321,13 +305,9 @@ class CardQueryTest {
     @Test
     public void includeSingleColor() {
       String result = "SELECT card_name, expansion, number FROM CardExpansion "
-          + "WHERE card_name IN ("
-          + "SELECT card_name FROM Color "
-          + "WHERE card_name IN "
-          + "(SELECT card_name FROM Color "
-          + "WHERE color IN ('R') "
-          + "GROUP BY card_name HAVING COUNT(DISTINCT(color)) = 1) "
-          + "AND color IN ('R'))";
+          + "WHERE card_name IN (SELECT card_name FROM Color "
+          + "WHERE color IN ('R') AND card_name IN (SELECT card_name FROM Color "
+          + "WHERE color IN ('R') GROUP BY card_name HAVING COUNT(DISTINCT(color)) = 1))";
       cardQuery.byColor("R", SearchOption.MustInclude);
       assertEquals(result, cardQuery.asQuery());
     }
@@ -335,37 +315,71 @@ class CardQueryTest {
     @DisplayName("Include multiple color parameters")
     @Test
     public void includeMultipleColor() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT card_name FROM Color "
+          + "WHERE color IN ('B', 'U') AND card_name IN (SELECT card_name FROM Color "
+          + "WHERE color IN ('B', 'U') GROUP BY card_name HAVING COUNT(DISTINCT(color)) = 2))";
+      cardQuery.byColor("U", SearchOption.MustInclude);
+      cardQuery.byColor("B", SearchOption.MustInclude);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow single color parameter")
     @Test
     public void disallowSingleColor() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT card_name FROM Color "
+          + "WHERE color NOT IN ('W'))";
+      cardQuery.byColor("W", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow multiple color parameters")
     @Test
     public void disallowMultipleColor() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT card_name FROM Color "
+          + "WHERE color NOT IN ('G', 'R'))";
+      cardQuery.byColor("G", SearchOption.Disallow);
+      cardQuery.byColor("R", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("One of single color parameter")
     @Test
     public void oneOfSingleColor() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT card_name FROM Color "
+          + "WHERE color IN ('R'))";
+      cardQuery.byColor("R", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
 
-    @DisplayName("ONe of multiple color parameters")
+    @DisplayName("One of multiple color parameters")
     @Test
     public void oneOfMultipleColor() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT card_name FROM Color "
+          + "WHERE color IN ('U', 'W'))";
+      cardQuery.byColor("W", SearchOption.OneOf);
+      cardQuery.byColor("U", SearchOption.OneOf);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Mixed multiple color parameters")
     @Test
     public void mixedMultipleColor() {
-
+      String result = "SELECT card_name, expansion, number "
+          + "FROM CardExpansion WHERE card_name IN (SELECT card_name FROM Color "
+          + "WHERE color NOT IN ('B') AND color IN ('G', 'R', 'U', 'W') "
+          + "AND card_name IN (SELECT card_name FROM Color "
+          + "WHERE color IN ('R', 'U') GROUP BY card_name HAVING COUNT(DISTINCT(color)) = 2))";
+      cardQuery.byColor("W", SearchOption.OneOf);
+      cardQuery.byColor("U", SearchOption.MustInclude);
+      cardQuery.byColor("R", SearchOption.MustInclude);
+      cardQuery.byColor("G", SearchOption.OneOf);
+      cardQuery.byColor("B", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
@@ -473,6 +487,9 @@ class CardQueryTest {
 
   @Nested
   @DisplayName("Block Parameter tests")
+      /**
+       * Very similar to how sets are implemented, so fewer tests here.
+       */
   class BlockParameterTests {
 
     @DisplayName("Throws if unsupported block parameter")
@@ -494,31 +511,41 @@ class CardQueryTest {
     @DisplayName("Include single block parameter")
     @Test
     public void includeSingleBlock() {
-
-    }
-
-    @DisplayName("Include multiple block parameters")
-    @Test
-    public void includeMultipleBlock() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE (card_name, expansion, number) IN ("
+          + "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE expansion IN ('Dragon''s Maze', 'Dragon''s Maze Promos', 'Gatecrash', "
+          + "'Gatecrash Promos', 'Return to Ravnica', 'Return to Ravnica Promos') "
+          + "AND card_name IN (SELECT card_name FROM CardExpansion "
+          + "WHERE expansion IN ('Dragon''s Maze', 'Dragon''s Maze Promos', 'Gatecrash', "
+          + "'Gatecrash Promos', 'Return to Ravnica', 'Return to Ravnica Promos') "
+          + "GROUP BY card_name HAVING COUNT(DISTINCT(expansion)) = 6))";
+      cardQuery.byBlock("Return to Ravnica", SearchOption.MustInclude);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow single block parameter")
     @Test
     public void disallowSingleBlock() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE (card_name, expansion, number) IN (SELECT card_name, expansion, number "
+          + "FROM CardExpansion WHERE expansion NOT IN ('Battle the Horde', 'Born of the Gods', "
+          + "'Born of the Gods Hero''s Path', 'Born of the Gods Promos', 'Defeat a God', "
+          + "'Face the Hydra', 'Journey into Nyx', 'Journey into Nyx Hero''s Path', "
+          + "'Journey into Nyx Promos', 'Theros', 'Theros Hero''s Path', 'Theros Promos'))";
+      cardQuery.byBlock("Theros", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
 
-    @DisplayName("Disallow multiple block parameters")
+    @DisplayName("One of single block parameters")
     @Test
-    public void disallowMultipleBlock() {
-
-    }
-
-    @DisplayName("Mixed multiple block parameters")
-    @Test
-    public void mixedMultipleBlock() {
-
+    public void oneOfSingleBlock() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE (card_name, expansion, number) IN (SELECT card_name, expansion, number "
+          + "FROM CardExpansion WHERE expansion IN ('Exodus', 'Stronghold', "
+          + "'Tempest'))";
+      cardQuery.byBlock("Tempest", SearchOption.OneOf);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
@@ -545,31 +572,94 @@ class CardQueryTest {
     @DisplayName("Include single set parameter")
     @Test
     public void includeSingleSet() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE (card_name, expansion, number) IN ("
+          + "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE expansion IN ('Return to Ravnica') "
+          + "AND card_name IN (SELECT card_name FROM CardExpansion "
+          + "WHERE expansion IN ('Return to Ravnica') "
+          + "GROUP BY card_name HAVING COUNT(DISTINCT(expansion)) = 1))";
+      cardQuery.bySet("Return to Ravnica", SearchOption.MustInclude);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Include multiple set parameters")
     @Test
     public void includeMultipleSet() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE (card_name, expansion, number) IN ("
+          + "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE expansion IN ('Khans of Tarkir', 'Return to Ravnica', 'Theros') "
+          + "AND card_name IN (SELECT card_name FROM CardExpansion "
+          + "WHERE expansion IN ('Khans of Tarkir', 'Return to Ravnica', 'Theros') "
+          + "GROUP BY card_name HAVING COUNT(DISTINCT(expansion)) = 3))";
+      cardQuery.bySet("Return to Ravnica", SearchOption.MustInclude);
+      cardQuery.bySet("Khans of Tarkir", SearchOption.MustInclude);
+      cardQuery.bySet("Theros", SearchOption.MustInclude);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow single set parameter")
     @Test
     public void disallowSingleSet() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE (card_name, expansion, number) IN (SELECT card_name, expansion, number "
+          + "FROM CardExpansion WHERE expansion NOT IN ('Magic 2012'))";
+      cardQuery.bySet("Magic 2012", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Disallow multiple set parameters")
     @Test
     public void disallowMultipleSet() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE (card_name, expansion, number) IN (SELECT card_name, expansion, number "
+          + "FROM CardExpansion WHERE expansion NOT IN ('Gatecrash', 'Scourge', 'Visions'))";
+      cardQuery.bySet("Visions", SearchOption.Disallow);
+      cardQuery.bySet("Gatecrash", SearchOption.Disallow);
+      cardQuery.bySet("Scourge", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
+    }
 
+    @DisplayName("One of single set parameters")
+    @Test
+    public void oneOfSingleSet() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE (card_name, expansion, number) IN (SELECT card_name, expansion, number "
+          + "FROM CardExpansion WHERE expansion IN ('Tempest'))";
+      cardQuery.bySet("Tempest", SearchOption.OneOf);
+      assertEquals(result, cardQuery.asQuery());
+    }
+
+    @DisplayName("One of multiple set parameters")
+    @Test
+    public void oneOfMultipleSet() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE (card_name, expansion, number) IN (SELECT card_name, expansion, number "
+          + "FROM CardExpansion WHERE expansion IN ('Homelands', 'Ixalan', 'Scars of Mirrodin'))";
+      cardQuery.bySet("Ixalan", SearchOption.OneOf);
+      cardQuery.bySet("Homelands", SearchOption.OneOf);
+      cardQuery.bySet("Scars of Mirrodin", SearchOption.OneOf);
+      assertEquals(result, cardQuery.asQuery());
     }
 
     @DisplayName("Mixed multiple set parameters")
     @Test
     public void mixedMultipleSet() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE (card_name, expansion, number) IN (SELECT card_name, expansion, number "
+          + "FROM CardExpansion WHERE expansion NOT IN ('Nemesis', 'Shards of Alara') "
+          + "AND expansion IN ('Guildpact', 'New Phyrexia', 'Prophecy', 'Zendikar') "
+          + "AND card_name IN (SELECT card_name FROM CardExpansion "
+          + "WHERE expansion IN ('New Phyrexia', 'Zendikar') "
+          + "GROUP BY card_name HAVING COUNT(DISTINCT(expansion)) = 2))";
+      cardQuery.bySet("New Phyrexia", SearchOption.MustInclude);
+      cardQuery.bySet("Zendikar", SearchOption.MustInclude);
+      cardQuery.bySet("Guildpact", SearchOption.OneOf);
+      cardQuery.bySet("Prophecy", SearchOption.OneOf);
+      cardQuery.bySet("Nemesis", SearchOption.Disallow);
+      cardQuery.bySet("Shards of Alara", SearchOption.Disallow);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
@@ -732,159 +822,213 @@ class CardQueryTest {
 
     }
 
-    @Nested
-    @DisplayName("Stat Parameter tests")
-    class StatParameterTests {
+  }
 
-      @DisplayName("Throws if null comparison stat parameter")
-      @Test
-      public void nullComparison() {
-        assertThrows(IllegalArgumentException.class, () -> {
-          cardQuery.byStat(Stat.CMC, null, 3);
-        });
-      }
+  @Nested
+  @DisplayName("Stat Parameter tests")
+  class StatParameterTests {
 
-      @DisplayName("Throws if null stat parameter")
-      @Test
-      public void nullStat() {
-        assertThrows(IllegalArgumentException.class, () -> {
-          cardQuery.byStat(null, Comparison.EQUAL, 5);
-        });
-      }
+    @DisplayName("Throws if null comparison stat parameter")
+    @Test
+    public void nullComparison() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStat(Stat.CMC, null, 3);
+      });
+    }
 
-      @DisplayName("Single stat parameter for each stat and comparison combination")
-      @Test
-      public void singleStatCombo() {
+    @DisplayName("Throws if null stat parameter")
+    @Test
+    public void nullStat() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStat(null, Comparison.EQUAL, 5);
+      });
+    }
 
-      }
-
-      @DisplayName("Mixed multiple stat parameters")
-      @Test
-      public void mixedMultipleStat() {
-
+    @DisplayName("Single stat parameter for loyalty stat against each comparison combination")
+    @Test
+    public void loyaltyStatEachComparison() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM Loyalty t0 WHERE t0.loyalty_value %s %d)";
+      for (Comparison comparison : Comparison.values()) {
+        int quantity = new Random().nextInt(20);
+        cardQuery.byStat(Stat.LOYALTY, comparison, quantity);
+        String formattedResult = String.format(result, comparison.getValue(), quantity);
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
       }
     }
 
-    @Nested
-    @DisplayName("StatVersusStat Parameter tests")
-    class StatVersusStatParameterTests {
+    @DisplayName("Single stat parameter for toughness stat against each comparison combination")
+    @Test
+    public void toughnessStatEachComparison() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM PowerToughness t0 WHERE t0.toughness_value %s %d)";
 
-      @DisplayName("Throws if null stat")
-      @Test
-      public void nullStat() {
-        assertThrows(IllegalArgumentException.class, () -> {
-          cardQuery.byStatVersusStat(null, Comparison.GREATER, Stat.LOYALTY);
-        });
-      }
-
-      @DisplayName("Throws if null comparison")
-      @Test
-      public void nullComparison() {
-        assertThrows(IllegalArgumentException.class, () -> {
-          cardQuery.byStatVersusStat(Stat.POWER, null, Stat.TOUGHNESS);
-        });
-      }
-
-      @DisplayName("Throws if null stat")
-      @Test
-      public void nullOtherStat() {
-        assertThrows(IllegalArgumentException.class, () -> {
-          cardQuery.byStatVersusStat(Stat.CMC, Comparison.UNEQUAL, null);
-        });
-      }
-
-      @DisplayName("Single stat parameter for each stat, comparison, and stat combination")
-      @Test
-      public void singleStatComparisonStat() {
-
-      }
-
-
-      @DisplayName("Mixed multiple stat versus stat parameters")
-      @Test
-      public void mixedMultipleStatVersusStat() {
-
+      for (Comparison comparison : Comparison.values()) {
+        int quantity = new Random().nextInt(20);
+        cardQuery.byStat(Stat.TOUGHNESS, comparison, quantity);
+        String formattedResult = String.format(result, comparison.getValue(), quantity);
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
       }
     }
 
-    @Nested
-    @DisplayName("ManaType Parameter tests")
-    class ManaTypeParameterTests {
+    @DisplayName("Single stat parameter for power stat against each comparison combination")
+    @Test
+    public void powerStatEachComparison() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM PowerToughness t0 WHERE t0.power_value %s %d)";
 
-      @DisplayName("Throws if unsupported mana type parameter")
-      @Test
-      public void unsupportedManaType() {
-        assertThrows(IllegalArgumentException.class, () -> {
-          cardQuery.byManaType("{O}", Comparison.LESS_EQUAL, 5);
-        });
-      }
-
-      @DisplayName("Throws if null mana type parameter")
-      @Test
-      public void nullManaType() {
-        assertThrows(IllegalArgumentException.class, () -> {
-          cardQuery.byManaType(null, Comparison.LESS_EQUAL, 5);
-        });
-      }
-
-      @DisplayName("Single mana type parameter for each type of mana type and comparison")
-      @Test
-      public void includeSingleManaType() throws SQLException {
-
-      }
-
-      @DisplayName("Mixed multiple mana type parameters")
-      @Test
-      public void mixedMultipleManaType() {
-
+      for (Comparison comparison : Comparison.values()) {
+        int quantity = new Random().nextInt(20);
+        cardQuery.byStat(Stat.POWER, comparison, quantity);
+        String formattedResult = String.format(result, comparison.getValue(), quantity);
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
       }
     }
 
-    @DisplayName("Mixed queries")
-    @Nested
-    class MixedQueries {
+    @DisplayName("Single stat parameter for cmc stat against each comparison combination")
+    @Test
+    public void cmcStatEachComparison() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.name FROM Card t0 WHERE t0.cmc %s %d)";
 
-      @DisplayName("Multiple card expansion parameters")
-      @Test
-      public void multipleCardExpansionParameters() {
-
+      for (Comparison comparison : Comparison.values()) {
+        int quantity = new Random().nextInt(20);
+        cardQuery.byStat(Stat.CMC, comparison, quantity);
+        String formattedResult = String.format(result, comparison.getValue(), quantity);
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
       }
+    }
 
-      @DisplayName("Name and text parameters")
-      @Test
-      public void nameAndText() {
+    @DisplayName("Mixed multiple stat parameters")
+    @Test
+    public void mixedMultipleStat() {
 
-      }
+    }
+  }
 
-      @DisplayName("Color and color identity parameters")
-      @Test
-      public void colorAndColorIdentity() {
+  @Nested
+  @DisplayName("StatVersusStat Parameter tests")
+  class StatVersusStatParameterTests {
 
-      }
+    @DisplayName("Throws if null stat")
+    @Test
+    public void nullStat() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStatVersusStat(null, Comparison.GREATER, Stat.LOYALTY);
+      });
+    }
 
-      @DisplayName("Stat and stat vs stat parameters")
-      @Test
-      public void statAndStatVsStat() {
+    @DisplayName("Throws if null comparison")
+    @Test
+    public void nullComparison() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStatVersusStat(Stat.POWER, null, Stat.TOUGHNESS);
+      });
+    }
 
-      }
+    @DisplayName("Throws if null stat")
+    @Test
+    public void nullOtherStat() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStatVersusStat(Stat.CMC, Comparison.UNEQUAL, null);
+      });
+    }
 
-      @DisplayName("Single card and block parameters")
-      @Test
-      public void singleCardAndBlock() {
+    @DisplayName("Single stat parameter for each stat, comparison, and stat combination")
+    @Test
+    public void singleStatComparisonStat() {
 
-      }
+    }
 
-      @DisplayName("Multiple card and block parameters")
-      @Test
-      public void multipleCardAndBlock() {
 
-      }
+    @DisplayName("Mixed multiple stat versus stat parameters")
+    @Test
+    public void mixedMultipleStatVersusStat() {
 
-      @DisplayName("One of each type of parameter")
-      @Test
-      public void singleEverything() {
+    }
+  }
 
-      }
+  @Nested
+  @DisplayName("ManaType Parameter tests")
+  class ManaTypeParameterTests {
+
+    @DisplayName("Throws if unsupported mana type parameter")
+    @Test
+    public void unsupportedManaType() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byManaType("{O}", Comparison.LESS_EQUAL, 5);
+      });
+    }
+
+    @DisplayName("Throws if null mana type parameter")
+    @Test
+    public void nullManaType() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byManaType(null, Comparison.LESS_EQUAL, 5);
+      });
+    }
+
+    @DisplayName("Single mana type parameter for each type of mana type and comparison")
+    @Test
+    public void includeSingleManaType() throws SQLException {
+
+    }
+
+    @DisplayName("Mixed multiple mana type parameters")
+    @Test
+    public void mixedMultipleManaType() {
+
+    }
+  }
+
+  @DisplayName("Mixed queries")
+  @Nested
+  class MixedQueries {
+
+    @DisplayName("Multiple card expansion parameters")
+    @Test
+    public void multipleCardExpansionParameters() {
+
+    }
+
+    @DisplayName("Name and text parameters")
+    @Test
+    public void nameAndText() {
+
+    }
+
+    @DisplayName("Color and color identity parameters")
+    @Test
+    public void colorAndColorIdentity() {
+
+    }
+
+    @DisplayName("Stat and stat vs stat parameters")
+    @Test
+    public void statAndStatVsStat() {
+
+    }
+
+    @DisplayName("Single card and block parameters")
+    @Test
+    public void singleCardAndBlock() {
+
+    }
+
+    @DisplayName("Multiple card and block parameters")
+    @Test
+    public void multipleCardAndBlock() {
+
+    }
+
+    @DisplayName("One of each type of parameter")
+    @Test
+    public void singleEverything() {
+
     }
   }
 }
