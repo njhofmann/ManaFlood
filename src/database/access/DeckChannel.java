@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import value_objects.deck.Deck;
 import value_objects.deck.instance.DeckInstance;
+import value_objects.deck.instance.InformativeDeckInstance;
 
 /**
  * Represents the set of methods available for interacting with the decks stored in the Card &
@@ -76,4 +77,11 @@ public interface DeckChannel {
    * @throws SQLException if there is a failure to query deck info or update deck desp with the CDDB
    */
   void updateDeckDesp(int deckID, String newDesp) throws IllegalArgumentException, SQLException;
+
+  /**
+   *
+   * @param deckInstance
+   * @return
+   */
+  InformativeDeckInstance getDeckInstanceInfo(DeckInstance deckInstance) throws SQLException;
 }

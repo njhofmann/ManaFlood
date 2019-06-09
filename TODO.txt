@@ -1,13 +1,9 @@
 -Finish card query tests
--InformativeDeckInstance
 -Mock deck for testing into separate class
 -Equality for deck instances and informative deck instances
--Redo relevant testing
--Finish card query tests
+-Interface equals, hashcode, and compare documentation
+-More testing - card retrieval, informative deck instances
 -Documentation clean up and adding
-
--Finish card retrieval tests (multiple artists tests, others)
-
 
 -Update text and types on cards option (errata)
 -View interface
@@ -16,3 +12,8 @@
 -Documentation updates
 -Write down how time handling is done (timestamp in database)
 -Comprehensive readme explaining project structure and plan and how to use
+
+Tests
+-Baseline class tests: constructor, equality, compare to, and hashcode
+-Deck creation and retrieval, with informative deck instance
+-Card querying and card retrieval (does card query retrieve desired cards, does card have correct info)

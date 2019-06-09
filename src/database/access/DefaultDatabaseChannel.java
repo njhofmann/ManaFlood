@@ -36,6 +36,8 @@ import value_objects.deck.instance.DeckInstance;
 import value_objects.deck.instance.DefaultDeckInstance;
 import value_objects.card.query.Comparison;
 import value_objects.card.query.Stat;
+import value_objects.deck.instance.DefaultInformativeDeckInstance;
+import value_objects.deck.instance.InformativeDeckInstance;
 import value_objects.utility.Triple;
 
 /**
@@ -477,6 +479,78 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
               + " description \"%s\"!", deckID, newDesp));
     }
   }
+
+  @Override
+  public InformativeDeckInstance getDeckInstanceInfo(DeckInstance deckInstance) throws SQLException {
+    if (deckInstance == null) {
+      throw new IllegalArgumentException("Given deck instance can't be null!");
+    }
+
+    // Get card names
+    Map<String, Map<String, Set<String>>> cardToExpansionToNumbers = new HashMap<>();
+    for (String cardName : deckInstance.getCards()) {
+      cardToExpansionToNumbers.put(cardName, new HashMap<>());
+    }
+
+    // Add each card printing info to associated card
+    for (CardPrinting cardPrinting : deckInstance.getCardPrintings()) {
+      String cardPrintingName = cardPrinting.getCardName();
+      if (!cardToExpansionToNumbers.containsKey(cardPrintingName)) {
+        throw new IllegalStateException("");
+      }
+
+      String cardPrintingExpansion = cardPrinting.getCardExpansion();
+      Map<String, Set<String>> expansionToNumbers = cardToExpansionToNumbers.get(cardPrintingName);
+      if (!expansionToNumbers.containsKey(cardPrintingExpansion)) {
+        expansionToNumbers.put(cardPrintingExpansion, new HashSet<>());
+      }
+      expansionToNumbers.get(cardPrintingExpansion).add(cardPrinting.getIdentifyingNumber());
+    }
+
+    // Get actual card info
+    Map<String, Card> cardNameToCard = new HashMap<>();
+    for (String cardName : cardToExpansionToNumbers.keySet()) {
+      cardNameToCard.put(cardName, new DefaultCard(cardName, cardToExpansionToNumbers.get(cardName)));
+    }
+
+    // Reassociate card info with categories
+    Map<String, SortedSet<String>> cardCategories = deckInstance.getCardsByCategory();
+    Map<String, SortedSet<Card>> informativeCardCategories = new HashMap<>();
+
+    for (String category : cardCategories.keySet()) {
+      SortedSet<Card> informativeCardsInCategory = new TreeSet<>();
+      for (String cardInCategory : cardCategories.get(category)) {
+        informativeCardsInCategory.add(cardNameToCard.get(cardInCategory));
+      }
+      informativeCardCategories.put(category, informativeCardsInCategory);
+    }
+
+    // Reassociate card printings with quantities
+    Map<CardPrinting, Integer> cardPrintingQuantities = deckInstance.getCardPrintingQuantities();
+    Map<InformativeCardPrinting, Integer> informativeCardPrintingQuantities = new HashMap<>();
+    for (CardPrinting cardPrinting : cardPrintingQuantities.keySet()) {
+      String cardPrintingName = cardPrinting.getCardName();
+      Card associatedCard = cardNameToCard.get(cardPrintingName);
+      Set<InformativeCardPrinting> associatedCardPrintings = associatedCard.getCardPrintings();
+      if (associatedCardPrintings.contains(cardPrinting)) {
+        for (InformativeCardPrinting informativeCardPrinting : associatedCardPrintings) {
+          if (cardPrinting.equals(informativeCardPrinting)) {
+            informativeCardPrintingQuantities.put(informativeCardPrinting,
+                cardPrintingQuantities.get(cardPrinting));
+          }
+        }
+      }
+      else {
+        throw new IllegalStateException("");
+      }
+    }
+
+    return new DefaultInformativeDeckInstance(deckInstance.getParentDeckID(),
+        deckInstance.getCreationInfo(),
+        informativeCardCategories,
+        informativeCardPrintingQuantities);
+  }
+
 
   @Override
   public CardQuery getQuery() {

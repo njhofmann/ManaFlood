@@ -1,5 +1,3 @@
-package deck;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;

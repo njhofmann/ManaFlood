@@ -1,5 +1,3 @@
-package card;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import database.access.CardChannel;
@@ -21,7 +19,8 @@ import value_objects.card.query.Stat;
 
 /**
  * Tests to verify that the queries produced by {@link CardQuery} and its main implementation
- * produce correct queries to database.
+ * produce correct queries to database. Brittle set of tests that are likely to change as they are
+ * implementation specific.
  */
 class CardQueryTest {
 

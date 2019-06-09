@@ -1,16 +1,16 @@
-package card;
+package baseline;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import value_objects.card.Card;
 import value_objects.card.printing.CardPrinting;
 import value_objects.card.printing.DefaultCardPrinting;
+import value_objects.card.printing.InformativeCardPrinting;
 
 /**
  * Tests to ensure overridden equality and implemented compareTo methods for {@link CardPrinting}
- * work properly.
+ * and {@link InformativeCardPrinting} work properly.
  */
 public class CardPrintingEqualityTest {
 

@@ -1,4 +1,4 @@
-package deck;
+package baseline;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -8,10 +8,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import value_objects.deck.instance.DeckInstance;
 import value_objects.deck.instance.DefaultDeckInstance;
+import value_objects.deck.instance.InformativeDeckInstance;
 
 /**
  * Tests to ensure overridden equality, hashcode, and comparison methods for the implementation
- * of {@link DeckInstance} work properly.
+ * of {@link DeckInstance} and {@link InformativeDeckInstance} work properly.
  */
 public class DeckInstanceEqualityTest {
 
