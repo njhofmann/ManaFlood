@@ -921,7 +921,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
 
       boolean singleCondition = true;
       for (String key : conditions.keySet()) {
-        String value = conditions.get(key);
+        String value = formatWordToSQL(conditions.get(key));
         String mergeCond;
         if (singleCondition) {
           singleCondition = false;
@@ -962,6 +962,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
      * closed
      */
     private Map<String, Integer> setManaCosts(Connection connection, String cardName) throws SQLException {
+      cardName = formatWordToSQL(cardName);
       String query = String.format("SELECT mana_type, quantity FROM Mana WHERE card_name = '%s'", cardName);
       try (PreparedStatement preparedStatement = connection.prepareStatement(query);
           ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -1095,6 +1096,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     private CardRelationship setCardRelationship(Connection connection,
         String cardName) throws SQLException {
       SortedSet<String> cardNames = new TreeSet<>();
+
+      cardName = formatWordToSQL(cardName);
 
       String twoCardQuery = String.format("SELECT * FROM TwoCards WHERE card_a = '%s' "
           + "OR card_b = '%s'", cardName, cardName);
@@ -1399,6 +1402,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
       }
       this.cardPrinting = new DefaultCardPrinting(cardName, cardExpansion, identifyingNumber);
 
+      cardName = formatWordToSQL(cardName);
       String formattedExpansion = formatWordToSQL(cardExpansion);
       String cardExpansionQuery = String.format("SELECT * FROM CardExpansion "
               + "WHERE card_name = '%s' AND expansion = '%s' AND number = '%s'",
@@ -1421,7 +1425,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
     }
 
     private SortedSet<String> setArtists(Connection connection) {
-      String cardName = cardPrinting.getCardName();
+      String cardName = formatWordToSQL(cardPrinting.getCardName());
       String expansion = cardPrinting.getCardExpansion();
       String number = cardPrinting.getIdentifyingNumber();
 

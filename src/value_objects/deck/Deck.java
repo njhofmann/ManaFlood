@@ -38,9 +38,9 @@ public interface Deck extends Comparable<Deck> {
   /**
    * Compares this {@link Deck} with another Deck for order based their ids. Returns a negative int if
    * this Deck's name comes after inputted Deck's name alphabetically, and a positive int if this
-   * Card's name comes before the inputted Card's name alphabetically. If names are the sames,
-   * checks for equality off of deck instances included within each deck. Returns 0 if and only
-   * if this Deck and given Deck have the same deck instances.
+   * Deck's name comes before the inputted Deck's name alphabetically. If names are the sames,
+   * checks for equality off of {@link DeckInstance} included within each Deck. Returns 0 if and only
+   * if this Deck and given Deck have the same DeckInstances.
    * @param other another Deck to compare this Deck to
    * @return int representing ordering of this Deck and given Deck
    * @throws IllegalArgumentException if given Deck is null

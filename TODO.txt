@@ -15,6 +15,8 @@
 -Comprehensive readme explaining project structure and plan and how to use
 
 Tests
--Baseline class tests: constructor, equality, compare to, and hashcode
+-Deck equality tests
+-Baseline class tests: constructor, equality, compare to, and hashcode (Deck, Informative card printings and informative deck instances tests)
 -Deck creation and retrieval, with informative deck instance
 -Card querying and card retrieval (does card query retrieve desired cards, does card have correct info)
+-

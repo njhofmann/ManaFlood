@@ -18,7 +18,7 @@ public class DeckEqualityTest {
 
   @DisplayName("Same oldDeck id, before oldDeck instances")
   @Test
-  public void test() {
+  public void sameIdDBeforeInstances() {
 
   }
 

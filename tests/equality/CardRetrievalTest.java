@@ -676,20 +676,241 @@ public class CardRetrievalTest {
 
     @DisplayName("Retrieve single card by name parameters")
     @Test
-    public void nameParameterSingleCard() {
+    public void nameParameterSingleCard() throws SQLException {
+      // Should retrieve Canyon Drake, only printed in Tempest
 
+      cardQuery.byName("canyon", SearchOption.MustInclude);
+      cardQuery.byName("drake", SearchOption.MustInclude);
+      cardQueryResult = cardChannel.queryCards(cardQuery);
+
+      assertEquals(1, cardQueryResult.size());
+      Card soleResult = cardQueryResult.first();
+
+      // Check name
+      assertEquals("Canyon Drake", soleResult.getName());
+
+      // Check cmc
+      assertEquals(4, soleResult.getConvertedManaCost());
+
+      // Check mana cost
+      Map<String, Integer> expectedManaCost = new HashMap<>();
+      expectedManaCost.put("{1}", 2);
+      expectedManaCost.put("{R}", 2);
+      assertEquals(expectedManaCost, soleResult.getManaCost());
+
+      Set<String> colors = new HashSet<>();
+      colors.add("R");
+
+      // Check colors
+      assertEquals(colors, soleResult.getColors());
+
+      // Check color identity
+      assertEquals(colors, soleResult.getColorIdentity());
+
+      // Check text
+      String expectedText = "Flying\n{1}, Discard a card at random: "
+          + "Canyon Drake gets +2/+0 until end of turn.";
+      assertEquals(expectedText, soleResult.getText());
+
+      // Check supertypes
+      Set<String> supertypes = new HashSet<>();
+      assertTrue(soleResult.getSupertypes().isEmpty());
+
+      // Check types
+      Set<String> types = new HashSet<>();
+      types.add("Creature");
+      assertEquals(types, soleResult.getTypes());
+
+      // Check subtypes
+      Set<String> subtypes = new HashSet<>();
+      subtypes.add("Drake");
+      assertEquals(subtypes, soleResult.getSubtypes());
+
+      // Check extra stats
+      HashMap<String, String> stats = new HashMap<>();
+      stats.put("power", "1");
+      stats.put("toughness", "2");
+      assertEquals(stats, soleResult.getExtraStats());
+
+      // Check relationship
+      assertFalse(soleResult.getRelationships().hasRelationship());
+
+      // Check card printings
+      SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
+      assertEquals(1, cardPrintings.size());
+
+      InformativeCardPrinting solePrinting = cardPrintings.first();
+      SortedSet<String> artists = solePrinting.getArtists();
+      assertEquals(soleResult.getName(), solePrinting.getCardName()); // Check name
+      assertEquals("Tempest", solePrinting.getCardExpansion()); // Check expansion
+      assertEquals("166", solePrinting.getIdentifyingNumber()); // Check identifying number
+      assertEquals("rare", solePrinting.getRarity()); // Check rarity
+      assertEquals("\"These runes are tough enough without the distraction,\" "
+          + "Ertai muttered, one eye on the drake.", solePrinting.getFlavorText());
+      assertEquals(1, artists.size());
+      assertEquals("Quinton Hoover", artists.first());
     }
 
     @DisplayName("Retrieve single card by text parameters")
     @Test
-    public void textParameterSingleCard() {
+    public void textParameterSingleCard() throws SQLException {
+      // Should retrieve Carian Walker from Lorwyn
 
+      cardQuery.byText("flying", SearchOption.MustInclude);
+      cardQuery.byText("same", SearchOption.MustInclude);
+      cardQuery.byText("true", SearchOption.MustInclude);
+      cardQuery.byText("double", SearchOption.MustInclude);
+      cardQuery.byText("strike", SearchOption.MustInclude);
+      cardQuery.byText("first", SearchOption.MustInclude);
+      cardQuery.byText("deathtouch", SearchOption.MustInclude);
+      cardQuery.byText("haste", SearchOption.MustInclude);
+      cardQuery.byText("shroud", SearchOption.MustInclude);
+      cardQuery.byText("vigilance", SearchOption.MustInclude);
+      cardQuery.byText("reach", SearchOption.MustInclude);
+
+      cardQueryResult = cardChannel.queryCards(cardQuery);
+      assertEquals(1, cardQueryResult.size());
+      Card soleResult = cardQueryResult.first();
+
+      // Check name
+      assertEquals("Cairn Wanderer", soleResult.getName());
+
+      // Check cmc
+      assertEquals(5, soleResult.getConvertedManaCost());
+
+      // Check mana cost
+      Map<String, Integer> expectedManaCost = new HashMap<>();
+      expectedManaCost.put("{1}", 4);
+      expectedManaCost.put("{B}", 1);
+      assertEquals(expectedManaCost, soleResult.getManaCost());
+
+      Set<String> colors = new HashSet<>();
+      colors.add("B");
+
+      // Check colors
+      assertEquals(colors, soleResult.getColors());
+
+      // Check color identity
+      assertEquals(colors, soleResult.getColorIdentity());
+
+      // Check text
+      String expectedText = "Changeling (This card is every creature type.)\nAs long as a creature "
+          + "card with flying is in a graveyard, Cairn Wanderer has flying. The same is true for "
+          + "fear, first strike, double strike, deathtouch, haste, landwalk, lifelink, protection, "
+          + "reach, trample, shroud, and vigilance.";
+      assertEquals(expectedText, soleResult.getText());
+
+      // Check supertypes
+      assertTrue(soleResult.getSupertypes().isEmpty());
+
+      // Check types
+      Set<String> types = new HashSet<>();
+      types.add("Creature");
+      assertEquals(types, soleResult.getTypes());
+
+      // Check subtypes
+      SortedSet<String> subtypes = new TreeSet<>();
+      subtypes.add("Shapeshifter");
+      assertEquals(subtypes, soleResult.getSubtypes());
+
+      // Check extra stats
+      Map<String, String> extraStats = new HashMap<>();
+      extraStats.put("power", "4");
+      extraStats.put("toughness", "4");
+      assertEquals(extraStats, soleResult.getExtraStats());
+
+      // Check relationship
+      assertFalse(soleResult.getRelationships().hasRelationship());
+
+      // Check card printings
+      SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
+      assertEquals(1, cardPrintings.size());
+
+      InformativeCardPrinting solePrinting = cardPrintings.first();
+      SortedSet<String> artists = solePrinting.getArtists();
+      assertEquals(soleResult.getName(), solePrinting.getCardName()); // Check name
+      assertEquals("Lorwyn", solePrinting.getCardExpansion()); // Check expansion
+      assertEquals("105", solePrinting.getIdentifyingNumber()); // Check identifying number
+      assertEquals("rare", solePrinting.getRarity()); // Check rarity
+      assertTrue(solePrinting.getFlavorText().isEmpty());
+      assertEquals(1, artists.size());
+      assertEquals("Nils Hamm", artists.first());
     }
 
     @DisplayName("Retrieve single card by flavor text parameters")
     @Test
-    public void flavorTextParameterSingleCard() {
+    public void flavorTextParameterSingleCard() throws SQLException {
+      // Should retrieve Gurmag Swiftwing from Khans of Tarkir
 
+      cardQuery.byFlavorText("falcon", SearchOption.MustInclude);
+      cardQuery.byFlavorText("bat", SearchOption.MustInclude);
+      cardQuery.byFlavorText("urdnan", SearchOption.MustInclude);
+
+      cardQueryResult = cardChannel.queryCards(cardQuery);
+      assertEquals(1, cardQueryResult.size());
+      Card soleResult = cardQueryResult.first();
+
+      // Check name
+      assertEquals("Gurmag Swiftwing", soleResult.getName());
+
+      // Check cmc
+      assertEquals(2, soleResult.getConvertedManaCost());
+
+      // Check mana cost
+      Map<String, Integer> expectedManaCost = new HashMap<>();
+      expectedManaCost.put("{1}", 1);
+      expectedManaCost.put("{B}", 1);
+      assertEquals(expectedManaCost, soleResult.getManaCost());
+
+      Set<String> colors = new HashSet<>();
+      colors.add("B");
+
+      // Check colors
+      assertEquals(colors, soleResult.getColors());
+
+      // Check color identity
+      assertEquals(colors, soleResult.getColorIdentity());
+
+      // Check text
+      String expectedText = "Flying, first strike, haste";
+      assertEquals(expectedText, soleResult.getText());
+
+      // Check supertypes
+      assertTrue(soleResult.getSupertypes().isEmpty());
+
+      // Check types
+      Set<String> types = new HashSet<>();
+      types.add("Creature");
+      assertEquals(types, soleResult.getTypes());
+
+      // Check subtypes
+      SortedSet<String> subtypes = new TreeSet<>();
+      subtypes.add("Bat");
+      assertEquals(subtypes, soleResult.getSubtypes());
+
+      // Check extra stats
+      Map<String, String> extraStats = new HashMap<>();
+      extraStats.put("power", "1");
+      extraStats.put("toughness", "2");
+      assertEquals(extraStats, soleResult.getExtraStats());
+
+      // Check relationship
+      assertFalse(soleResult.getRelationships().hasRelationship());
+
+      // Check card printings
+      SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
+      assertEquals(1, cardPrintings.size());
+
+      InformativeCardPrinting solePrinting = cardPrintings.first();
+      SortedSet<String> artists = solePrinting.getArtists();
+      assertEquals(soleResult.getName(), solePrinting.getCardName()); // Check name
+      assertEquals("Khans of Tarkir", solePrinting.getCardExpansion()); // Check expansion
+      assertEquals("74", solePrinting.getIdentifyingNumber()); // Check identifying number
+      assertEquals("uncommon", solePrinting.getRarity()); // Check rarity
+      assertEquals("\"Anything a falcon can do, a bat can do in pitch darkness.\" —Urdnan the Wanderer",
+          solePrinting.getFlavorText());
+      assertEquals(1, artists.size());
+      assertEquals("Jeff Simpson", artists.first());
     }
 
     @DisplayName("Retrieve single card by artist parameters")
@@ -698,10 +919,95 @@ public class CardRetrievalTest {
 
     }
 
-    @DisplayName("Retrieve single card by type parameters")
+    @DisplayName("Retrieve single card by subtype parameters")
     @Test
-    public void typeParameterSingleCard() {
+    public void subtypeParameterSingleCard() throws SQLException {
+      cardQuery.bySubtype("Archer", SearchOption.MustInclude);
+      cardQuery.bySubtype("Druid", SearchOption.MustInclude);
+      cardQuery.bySubtype("Centaur", SearchOption.MustInclude);
+      cardQuery.bySubtype("Scout", SearchOption.MustInclude);
 
+      cardQueryResult = cardChannel.queryCards(cardQuery);
+      assertEquals(1, cardQueryResult.size());
+      Card soleResult = cardQueryResult.first();
+
+      // Check name
+      assertEquals("Seton's Scout", soleResult.getName());
+
+      // Check cmc
+      assertEquals(2, soleResult.getConvertedManaCost());
+
+      // Check mana cost
+      Map<String, Integer> expectedManaCost = new HashMap<>();
+      expectedManaCost.put("{1}", 1);
+      expectedManaCost.put("{G}", 1);
+      assertEquals(expectedManaCost, soleResult.getManaCost());
+
+      Set<String> colors = new HashSet<>();
+      colors.add("G");
+
+      // Check colors
+      assertEquals(colors, soleResult.getColors());
+
+      // Check color identity
+      assertEquals(colors, soleResult.getColorIdentity());
+
+      // Check text
+      String expectedText = "Reach (This creature can block creatures with flying.)\n"
+          + "Threshold — Seton's Scout gets +2/+2 as long as seven or more cards are in your "
+          + "graveyard.";
+      assertEquals(expectedText, soleResult.getText());
+
+      // Check supertypes
+      assertTrue(soleResult.getSupertypes().isEmpty());
+
+      // Check types
+      Set<String> types = new HashSet<>();
+      types.add("Creature");
+      assertEquals(types, soleResult.getTypes());
+
+      // Check subtypes
+      SortedSet<String> subtypes = new TreeSet<>();
+      subtypes.add("Centaur");
+      subtypes.add("Archer");
+      subtypes.add("Scout");
+      subtypes.add("Druid");
+      assertEquals(subtypes, soleResult.getSubtypes());
+
+      // Check extra stats
+      Map<String, String> extraStats = new HashMap<>();
+      extraStats.put("power", "2");
+      extraStats.put("toughness", "1");
+      assertEquals(extraStats, soleResult.getExtraStats());
+
+      // Check relationship
+      assertFalse(soleResult.getRelationships().hasRelationship());
+
+      // Check card printings
+      SortedSet<InformativeCardPrinting> cardPrintings = soleResult.getCardPrintings();
+      assertEquals(2, cardPrintings.size());
+
+      Iterator<InformativeCardPrinting> cardPrintingIterator = cardPrintings.iterator();
+
+      InformativeCardPrinting firstPrinting = cardPrintingIterator.next();
+      SortedSet<String> artists = firstPrinting.getArtists();
+      assertEquals(soleResult.getName(), firstPrinting.getCardName()); // Check name
+      assertEquals("Torment", firstPrinting.getCardExpansion()); // Check expansion
+      assertEquals("138", firstPrinting.getIdentifyingNumber()); // Check identifying number
+      assertEquals("uncommon", firstPrinting.getRarity()); // Check rarity
+      assertTrue(firstPrinting.getFlavorText().isEmpty());
+      assertEquals(1, artists.size());
+      assertEquals("Mark Romanoski", artists.first());
+
+      InformativeCardPrinting secondPrinting = cardPrintingIterator.next();
+      artists = secondPrinting.getArtists();
+      assertEquals(soleResult.getName(), secondPrinting.getCardName()); // Check name
+      assertEquals("World Championship Decks 2002", secondPrinting.getCardExpansion()); // Check expansion
+      assertEquals("rl138", secondPrinting.getIdentifyingNumber()); // Check identifying number
+      assertEquals("uncommon", secondPrinting.getRarity()); // Check rarity
+      assertTrue(secondPrinting.getFlavorText().isEmpty());
+      assertEquals(1, artists.size());
+      assertEquals("Mark Romanoski", artists.first());
     }
 
     @DisplayName("Retrieve single card by set parameters")
