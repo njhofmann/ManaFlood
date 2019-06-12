@@ -1,3 +1,5 @@
+package equality;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;
@@ -117,19 +119,16 @@ public class DeckInstanceCreationTest {
     deckInstance = new DefaultDeckInstance(deckId, creation, categoryContents, cardQuantities);
 
     // Check card quantities
-    assertTrue(deckInstance.getCardQuantities().isEmpty());
-
-    // Check cards by category
-    assertTrue(deckInstance.getCardsByCategory().isEmpty());
+    assertTrue(deckInstance.getCardPrintingQuantities().isEmpty());
 
     // Check card printings
     assertTrue(deckInstance.getCardPrintings().isEmpty());
 
     // Check card categories
-    assertTrue(deckInstance.getCardsByCategory().isEmpty());
+    assertTrue(deckInstance.getCardNamesByCategory().isEmpty());
 
     // Check cards
-    assertTrue(deckInstance.getCards().isEmpty());
+    assertTrue(deckInstance.getCardNames().isEmpty());
 
     // Check card printing quantities
     assertTrue(deckInstance.getCardPrintingQuantities().isEmpty());
@@ -161,13 +160,13 @@ public class DeckInstanceCreationTest {
         cardPrintingQuantities);
 
     // Check card quantities
-    Map<String, Integer> cardQuantities = deckInstance.getCardQuantities();
+    Map<String, Integer> cardQuantities = deckInstance.getCardNameQuantities();
     assertEquals(1, cardQuantities.size());
     assertTrue(cardQuantities.containsKey(card));
     assertEquals(cardPrintingQuantity, cardQuantities.get(card));
 
     // Check cards by category
-    assertEquals(categoryContents, deckInstance.getCardsByCategory());
+    assertEquals(categoryContents, deckInstance.getCardNamesByCategory());
 
     // Check card printings
     SortedSet<CardPrinting> cardPrintings = deckInstance.getCardPrintings();
@@ -180,7 +179,7 @@ public class DeckInstanceCreationTest {
     assertTrue(categories.contains(category));
 
     // Check cardsInCategory
-    SortedSet<String> cards = deckInstance.getCards();
+    SortedSet<String> cards = deckInstance.getCardNames();
     assertEquals(1, cards.size());
     assertTrue(cards.contains(card));
 
@@ -220,13 +219,13 @@ public class DeckInstanceCreationTest {
         cardPrintingQuantities);
 
     // Check card quantities
-    Map<String, Integer> cardQuantities = deckInstance.getCardQuantities();
+    Map<String, Integer> cardQuantities = deckInstance.getCardNameQuantities();
     assertEquals(1, cardQuantities.size());
     assertTrue(cardQuantities.containsKey(card));
     assertEquals(cardPrintingAQuantity + cardPrintingBQuantity, cardQuantities.get(card));
 
     // Check cards by category
-    assertEquals(categoryContents, deckInstance.getCardsByCategory());
+    assertEquals(categoryContents, deckInstance.getCardNamesByCategory());
 
     // Check card printings
     SortedSet<CardPrinting> cardPrintings = deckInstance.getCardPrintings();
@@ -240,7 +239,7 @@ public class DeckInstanceCreationTest {
     assertTrue(categories.contains(category));
 
     // Check cardsInCategory
-    SortedSet<String> cards = deckInstance.getCards();
+    SortedSet<String> cards = deckInstance.getCardNames();
     assertEquals(1, cards.size());
     assertTrue(cards.contains(card));
 
@@ -282,7 +281,7 @@ public class DeckInstanceCreationTest {
         cardPrintingQuantities);
 
     // Check card quantities
-    Map<String, Integer> cardQuantities = deckInstance.getCardQuantities();
+    Map<String, Integer> cardQuantities = deckInstance.getCardNameQuantities();
     assertEquals(2, cardQuantities.size());
 
     assertTrue(cardQuantities.containsKey(cardA));
@@ -292,7 +291,7 @@ public class DeckInstanceCreationTest {
     assertEquals(cardBPrintingQuantity, cardQuantities.get(cardB));
 
     // Check cards by category
-    assertEquals(categoryContents, deckInstance.getCardsByCategory());
+    assertEquals(categoryContents, deckInstance.getCardNamesByCategory());
 
     // Check card printings
     SortedSet<CardPrinting> cardPrintings = deckInstance.getCardPrintings();
@@ -306,7 +305,7 @@ public class DeckInstanceCreationTest {
     assertTrue(categories.contains(category));
 
     // Check cards
-    SortedSet<String> cards = deckInstance.getCards();
+    SortedSet<String> cards = deckInstance.getCardNames();
     assertEquals(2, cards.size());
     assertTrue(cards.contains(cardA));
     assertTrue(cards.contains(cardB));
@@ -348,13 +347,13 @@ public class DeckInstanceCreationTest {
         cardPrintingQuantities);
 
     // Check card quantities
-    Map<String, Integer> cardQuantities = deckInstance.getCardQuantities();
+    Map<String, Integer> cardQuantities = deckInstance.getCardNameQuantities();
     assertEquals(1, cardQuantities.size());
     assertTrue(cardQuantities.containsKey(card));
     assertEquals(cardPrintingQuantity, cardQuantities.get(card));
 
     // Check cards by category, same as inserted mapping
-    assertEquals(categoryContents, deckInstance.getCardsByCategory());
+    assertEquals(categoryContents, deckInstance.getCardNamesByCategory());
 
     // Check card printings
     SortedSet<CardPrinting> cardPrintings = deckInstance.getCardPrintings();
@@ -368,7 +367,7 @@ public class DeckInstanceCreationTest {
     assertTrue(categories.contains(categoryB));
 
     // Check cards
-    SortedSet<String> cards = deckInstance.getCards();
+    SortedSet<String> cards = deckInstance.getCardNames();
     assertEquals(1, cards.size());
     assertTrue(cards.contains(card));
 
@@ -530,12 +529,14 @@ public class DeckInstanceCreationTest {
         cardPrintingQuantities);
 
     // Check card quantities
-    Map<String, Integer> cardQuantities = deckInstance.getCardQuantities();
+    Map<String, Integer> cardQuantities = deckInstance.getCardNameQuantities();
     assertEquals(12, cardQuantities.size());
+    assertTrue(cardQuantities.containsKey(desecrationDemonCard));
+    assertEquals(4, cardQuantities.get(desecrationDemonCard));
     // ToDo check card quantities
 
     // Check cards by category, same as inserted mapping
-    assertEquals(categoryContents, deckInstance.getCardsByCategory());
+    assertEquals(categoryContents, deckInstance.getCardNamesByCategory());
 
     // Check card printings
     SortedSet<CardPrinting> cardPrintings = deckInstance.getCardPrintings();
@@ -569,7 +570,7 @@ public class DeckInstanceCreationTest {
     assertTrue(categories.contains(cardAdvantageCategory));
 
     // Check cards
-    SortedSet<String> cards = deckInstance.getCards();
+    SortedSet<String> cards = deckInstance.getCardNames();
     assertEquals(12, cards.size());
     assertTrue(cards.contains(desecrationDemonCard));
     assertTrue(cards.contains(grayMerchantCard));

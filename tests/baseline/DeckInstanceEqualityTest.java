@@ -152,4 +152,10 @@ public class DeckInstanceEqualityTest {
     assertTrue(deckInstanceA.compareTo(deckInstanceC) < 0);
     assertTrue(deckInstanceC.compareTo(deckInstanceA) > 0);
   }
+
+  @DisplayName("Retrieve an informative deck instance, check that they are equal.")
+  @Test
+  public void retrieveInformativeDeckInstance() {
+
+  }
 }

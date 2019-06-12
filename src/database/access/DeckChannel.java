@@ -6,6 +6,9 @@ import java.util.Map;
 import value_objects.deck.Deck;
 import value_objects.deck.instance.DeckInstance;
 import value_objects.deck.instance.InformativeDeckInstance;
+import value_objects.card.Card;
+import value_objects.card.printing.InformativeCardPrinting;
+import value_objects.card.printing.CardPrinting;
 
 /**
  * Represents the set of methods available for interacting with the decks stored in the Card &
@@ -79,9 +82,11 @@ public interface DeckChannel {
   void updateDeckDesp(int deckID, String newDesp) throws IllegalArgumentException, SQLException;
 
   /**
-   *
-   * @param deckInstance
-   * @return
+   * Retrieves specific information about Cards and {@link CardPrinting}s in the given
+   * {@link DeckInstance} in the form of a {@link InformativeDeckInstance}, which contains
+   * {@link Card}s for each Card and {@link InformativeCardPrinting} for each CardPrinting.
+   * @param deckInstance DeckInstance to retrieve info on
+   * @return a InformativeDeckInstance of the given DeckInstance
    */
   InformativeDeckInstance getDeckInstanceInfo(DeckInstance deckInstance) throws SQLException;
 }

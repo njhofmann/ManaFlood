@@ -32,7 +32,7 @@ public interface DeckInstance extends Comparable<DeckInstance> {
    * @return uncategorized list of the cards in the {@link DeckInstance} with their associated
    *         quantity
    */
-  Map<String, Integer> getCardQuantities();
+  Map<String, Integer> getCardNameQuantities();
 
   /**
    * Returns a categorized hashmap of the cards (by name) that are apart of this
@@ -40,7 +40,7 @@ public interface DeckInstance extends Comparable<DeckInstance> {
    * apart of that category.
    * @return uncategorized list of cards (by name)
    */
-  Map<String, SortedSet<String>> getCardsByCategory();
+  Map<String, SortedSet<String>> getCardNamesByCategory();
 
   /**
    * Returns set of {@link CardPrinting} in this {@link DeckInstance}
@@ -58,7 +58,7 @@ public interface DeckInstance extends Comparable<DeckInstance> {
    * Returns set of card names that are in this {@link DeckInstance}
    * @return set of cards in this instance
    */
-  SortedSet<String> getCards();
+  SortedSet<String> getCardNames();
 
   /**
    * Returns mapping of specific card printings that are apart of this {@link DeckInstance}, to the
@@ -67,9 +67,21 @@ public interface DeckInstance extends Comparable<DeckInstance> {
    */
   Map<CardPrinting, Integer> getCardPrintingQuantities();
 
+  /**
+   * If given object is also an instance of {@link DeckInstance} or {@link InformativeDeckInstance},
+   * returns true given object and this object have the same parent deck and same creation time,
+   * else return false,
+   * @param other other object to test for equality with
+   * @return if given object is the same as this object
+   */
   @Override
   boolean equals(Object other);
 
+  /**
+   * Overrides the hashcode of this {@link InformativeDeckInstance} to be based off of its parent deck ID and
+   * creation time.
+   * @return overriden hashcode of this object
+   */
   @Override
   int hashCode();
 

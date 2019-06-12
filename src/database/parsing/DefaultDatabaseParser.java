@@ -59,7 +59,6 @@ public class DefaultDatabaseParser extends DatabasePort implements DatabaseParse
     super(pathToDatabase, initalizationPath);
   }
 
-
   /**
    * Given a {@link Path} to a JSON file of one or more MTG sets from MTGJSON, attempts to create
    * a {@link JSONObject} from that file.

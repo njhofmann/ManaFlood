@@ -1,3 +1,5 @@
+package equality;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import database.access.DeckChannel;
@@ -391,11 +393,11 @@ public class DeckCreationTest {
     assertEquals(1, newDeckHistory.size());
     assertEquals(deckInstance, newDeckInstance);
     assertEquals(deckInstance.hashCode(), newDeckInstance.hashCode());
-    assertEquals(deckInstance.getCardsByCategory(), newDeckInstance.getCardsByCategory());
-    assertEquals(deckInstance.getCards(), newDeckInstance.getCards());
+    assertEquals(deckInstance.getCardNamesByCategory(), newDeckInstance.getCardNamesByCategory());
+    assertEquals(deckInstance.getCardNames(), newDeckInstance.getCardNames());
     assertEquals(deckInstance.getCardPrintings(), newDeckInstance.getCardPrintings());
     assertEquals(deckInstance.getCardPrintingQuantities(), newDeckInstance.getCardPrintingQuantities());
-    assertEquals(deckInstance.getCardQuantities(), newDeckInstance.getCardQuantities());
+    assertEquals(deckInstance.getCardNameQuantities(), newDeckInstance.getCardNameQuantities());
 
     assertEquals(oldDeck.getHistory(), newDeck.getHistory());
 

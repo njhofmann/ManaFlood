@@ -1,3 +1,5 @@
+package equality;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import database.access.CardChannel;
@@ -672,5 +674,40 @@ public class CardRetrievalTest {
   @DisplayName("Card query specific tests")
   class CardQuerySpecificTests {
 
+    @DisplayName("Retrieve single card by name parameters")
+    @Test
+    public void nameParameterSingleCard() {
+
+    }
+
+    @DisplayName("Retrieve single card by text parameters")
+    @Test
+    public void textParameterSingleCard() {
+
+    }
+
+    @DisplayName("Retrieve single card by flavor text parameters")
+    @Test
+    public void flavorTextParameterSingleCard() {
+
+    }
+
+    @DisplayName("Retrieve single card by artist parameters")
+    @Test
+    public void artistParameterSingleCard() {
+
+    }
+
+    @DisplayName("Retrieve single card by type parameters")
+    @Test
+    public void typeParameterSingleCard() {
+
+    }
+
+    @DisplayName("Retrieve single card by set parameters")
+    @Test
+    public void setParametersSingleCard() {
+
+    }
   }
 }

@@ -1,6 +1,9 @@
+package equality;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import database.access.CardChannel;
+import database.access.DeckChannel;
 import database.access.DefaultDatabaseChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,12 +29,14 @@ class CardQueryTest {
 
   public static CardQuery cardQuery;
   public static CardChannel cardChannel;
+  public static DeckChannel deckChannel;
 
   @BeforeAll
   public static void init() throws SQLException {
     Path pathToDatabase = Paths.get("tests\\test_cddb.db").toAbsolutePath();
     DefaultDatabaseChannel defaultChannel = new DefaultDatabaseChannel(pathToDatabase);
     cardChannel = defaultChannel;
+    deckChannel = defaultChannel;
     cardQuery = defaultChannel.getQuery();
   }
 
@@ -700,9 +705,15 @@ class CardQueryTest {
 
     }
 
-    @DisplayName("Disallow multiple artist parameters")
+    @DisplayName("One of single artist parameters")
     @Test
-    public void disallowMultipleArtist() {
+    public void oneOfSingleArtist() {
+
+    }
+
+    @DisplayName("One of multiple artist parameters")
+    @Test
+    public void oneOfMultipleArtist() {
 
     }
 
@@ -764,6 +775,18 @@ class CardQueryTest {
 
     }
 
+    @DisplayName("One of single flavor text parameter")
+    @Test
+    public void oneOfSingleFlavorText() {
+
+    }
+
+    @DisplayName("One of multiple flavor text parameters")
+    @Test
+    public void oneOfMultipleFlavorText() {
+
+    }
+
     @DisplayName("Mixed multiple flavor text parameters")
     @Test
     public void mixedMultipleFlavorText() {
@@ -809,9 +832,15 @@ class CardQueryTest {
 
     }
 
-    @DisplayName("Disallow multiple rarity parameters")
+    @DisplayName("One of single rarity parameters")
     @Test
-    public void disallowMultipleRarity() {
+    public void oneOfSingleRarity() {
+
+    }
+
+    @DisplayName("One of multiple rarity parameters")
+    @Test
+    public void oneOfMultipleRarity() {
 
     }
 
@@ -937,17 +966,207 @@ class CardQueryTest {
       });
     }
 
-    @DisplayName("Single stat parameter for each stat, comparison, and stat combination")
+    @DisplayName("Throws null if same stat")
     @Test
-    public void singleStatComparisonStat() {
+    public void sameStat() {
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStatVersusStat(Stat.CMC, Comparison.UNEQUAL, Stat.CMC);
+      });
 
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStatVersusStat(Stat.POWER, Comparison.UNEQUAL, Stat.POWER);
+      });
+
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStatVersusStat(Stat.TOUGHNESS, Comparison.UNEQUAL, Stat.TOUGHNESS);
+      });
+
+      assertThrows(IllegalArgumentException.class, () -> {
+        cardQuery.byStatVersusStat(Stat.POWER, Comparison.UNEQUAL, Stat.POWER);
+      });
     }
 
+    @DisplayName("Power stat vs toughness stat")
+    @Test
+    public void powerVsToughness() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM PowerToughness t0 JOIN PowerToughness t1 "
+          + "ON t0.card_name = t1.card_name WHERE t0.power_value %s t1.toughness_value)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.POWER, comparison, Stat.TOUGHNESS);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("Toughness stat vs power stat")
+    @Test
+    public void toughnessVsPower() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM PowerToughness t0 JOIN PowerToughness t1 "
+          + "ON t0.card_name = t1.card_name WHERE t0.toughness_value %s t1.power_value)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.TOUGHNESS, comparison, Stat.POWER);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("Power stat vs CMC stat")
+    @Test
+    public void powerVsCMC() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM PowerToughness t0 JOIN Card t1 "
+          + "ON t0.card_name = t1.name WHERE t0.power_value %s t1.cmc)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.POWER, comparison, Stat.CMC);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("CMC stat vs Power stat")
+    @Test
+    public void cmcVsPower() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.name FROM Card t0 JOIN PowerToughness t1 "
+          + "ON t0.name = t1.card_name WHERE t0.cmc %s t1.power_value)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.CMC, comparison, Stat.POWER);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("Power stat vs loyalty stat")
+    @Test
+    public void powerVsLoyalty() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM PowerToughness t0 JOIN Loyalty t1 "
+          + "ON t0.card_name = t1.card_name WHERE t0.power_value %s t1.loyalty_value)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.POWER, comparison, Stat.LOYALTY);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("Power stat vs loyalty stat")
+    @Test
+    public void loyaltyVsPower() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM Loyalty t0 JOIN PowerToughness t1 "
+          + "ON t0.card_name = t1.card_name WHERE t0.loyalty_value %s t1.power_value)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.LOYALTY, comparison, Stat.POWER);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("CMC stat vs loyalty stat")
+    @Test
+    public void cmcVsLoyalty() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.name FROM Card t0 JOIN Loyalty t1 "
+          + "ON t0.name = t1.card_name WHERE t0.cmc %s t1.loyalty_value)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.CMC, comparison, Stat.LOYALTY);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("Loyalty stat vs CMC stat")
+    @Test
+    public void loyaltyVsCMC() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM Loyalty t0 JOIN Card t1 "
+          + "ON t0.card_name = t1.name WHERE t0.loyalty_value %s t1.cmc)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.LOYALTY, comparison, Stat.CMC);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("Toughness stat vs CMC stat")
+    @Test
+    public void toughnessVsCMC() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM PowerToughness t0 JOIN Card t1 "
+          + "ON t0.card_name = t1.name WHERE t0.toughness_value %s t1.cmc)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.TOUGHNESS, comparison, Stat.CMC);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("CMC stat vs toughness stat")
+    @Test
+    public void cmcVsToughness() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.name FROM Card t0 JOIN PowerToughness t1 "
+          + "ON t0.name = t1.card_name WHERE t0.cmc %s t1.toughness_value)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.CMC, comparison, Stat.TOUGHNESS);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("Loyalty stat vs toughness stat")
+    @Test
+    public void loyaltyVsToughness() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.name FROM Card t0 JOIN PowerToughness t1 "
+          + "ON t0.name = t1.card_name WHERE t0.cmc %s t1.toughness_value)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.CMC, comparison, Stat.TOUGHNESS);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
+
+    @DisplayName("Toughness stat vs loyalty Stat")
+    @Test
+    public void toughnessVsLoyalty() {
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM PowerToughness t0 JOIN Loyalty t1 "
+          + "ON t0.card_name = t1.card_name WHERE t0.toughness_value %s t1.loyalty_value)";
+      for (Comparison comparison : Comparison.values()) {
+        cardQuery.byStatVersusStat(Stat.TOUGHNESS, comparison, Stat.LOYALTY);
+        String formattedResult = String.format(result, comparison.getValue());
+        assertEquals(formattedResult, cardQuery.asQuery());
+        cardQuery.clear();
+      }
+    }
 
     @DisplayName("Mixed multiple stat versus stat parameters")
     @Test
     public void mixedMultipleStatVersusStat() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM PowerToughness t0 "
+          + "JOIN PowerToughness t1 ON t0.card_name = t1.card_name "
+          + "JOIN PowerToughness t2 ON t0.card_name = t2.card_name "
+          + "JOIN Card t3 ON t0.card_name = t3.name "
+          + "WHERE t0.power_value >= t1.toughness_value "
+          + "AND t2.toughness_value = t3.cmc)";
+      cardQuery.byStatVersusStat(Stat.POWER, Comparison.GREATER_EQUAL, Stat.TOUGHNESS);
+      cardQuery.byStatVersusStat(Stat.TOUGHNESS, Comparison.EQUAL, Stat.CMC);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 
@@ -974,13 +1193,34 @@ class CardQueryTest {
     @DisplayName("Single mana type parameter for each type of mana type and comparison")
     @Test
     public void includeSingleManaType() throws SQLException {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM Mana t0 "
+          + "WHERE t0.mana_type = '%s' AND t0.quantity %s %d)";
+      Random random = new Random();
+      int bound = 20;
+      SortedSet<String> manaTypes = cardChannel.getManaTypes();
+      for (String manaType : manaTypes) {
+        for (Comparison comparison : Comparison.values()) {
+          int nextRandom = random.nextInt(bound);
+          String formattedResult = String.format(result, manaType, comparison.getValue(), nextRandom);
+          cardQuery.byManaType(manaType, comparison, nextRandom);
+          assertEquals(formattedResult, cardQuery.asQuery());
+          cardQuery.clear();
+        }
+      }
     }
 
     @DisplayName("Mixed multiple mana type parameters")
     @Test
     public void mixedMultipleManaType() {
-
+      String result = "SELECT card_name, expansion, number FROM CardExpansion "
+          + "WHERE card_name IN (SELECT t0.card_name FROM Mana t0 "
+          + "JOIN Mana t1 ON t0.card_name = t1.card_name "
+          + "WHERE t0.mana_type = '{R}' AND t0.quantity = 2"
+          + " AND t1.mana_type = '{1}' AND t1.quantity > 1)";
+      cardQuery.byManaType("{R}", Comparison.EQUAL, 2);
+      cardQuery.byManaType("{1}", Comparison.GREATER, 1);
+      assertEquals(result, cardQuery.asQuery());
     }
   }
 

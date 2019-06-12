@@ -1,5 +1,6 @@
 -Finish card query tests
 -Mock deck for testing into separate class
+-Make informative deck instance an extension of deck instance
 -Equality for deck instances and informative deck instances
 -Interface equals, hashcode, and compare documentation
 -More testing - card retrieval, informative deck instances

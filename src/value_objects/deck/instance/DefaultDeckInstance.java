@@ -19,7 +19,7 @@ import value_objects.card.printing.CardPrinting;
 public class DefaultDeckInstance implements DeckInstance {
 
   /**
-   * Unique ID of the {@link Deck} this {@link DeckInstance}
+   * Unique ID of the {@link Deck} this {@link DeckInstance} is associated with
    */
   private final int parentDeckID;
 
@@ -29,17 +29,17 @@ public class DefaultDeckInstance implements DeckInstance {
   private final LocalDateTime creation;
 
   /**
-   * The set of cards that make up this DeckInstance, without quantities.
+   * The set of card names that make up this {@link DeckInstance}, without quantities.
    */
   private final SortedSet<String> cards;
 
   /**
-   * Mapping of categories in this DeckInstance to the cards that are apart of them.
+   * Mapping of categories in this {@link DeckInstance} to the cards names that are apart of them.
    */
   private final Map<String, SortedSet<String>> categoryContents;
 
   /**
-   * Mapping of specific card printings to their quantities in this deck instance.
+   * Mapping of specific {@link CardPrinting}s to their quantities in this {@link DeckInstance}.
    */
   private final Map<CardPrinting, Integer> cardPrintingQuantities;
 
@@ -112,7 +112,7 @@ public class DefaultDeckInstance implements DeckInstance {
   }
 
   @Override
-  public Map<String, Integer> getCardQuantities() {
+  public Map<String, Integer> getCardNameQuantities() {
     Map<String, Integer> toReturn = new HashMap<>();
     for (CardPrinting cardPrinting : cardPrintingQuantities.keySet()) {
       String cardName = cardPrinting.getCardName();
@@ -128,7 +128,7 @@ public class DefaultDeckInstance implements DeckInstance {
   }
 
   @Override
-  public Map<String, SortedSet<String>> getCardsByCategory() {
+  public Map<String, SortedSet<String>> getCardNamesByCategory() {
     return categoryContents;
   }
 
@@ -143,7 +143,7 @@ public class DefaultDeckInstance implements DeckInstance {
   }
 
   @Override
-  public SortedSet<String> getCards() {
+  public SortedSet<String> getCardNames() {
     return Collections.unmodifiableSortedSet(cards);
   }
 
@@ -157,6 +157,12 @@ public class DefaultDeckInstance implements DeckInstance {
     if (other == null) {
       throw new IllegalArgumentException("Given deck instance can't be null!");
     }
+
+    int otherId = other.getParentDeckID();
+    if (parentDeckID != otherId) {
+      return parentDeckID - otherId;
+    }
+
     return this.getCreationInfo().compareTo(other.getCreationInfo());
   }
 
