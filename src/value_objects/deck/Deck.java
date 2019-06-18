@@ -50,10 +50,17 @@ public interface Deck extends Comparable<Deck> {
 
   /**
    * Returns if given object is equal to this {@link Deck} if and only if it is a Deck itself, has
-   * the same id as this card, and the same deck instances as this Deck
+   * the same id as this card, and the same {@link DeckInstance} as this Deck
    * @param other object to compare to
    * @return if this given object equals this Deck
    */
   @Override
   boolean equals(Object other);
+
+  /**
+   * Returns the hashCode of this {@link Deck} based on its ID and {@link DeckInstance}s.
+   * @return hashcode of this Deck
+   */
+  @Override
+  int hashCode();
 }

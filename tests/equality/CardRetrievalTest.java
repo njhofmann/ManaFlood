@@ -2,7 +2,7 @@ package equality;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import database.access.CardChannel;
+import database.access.DatabaseChannel;
 import database.access.DefaultDatabaseChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,7 +39,7 @@ import value_objects.card.relationship.DefaultCardRelationship;
  */
 public class CardRetrievalTest {
 
-  static CardChannel cardChannel;
+  static DatabaseChannel cardChannel;
   static CardQuery cardQuery;
   static SortedSet<Card> cardQueryResult;
 

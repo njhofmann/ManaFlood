@@ -10,7 +10,7 @@ import value_objects.utility.Pair;
 /**
  * Takes in card, deck, and other info from the Card and Deck Database(CDDB) to display to a user,
  * and returns any information queries and deck updates the user wishes to make to the CDDB.
- * (CDDB)
+ * (CDDB).
  */
 public interface DatabaseView {
 
@@ -36,6 +36,13 @@ public interface DatabaseView {
    * @throws IllegalArgumentException if given set of Cards is null or empty
    */
   void acceptCards(SortedSet<Card> cards);
+
+  /**
+   * Takes in a {@link Deck} to display to the user.
+   * @param deck Deck to display
+   * @throws IllegalArgumentException if given Deck is null
+   */
+  void acceptDeck(Deck deck);
 
   /**
    * Returns the integer ID of a {@link Deck} the user wishes to retrieve info about from the CDDB

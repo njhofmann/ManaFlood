@@ -30,7 +30,6 @@ public interface CardRelationship {
    */
   String getRelationship();
 
-
   /**
    * Returns if the given object is equal to this {@link CardRelationship}. Given object must be
    * a CardRelationship itself, have the same set of cards making up its relationship, and have

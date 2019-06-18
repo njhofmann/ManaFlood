@@ -2,9 +2,9 @@ package value_objects.card;
 
 import java.util.SortedSet;
 import value_objects.card.relationship.CardRelationship;
-
 import java.util.Map;
 import value_objects.card.printing.InformativeCardPrinting;
+import value_objects.card.printing.CardPrinting;
 
 /**
  * Represents all info of an individual card in the Card and Deck Database (CDDB). Uniqueness is
@@ -115,4 +115,12 @@ public interface Card extends Comparable<Card> {
    */
   @Override
   boolean equals(Object other);
+
+  /**
+   * Returns the hashcode of this {@link Card} as a hashing based off of its name and associated
+   * {@link CardPrinting}s.
+   * @return hashcode of this Card
+   */
+  @Override
+  int hashCode();
 }

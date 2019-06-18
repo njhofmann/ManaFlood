@@ -2,8 +2,7 @@ package equality;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import database.access.CardChannel;
-import database.access.DeckChannel;
+import database.access.DatabaseChannel;
 import database.access.DefaultDatabaseChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,16 +27,13 @@ import value_objects.card.query.Stat;
 class CardQueryTest {
 
   public static CardQuery cardQuery;
-  public static CardChannel cardChannel;
-  public static DeckChannel deckChannel;
+  public static DatabaseChannel deckChannel;
 
   @BeforeAll
   public static void init() throws SQLException {
     Path pathToDatabase = Paths.get("tests\\test_cddb.db").toAbsolutePath();
-    DefaultDatabaseChannel defaultChannel = new DefaultDatabaseChannel(pathToDatabase);
-    cardChannel = defaultChannel;
-    deckChannel = defaultChannel;
-    cardQuery = defaultChannel.getQuery();
+    deckChannel = new DefaultDatabaseChannel(pathToDatabase);
+    cardQuery = deckChannel.getQuery();
   }
 
   @AfterEach
@@ -1198,7 +1194,7 @@ class CardQueryTest {
           + "WHERE t0.mana_type = '%s' AND t0.quantity %s %d)";
       Random random = new Random();
       int bound = 20;
-      SortedSet<String> manaTypes = cardChannel.getManaTypes();
+      SortedSet<String> manaTypes = deckChannel.getManaTypes();
       for (String manaType : manaTypes) {
         for (Comparison comparison : Comparison.values()) {
           int nextRandom = random.nextInt(bound);

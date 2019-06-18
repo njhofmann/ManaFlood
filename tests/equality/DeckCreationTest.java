@@ -2,7 +2,7 @@ package equality;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import database.access.DeckChannel;
+import database.access.DatabaseChannel;
 import database.access.DefaultDatabaseChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,7 +30,7 @@ import value_objects.deck.instance.DefaultDeckInstance;
  */
 public class DeckCreationTest {
 
-  static DeckChannel deckChannel;
+  static DatabaseChannel deckChannel;
   static Deck oldDeck;
   static Deck newDeck;
   static DeckInstance deckInstance;

@@ -43,8 +43,7 @@ import value_objects.utility.Triple;
  * Default class to use to access the Card and Deck Database (CDDB) for querying cards and reading,
  * updating, and deleting decks. In addition to accessing enumerated info about card types.
  */
-public class DefaultDatabaseChannel extends DatabasePort implements DeckChannel,
-    CardChannel {
+public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChannel {
 
   /**
    * Sorted set of all the card supertypes stored in the CDDB.

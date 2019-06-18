@@ -3,7 +3,7 @@ package value_objects.utility;
 import java.util.Objects;
 
 /**
- * Generic container to contain two objects of any two type.
+ * Generic container to contain two objects of any two types.
  */
 public class Pair<A, B> {
 

@@ -2,7 +2,7 @@ package baseline;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import database.access.CardChannel;
+import database.access.DatabaseChannel;
 import database.access.DefaultDatabaseChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,7 +25,7 @@ import value_objects.card.query.Stat;
 public class CardEqualityTest {
 
   static CardQuery cardQuery;
-  static CardChannel cardChannel;
+  static DatabaseChannel cardChannel;
   Card cardA;
   Card cardB;
   Card cardC;

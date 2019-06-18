@@ -170,15 +170,15 @@ public interface CardQuery {
   void byManaType(String type, Comparison comparison, int quantity) throws IllegalArgumentException;
 
   /**
-   * Returns this {@link CardQuery} as a string for for actual seaching in the CDDB, as
+   * Returns this {@link CardQuery} as a string for for actual querying in the CDDB, as
    * determined by the parameters included so far. If no parameters have been entered, searches
-   * for all cards.
+   * for all Cards ever printed.
    * @return this query as a string query
    */
   String asQuery();
 
   /**
-   * Reset the CardQuery of all entered parameters.
+   * Resets this {@link CardQuery} of all entered parameters.
    */
   void clear();
 }
