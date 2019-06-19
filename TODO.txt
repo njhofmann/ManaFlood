@@ -2,6 +2,9 @@
 -Mock deck for testing into separate class
 -Equality for deck instances and informative deck instances
 -How to do errors in controller
+-Get rid of clear method in CardQuery
+-Update to sorted map
+-Close database method?
 -More testing - card retrieval, informative deck instances
 -Documentation clean up and adding
 

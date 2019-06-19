@@ -158,7 +158,7 @@ public interface DatabaseChannel {
    *        {@link DeckInstance} is null
    * @throws SQLException if there is a failure to update the CDDB
    */
-  void updateDeck(DeckInstance deck) throws IllegalArgumentException, SQLException;
+  void addDeckInstance(DeckInstance deck) throws IllegalArgumentException, SQLException;
 
   /**
    * Deletes the {@link Deck} in the CDDB with the given {@param deckID}.

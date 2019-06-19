@@ -304,12 +304,12 @@ public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChan
 
     SortedSet<DeckInstance> history = deck.getHistory();
     for (DeckInstance deckInstance : history) {
-      updateDeck(deckInstance);
+      addDeckInstance(deckInstance);
     }
   }
 
   @Override
-  public void updateDeck(DeckInstance deck) throws IllegalArgumentException, SQLException {
+  public void addDeckInstance(DeckInstance deck) throws IllegalArgumentException, SQLException {
     if (deck == null) {
       throw new IllegalArgumentException("Given deck instance can't be null!");
     }
