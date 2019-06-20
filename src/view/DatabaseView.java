@@ -1,7 +1,9 @@
 package view;
 
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.SortedSet;
+import relay.DatabaseViewConnection;
 import value_objects.card.Card;
 import value_objects.card.query.CardQuery;
 import value_objects.deck.Deck;
@@ -14,6 +16,17 @@ import value_objects.utility.Pair;
  * (CDDB).
  */
 public interface DatabaseView {
+
+  /**
+   * Accepts a mapping of {@link DatabaseViewConnection} to {@link Runnable}s for this
+   * {@link DatabaseView} to utilize in the form of supported behaviors (interactions between
+   * the CDDB and a user display that must be supported). A mapping of the type of behavior to the
+   * behavior that will actually be executed when needed.
+   * @param relayRunnables mapping to accept
+   * @throws IllegalArgumentException if given mapping is null, any key or value is null, or not
+   * every DatabaseViewConnection is included in the mapping
+   */
+  void acceptRelayRunnables(EnumMap<DatabaseViewConnection, Runnable> relayRunnables);
 
   /**
    * Accepts a mapping of all {@link Deck} IDs and their associated names currently in the CDDB.
