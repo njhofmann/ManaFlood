@@ -21,4 +21,6 @@ Tests
 -Baseline class tests: constructor, equality, compare to, and hashcode (Deck, Informative card printings and informative deck instances tests)
 -Deck creation and retrieval, with informative deck instance
 -Card querying and card retrieval (does card query retrieve desired cards, does card have correct info)
--
+-Controller testing  with mock view
+-Terminal view testing
+-GUI view testing

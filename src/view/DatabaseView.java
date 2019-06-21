@@ -56,7 +56,7 @@ public interface DatabaseView {
    * meet the parameters entered into the CardQuery from the CDDB
    * @return CardQuery the user has interacted with
    * @throws IllegalStateException if this {@link DatabaseView} hasn't been given a CardQuery to
-   * work with
+   * work with yet
    */
   CardQuery getCardQuery() throws IllegalStateException;
 
