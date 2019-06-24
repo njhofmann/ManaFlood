@@ -67,4 +67,10 @@ public class TerminalView extends BaseView implements DatabaseView {
   public Pair<Integer, String> newDeckDesp() throws IllegalStateException {
     return null;
   }
+
+  @Override
+  public void start() {
+
+  }
+
 }

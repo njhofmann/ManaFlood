@@ -20,7 +20,7 @@ import value_objects.card.Card;
  * display given to a user in the form of a {@link DatabaseView}. In addition, assigns
  * {@link EventHandler}s to give to the given DatabaseView.
  */
-public class DefaultChannelViewRelay {
+public class DefaultChannelViewRelay implements ChannelViewRelay {
 
   /**
    * The {@link DatabaseChannel} this controller uses to interact with the CDDB.
@@ -147,6 +147,11 @@ public class DefaultChannelViewRelay {
       error.setContentText(e.getMessage());
       error.show();
     }
+  }
+
+  @Override
+  public void start() {
+    databaseView.start();
   }
 
   /**

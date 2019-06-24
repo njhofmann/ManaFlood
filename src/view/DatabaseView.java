@@ -116,4 +116,9 @@ public interface DatabaseView {
    * @throws IllegalStateException if no Deck has been selected to have its name updated
    */
   Pair<Integer, String> newDeckDesp() throws IllegalStateException;
+
+  /**
+   * Starts displaying this {@link DatabaseView}.
+   */
+  void start();
 }
