@@ -21,7 +21,9 @@ public interface DatabaseView {
    * Accepts a mapping of {@link DatabaseViewConnection} to {@link Runnable}s for this
    * {@link DatabaseView} to utilize in the form of supported behaviors (interactions between
    * the CDDB and a user display that must be supported). A mapping of the type of behavior to the
-   * behavior that will actually be executed when needed.
+   * behavior that will actually be executed when needed. This method should be called before any
+   * other method to ensure that need connections have been established with the CDDB, else other
+   * methods will throw a {@link IllegalStateException}.
    * @param relayRunnables mapping to accept
    * @throws IllegalArgumentException if given mapping is null, any key or value is null, or not
    * every DatabaseViewConnection is included in the mapping
@@ -30,19 +32,10 @@ public interface DatabaseView {
 
   /**
    * Accepts a mapping of all {@link Deck} IDs and their associated names currently in the CDDB.
-   * @param deckInfo
+   * @param  deckInfo
    * @throws IllegalArgumentException if the given mapping is null
    */
   void acceptAvailableDecksInfo(Map<Integer, String> deckInfo) throws IllegalArgumentException;
-
-  /**
-   * Takes in some sorted set of information to display to the user. Such as supported types,
-   * rarities, expansions, etc. in the CDDB.
-   * @param infoType type of info being displayed
-   * @param info info to display
-   * @throws IllegalArgumentException if any param is null or if info is empty
-   */
-  void acceptInfo(String infoType, SortedSet<String> info) throws IllegalArgumentException;
 
   /**
    * Takes in a {@link CardQuery} to use for card searching in this {@link DatabaseView}.

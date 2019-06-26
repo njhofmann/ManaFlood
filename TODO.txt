@@ -1,3 +1,4 @@
+-Move search options to card query from database
 -Finish card query tests
 -Mock deck for testing into separate class
 -Equality for deck instances and informative deck instances

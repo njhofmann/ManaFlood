@@ -1,5 +1,7 @@
 package value_objects.card.query;
 
+import java.sql.SQLException;
+import java.util.SortedSet;
 import value_objects.card.Card;
 
 /**
@@ -8,6 +10,86 @@ import value_objects.card.Card;
  * {@link CardQuery#asQuery()} to the full query.
  */
 public interface CardQuery {
+
+  /**
+   * Returns a unmodifiable sorted set of all the card supertypes that can be used for querying.
+   * @return unmodifiable sorted set of all the card types
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getAvailableSupertypes() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all the card types that can be used for querying.
+   * @return unmodifiable sorted set of all the card types
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getAvailableTypes() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all the card subtypes held in the CDDB.
+   * @return unmodifiable sorted set of all the card types
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getAvailableSubtypes() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all the card rarity types held in the CDDB.
+   * @return unmodifiable sorted set of all the card rarity types
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getAvailableRarityTypes() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all colors held in the CDDB.
+   * @return unmodifiable sorted set of all the three faced card types
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getAvailableColors() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all the card mana types held in the CDDB.
+   * @return unmodifiable sorted set of all the card mana types
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getAvailableManaTypes() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all the multifaced card types held in the CDDB.
+   * @return unmodifiable sorted set of all the two faced card types
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getAvailableMultifacedTypes() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all the blocks held in the CDDB.
+   * @return unmodifiable sorted set of all the two faced card types
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getAvailableBlocks() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all the artists held in the CDDB.
+   * @return unmodifiable sorted set of all artists
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getAvailableArtists() throws SQLException;
+
+  /**
+   * Returns a unmodifiable sorted set of all expansions (full name) that are held in the CDDB.
+   * @return unmodifiable sorted set of all expansion names
+   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
+   * failure to query from the database
+   */
+  SortedSet<String> getAvailableSets() throws SQLException;
 
   /**
    * Add parameter to search for cards with given word in their name, not in their name, or one

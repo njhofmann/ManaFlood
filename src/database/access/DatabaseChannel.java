@@ -21,8 +21,9 @@ public interface DatabaseChannel {
   /**
    * Returns a {@link CardQuery} object to use for querying specific cards from the CDDB.
    * @return CardQuery object
+   * @throws SQLException if there is a failure in creating the CardQuery
    */
-  CardQuery getQuery();
+  CardQuery getQuery() throws SQLException;
 
   /**
    * Returns a list of {@link Card} s from the CDDB that match the parameters given by the inputted
@@ -33,86 +34,6 @@ public interface DatabaseChannel {
    * @throws SQLException if there is a failure to query card info from the CDDB
    */
   SortedSet<Card> queryCards(CardQuery cardQuery) throws IllegalArgumentException, SQLException;
-
-  /**
-   * Returns a unmodifiable sorted set of all the card supertypes held in the CDDB.
-   * @return unmodifiable sorted set of all the card types
-   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
-   * failure to query from the database
-   */
-  SortedSet<String> getSupertypes() throws SQLException;
-
-  /**
-   * Returns a unmodifiable sorted set of all the card types held in the CDDB.
-   * @return unmodifiable sorted set of all the card types
-   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
-   * failure to query from the database
-   */
-  SortedSet<String> getTypes() throws SQLException;
-
-  /**
-   * Returns a unmodifiable sorted set of all the card subtypes held in the CDDB.
-   * @return unmodifiable sorted set of all the card types
-   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
-   * failure to query from the database
-   */
-  SortedSet<String> getSubtypes() throws SQLException;
-
-  /**
-   * Returns a unmodifiable sorted set of all the card rarity types held in the CDDB.
-   * @return unmodifiable sorted set of all the card rarity types
-   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
-   * failure to query from the database
-   */
-  SortedSet<String> getRarityTypes() throws SQLException;
-
-  /**
-   * Returns a unmodifiable sorted set of all colors held in the CDDB.
-   * @return unmodifiable sorted set of all the three faced card types
-   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
-   * failure to query from the database
-   */
-  SortedSet<String> getColors() throws SQLException;
-
-  /**
-   * Returns a unmodifiable sorted set of all the card mana types held in the CDDB.
-   * @return unmodifiable sorted set of all the card mana types
-   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
-   * failure to query from the database
-   */
-  SortedSet<String> getManaTypes() throws SQLException;
-
-  /**
-   * Returns a unmodifiable sorted set of all the multifaced card types held in the CDDB.
-   * @return unmodifiable sorted set of all the two faced card types
-   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
-   * failure to query from the database
-   */
-  SortedSet<String> getMultifacedTypes() throws SQLException;
-
-  /**
-   * Returns a unmodifiable sorted set of all the blocks held in the CDDB.
-   * @return unmodifiable sorted set of all the two faced card types
-   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
-   * failure to query from the database
-   */
-  SortedSet<String> getBlocks() throws SQLException;
-
-  /**
-   * Returns a unmodifiable sorted set of all the artists held in the CDDB.
-   * @return unmodifiable sorted set of all artists
-   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
-   * failure to query from the database
-   */
-  SortedSet<String> getArtists() throws SQLException;
-
-  /**
-   * Returns a unmodifiable sorted set of all expansions (full name) that are held in the CDDB.
-   * @return unmodifiable sorted set of all expansion names
-   * @throws SQLException if connection to CDDB has not yet been established, or if there is a
-   * failure to query from the database
-   */
-  SortedSet<String> getSets() throws SQLException;
 
   /**
    * Returns a {@link Card} representing all the information associated with a given card name, from

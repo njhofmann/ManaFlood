@@ -23,6 +23,8 @@ public abstract class BaseView implements DatabaseView {
    */
   protected Integer selectedDeckId;
 
+  protected EnumMap<DatabaseViewConnection, Runnable> relayRunnables = null;
+
   /**
    * Returns if this {@link DatabaseView}'s {@link CardQuery} has been assigned a working
    * implementation and thus is usable.
@@ -42,8 +44,18 @@ public abstract class BaseView implements DatabaseView {
   }
 
   /**
+   * @throws IllegalStateException if this DatabaseView's relayRunnables haven't been assigned yet.
+   */
+  protected void haveRelayRunnablesBeenAssigned() {
+    if (relayRunnables == null) {
+      throw new IllegalStateException("Relay runnables have not yet been assigned!");
+    }
+  }
+
+  /**
    * Checks that a given mapping of {@link DatabaseViewConnection}s to their respectable
-   * {@link Runnable}s is valid. Throws an IllegalArgumentException otherwise.
+   * {@link Runnable}s is valid. If so, assigns the given relay runnables as the designated
+   * runnables for this {@link DatabaseView}. Throws an IllegalArgumentException otherwise.
    * @param relayRunnables mapping to check
    * @throws IllegalArgumentException if given mapping is null, a value is null, or not every value
    * of a DatabaseViewConnection is included in the mapping
@@ -62,14 +74,22 @@ public abstract class BaseView implements DatabaseView {
             + "connection!");
       }
     }
+
+    this.relayRunnables = relayRunnables;
   }
+
+  /**
+   *
+   */
+  protected abstract void setUpCardQueryDisplay();
 
   @Override
   public final void acceptCardQuery(CardQuery cardQuery) throws IllegalArgumentException {
     if (cardQuery == null) {
-      throw new IllegalArgumentException("Given car dquery can't be null!");
+      throw new IllegalArgumentException("Given card query can't be null!");
     }
     this.cardQuery = cardQuery;
+    setUpCardQueryDisplay();
   }
 
   @Override

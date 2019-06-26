@@ -2,7 +2,6 @@ package relay;
 
 import database.access.DatabaseChannel;
 import java.util.EnumMap;
-import java.util.SortedSet;
 import value_objects.card.query.CardQuery;
 import java.sql.SQLException;
 import javafx.event.EventHandler;
@@ -56,41 +55,14 @@ public class DefaultChannelViewRelay implements ChannelViewRelay {
    * IDs and names) currently stored in the CDDB.
    */
   private void setUpConnections() {
-    // Giving available deck info
-    retrieveAvailableDecksInfo();
+    // Give mapping of Runnables by respective enum
+    setUpRelayRunnables();
 
     // Give starting card query
     giveNewCardQuery();
 
-    // Give "enum" info related to cards from the CDDB
-    setUpCardInfo();
-
-    // Give mapping of Runnables by respective enum
-    setUpRelayRunnables();
-  }
-
-  /**
-   * Gives {@link Card} info from this controller's {@link DatabaseChannel} to its
-   * {@link DatabaseView} via {@link DatabaseView#acceptInfo(String, SortedSet)}.
-   */
-  private void setUpCardInfo() {
-    try {
-      databaseView.acceptInfo("artist", databaseChannel.getArtists());
-      databaseView.acceptInfo("block", databaseChannel.getBlocks());
-      databaseView.acceptInfo("color", databaseChannel.getColors());
-      databaseView.acceptInfo("mana", databaseChannel.getManaTypes());
-      databaseView.acceptInfo("rarity", databaseChannel.getRarityTypes());
-      databaseView.acceptInfo("set", databaseChannel.getSets());
-      databaseView.acceptInfo("supertype", databaseChannel.getSupertypes());
-      databaseView.acceptInfo("type", databaseChannel.getTypes());
-      databaseView.acceptInfo("subtype", databaseChannel.getSubtypes());
-    }
-    catch (SQLException e) {
-      Alert error = new Alert(AlertType.ERROR);
-      error.setHeaderText("Type Info Failure");
-      error.setContentText(e.getMessage());
-      error.show();
-    }
+    // Giving available deck info
+    retrieveAvailableDecksInfo();
   }
 
   /**
@@ -114,7 +86,15 @@ public class DefaultChannelViewRelay implements ChannelViewRelay {
    * Assigns a new {@link CardQuery} to the {@link DatabaseView} from the {@link DatabaseChannel}.
    */
   private void giveNewCardQuery() {
-    databaseView.acceptCardQuery(databaseChannel.getQuery());
+    try {
+      databaseView.acceptCardQuery(databaseChannel.getQuery());
+    }
+    catch (SQLException e) {
+      Alert error = new Alert(AlertType.ERROR);
+      error.setHeaderText("Card Query Retrieval Failure");
+      error.setContentText(e.getMessage());
+      error.show();
+    }
   }
 
   /**

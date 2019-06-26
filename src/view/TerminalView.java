@@ -29,11 +29,6 @@ public class TerminalView extends BaseView implements DatabaseView {
   }
 
   @Override
-  public void acceptInfo(String infoType, SortedSet<String> info) throws IllegalArgumentException {
-
-  }
-
-  @Override
   public void acceptCards(SortedSet<Card> cards) throws IllegalArgumentException {
 
   }
@@ -73,4 +68,8 @@ public class TerminalView extends BaseView implements DatabaseView {
 
   }
 
+  @Override
+  protected void setUpCardQueryDisplay() {
+
+  }
 }

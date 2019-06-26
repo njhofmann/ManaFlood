@@ -46,51 +46,6 @@ import value_objects.utility.Triple;
 public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChannel {
 
   /**
-   * Sorted set of all the card supertypes stored in the CDDB.
-   */
-  private final SortedSet<String> supertypes;
-
-  /**
-   * Sorted set of all the card types stored in the CDDB.
-   */
-  private final SortedSet<String> types;
-
-  /**
-   * Sorted set of all the card subtypes stored in the CDDB.
-   */
-  private final SortedSet<String> subtypes;
-
-  /**
-   * Sorted set of all the card rarites stored in the CDDB.
-   */
-  private final SortedSet<String> rarities;
-
-  /**
-   * Sorted set of all the card colors stored in the CDDB.
-   */
-  private final SortedSet<String> colors;
-
-  /**
-   * Sorted set of all types of mana symbols stored in the CDDB.
-   */
-  private final SortedSet<String> manaTypes;
-
-  /**
-   * Sorted set of all the card artists stored in the CDDB.
-   */
-  private final SortedSet<String> artists;
-
-  /**
-   * Sorted set of all the expansions stored in the CDDB.
-   */
-  private final SortedSet<String> sets;
-
-  /**
-   * Sorted set of all the blocks stored in the CDDB.
-   */
-  private final SortedSet<String> blocks;
-
-  /**
    * Takes in a {@link Path} referencing the Card and Deck Database (CDDB) to establish a
    * connection with the database.
    * @param pathToDatabase path to CDDB
@@ -98,17 +53,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChan
    */
   public DefaultDatabaseChannel(Path pathToDatabase) throws SQLException {
     super(pathToDatabase);
-    Connection connection = connect();
-    supertypes = retrieveColumnInfo("Supertype", "type", connection);
-    types = retrieveColumnInfo("Type", "type", connection);
-    subtypes = retrieveColumnInfo("Subtype", "type", connection);
-    rarities = retrieveColumnInfo("CardExpansion", "rarity", connection);
-    colors = retrieveColumnInfo("Color", "color", connection);
-    manaTypes = retrieveColumnInfo("Mana", "mana_type", connection);
-    blocks = retrieveColumnInfo("Block", "block", connection);
-    artists = retrieveColumnInfo("Artist", "artist", connection);
-    sets = retrieveColumnInfo("Expansion", "expansion", connection);
-    disconnect(connection);
   }
 
   @Override
@@ -484,7 +428,7 @@ public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChan
   }
 
   @Override
-  public CardQuery getQuery() {
+  public CardQuery getQuery() throws SQLException {
     return new DefaultCardQuery();
   }
 
@@ -565,63 +509,6 @@ public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChan
     if (deckIDs.contains(deckID)) {
       throw new IllegalArgumentException("CDDB already contains deck with given ID!");
     }
-  }
-
-  @Override
-  public SortedSet<String> getSupertypes() {
-    return Collections.unmodifiableSortedSet(supertypes);
-  }
-
-  @Override
-  public SortedSet<String> getTypes() {
-    return Collections.unmodifiableSortedSet(types);
-  }
-
-  @Override
-  public SortedSet<String> getSubtypes() {
-    return Collections.unmodifiableSortedSet(subtypes);
-  }
-
-  @Override
-  public SortedSet<String> getManaTypes() {
-    return Collections.unmodifiableSortedSet(manaTypes);
-  }
-
-  @Override
-  public SortedSet<String> getRarityTypes() {
-    return Collections.unmodifiableSortedSet(rarities);
-  }
-
-  @Override
-  public SortedSet<String> getColors() {
-    return Collections.unmodifiableSortedSet(colors);
-  }
-
-  @Override
-  public SortedSet<String> getMultifacedTypes() throws SQLException {
-    SortedSet<String> twoTypes = retrieveColumnInfo("TwoCards", "type");
-    SortedSet<String> threeTypes = retrieveColumnInfo("ThreeCards", "type");
-
-    SortedSet<String> types = new TreeSet<>();
-    types.addAll(twoTypes);
-    types.addAll(threeTypes);
-
-    return Collections.unmodifiableSortedSet(types);
-  }
-
-  @Override
-  public SortedSet<String> getBlocks() {
-    return Collections.unmodifiableSortedSet(blocks);
-  }
-
-  @Override
-  public SortedSet<String> getArtists(){
-    return Collections.unmodifiableSortedSet(artists);
-  }
-
-  @Override
-  public SortedSet<String> getSets() {
-    return Collections.unmodifiableSortedSet(sets);
   }
 
   /**
@@ -816,6 +703,8 @@ public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChan
       else if (expansions == null || expansions.isEmpty()) {
         throw new IllegalArgumentException("Given expansions can't be null nor empty!");
       }
+
+      SortedSet<String> sets = retrieveColumnInfo("Expansion", "expansion");
 
       for (String expansion : expansions.keySet()) {
         if (!sets.contains(expansion)) {
@@ -1506,6 +1395,51 @@ public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChan
   private class DefaultCardQuery implements CardQuery {
 
     /**
+     * Sorted set of all the card supertypes stored in the CDDB.
+     */
+    private final SortedSet<String> supertypes;
+
+    /**
+     * Sorted set of all the card types stored in the CDDB.
+     */
+    private final SortedSet<String> types;
+
+    /**
+     * Sorted set of all the card subtypes stored in the CDDB.
+     */
+    private final SortedSet<String> subtypes;
+
+    /**
+     * Sorted set of all the card rarites stored in the CDDB.
+     */
+    private final SortedSet<String> rarities;
+
+    /**
+     * Sorted set of all the card colors stored in the CDDB.
+     */
+    private final SortedSet<String> colors;
+
+    /**
+     * Sorted set of all types of mana symbols stored in the CDDB.
+     */
+    private final SortedSet<String> manaTypes;
+
+    /**
+     * Sorted set of all the card artists stored in the CDDB.
+     */
+    private final SortedSet<String> artists;
+
+    /**
+     * Sorted set of all the expansions stored in the CDDB.
+     */
+    private final SortedSet<String> sets;
+
+    /**
+     * Sorted set of all the blocks stored in the CDDB.
+     */
+    private final SortedSet<String> blocks;
+
+    /**
      * Specific table names to use for each type of {@link Stat}.
      */
     private final Map<Stat, String> statTableNames;
@@ -1596,7 +1530,26 @@ public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChan
      * Default constructor for this {@link DefaultCardQuery}, sets empty array lists for each type
      * of parameter list
      */
-    private DefaultCardQuery() {
+    private DefaultCardQuery() throws SQLException {
+      // Get search options
+
+      try {
+        Connection connection = connect();
+        supertypes = retrieveColumnInfo("Supertype", "type", connection);
+        types = retrieveColumnInfo("Type", "type", connection);
+        subtypes = retrieveColumnInfo("Subtype", "type", connection);
+        rarities = retrieveColumnInfo("CardExpansion", "rarity", connection);
+        colors = retrieveColumnInfo("Color", "color", connection);
+        manaTypes = retrieveColumnInfo("Mana", "mana_type", connection);
+        blocks = retrieveColumnInfo("Block", "block", connection);
+        artists = retrieveColumnInfo("Artist", "artist", connection);
+        sets = retrieveColumnInfo("Expansion", "expansion", connection);
+        disconnect(connection);
+      }
+      catch (SQLException e) {
+        throw new SQLException("Failed to rerieve search options for CardQuery!\n" + e.getMessage());
+      }
+
       nameParams = new HashMap<>();
       textParams = new HashMap<>();
       colorParams = new HashMap<>();
@@ -1632,6 +1585,63 @@ public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChan
       statTableNames.put(Stat.TOUGHNESS, "PowerToughness");
       statValueColumnNames.put(Stat.TOUGHNESS, "toughness_value");
       statCardNameColumnNames.put(Stat.TOUGHNESS, "card_name");
+    }
+
+    @Override
+    public SortedSet<String> getAvailableSupertypes() {
+      return Collections.unmodifiableSortedSet(supertypes);
+    }
+
+    @Override
+    public SortedSet<String> getAvailableTypes() {
+      return Collections.unmodifiableSortedSet(types);
+    }
+
+    @Override
+    public SortedSet<String> getAvailableSubtypes() {
+      return Collections.unmodifiableSortedSet(subtypes);
+    }
+
+    @Override
+    public SortedSet<String> getAvailableManaTypes() {
+      return Collections.unmodifiableSortedSet(manaTypes);
+    }
+
+    @Override
+    public SortedSet<String> getAvailableRarityTypes() {
+      return Collections.unmodifiableSortedSet(rarities);
+    }
+
+    @Override
+    public SortedSet<String> getAvailableColors() {
+      return Collections.unmodifiableSortedSet(colors);
+    }
+
+    @Override
+    public SortedSet<String> getAvailableMultifacedTypes() throws SQLException {
+      SortedSet<String> twoTypes = retrieveColumnInfo("TwoCards", "type");
+      SortedSet<String> threeTypes = retrieveColumnInfo("ThreeCards", "type");
+
+      SortedSet<String> types = new TreeSet<>();
+      types.addAll(twoTypes);
+      types.addAll(threeTypes);
+
+      return Collections.unmodifiableSortedSet(types);
+    }
+
+    @Override
+    public SortedSet<String> getAvailableBlocks() {
+      return Collections.unmodifiableSortedSet(blocks);
+    }
+
+    @Override
+    public SortedSet<String> getAvailableArtists(){
+      return Collections.unmodifiableSortedSet(artists);
+    }
+
+    @Override
+    public SortedSet<String> getAvailableSets() {
+      return Collections.unmodifiableSortedSet(sets);
     }
 
     @Override
