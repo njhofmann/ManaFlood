@@ -3,8 +3,10 @@ package view;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.SortedSet;
+import javafx.scene.Parent;
 import relay.DatabaseViewConnection;
 import value_objects.card.Card;
+import value_objects.card.query.CardQuery;
 import value_objects.deck.Deck;
 import value_objects.deck.instance.DeckInstance;
 import value_objects.utility.Pair;
@@ -14,6 +16,7 @@ import value_objects.utility.Pair;
  * with.
  */
 public class TerminalView extends BaseView implements DatabaseView {
+
 
   @Override
   public void acceptRelayRunnables(EnumMap<DatabaseViewConnection, Runnable> relayRunnables) {
@@ -29,6 +32,12 @@ public class TerminalView extends BaseView implements DatabaseView {
   }
 
   @Override
+  public void acceptCardQuery(CardQuery cardQuery) throws IllegalArgumentException {
+
+  }
+
+
+  @Override
   public void acceptCards(SortedSet<Card> cards) throws IllegalArgumentException {
 
   }
@@ -36,6 +45,11 @@ public class TerminalView extends BaseView implements DatabaseView {
   @Override
   public void acceptDeckInfo(Deck deck) throws IllegalArgumentException {
 
+  }
+
+  @Override
+  public int deckToRetrieveInfoOn() throws IllegalStateException {
+    return 0;
   }
 
   @Override
@@ -64,12 +78,8 @@ public class TerminalView extends BaseView implements DatabaseView {
   }
 
   @Override
-  public void start() {
-
+  public Parent asParent() {
+    return null;
   }
 
-  @Override
-  protected void setUpCardQueryDisplay() {
-
-  }
 }

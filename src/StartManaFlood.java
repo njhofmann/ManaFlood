@@ -3,6 +3,9 @@ import database.access.DefaultDatabaseChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 import relay.ChannelViewRelay;
 import relay.DefaultChannelViewRelay;
 import view.DatabaseView;
@@ -12,9 +15,11 @@ import view.TerminalView;
 /**
  * Starts up the ManaFlood application as either a terminal or GUI display.
  */
-public class StartManaFlood {
+public class StartManaFlood extends Application {
 
   private static final Path pathToDatabase = Paths.get("resources\\cddb.db").toAbsolutePath();
+
+  private static DatabaseView databaseView;
 
   /**
    * Starts up the ManaFlood application based on the given String parameters.
@@ -24,6 +29,11 @@ public class StartManaFlood {
    * contain unsupported arguments, etc.
    */
   public static void main(String[] args) {
+    databaseView = parseArgs(args);
+    launch(args);
+  }
+
+  private static DatabaseView parseArgs(String[] args) {
     if (args == null || args.length == 0) {
       throw new IllegalArgumentException("Given set of parameters can't be null!");
     }
@@ -31,19 +41,21 @@ public class StartManaFlood {
       throw new IllegalArgumentException("Given set of parameters must contain only one pararmeter!");
     }
 
-    DatabaseView databaseView;
     String param = args[0].toLowerCase();
     if (param.equals("terminal")) {
-      databaseView = new TerminalView();
+       return new TerminalView();
     }
     else if (param.equals("gui")) {
-      databaseView = new GUIView();
+      return new GUIView();
     }
     else {
-      throw new IllegalArgumentException("Diplay parameter doesn't contain a valid type of display "
+      throw new IllegalArgumentException("Display parameter doesn't contain a valid type of display "
           + "to start the application with!");
     }
+  }
 
+  @Override
+  public void start(Stage stage) {
     DatabaseChannel databaseChannel = null;
     try {
       databaseChannel = new DefaultDatabaseChannel(StartManaFlood.pathToDatabase);
@@ -54,6 +66,12 @@ public class StartManaFlood {
       System.exit(1);
     }
     ChannelViewRelay channelViewRelay = new DefaultChannelViewRelay(databaseChannel, databaseView);
-    channelViewRelay.start();
+
+    Scene scene = new Scene(databaseView.asParent());
+    stage.setTitle("ManaFlood");
+    // TODO image header
+    stage.setResizable(false);
+    stage.setScene(scene);
+    stage.show();
   }
 }

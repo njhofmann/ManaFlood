@@ -1194,7 +1194,7 @@ class CardQueryTest {
           + "WHERE t0.mana_type = '%s' AND t0.quantity %s %d)";
       Random random = new Random();
       int bound = 20;
-      SortedSet<String> manaTypes = deckChannel.getManaTypes();
+      SortedSet<String> manaTypes = deckChannel.getQuery().getAvailableManaTypes();
       for (String manaType : manaTypes) {
         for (Comparison comparison : Comparison.values()) {
           int nextRandom = random.nextInt(bound);

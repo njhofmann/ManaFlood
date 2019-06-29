@@ -7,9 +7,10 @@ import value_objects.deck.Deck;
 import value_objects.card.query.CardQuery;
 
 /**
- * Abstract class providing methods common to all {@link DatabaseView} implementations.
+ * Class providing methods common to all {@link DatabaseView} implementations. Not abstract as some
+ * DatabaseView implementations must extend other classes.
  */
-public abstract class BaseView implements DatabaseView {
+public abstract class BaseView implements DatabaseView  {
 
   /**
    * {@link CardQuery} this {@link DatabaseView} is currently using for querying for {@link Card}.
@@ -41,6 +42,10 @@ public abstract class BaseView implements DatabaseView {
    */
   protected boolean isDeckSelected() {
     return selectedDeckId == null;
+  }
+
+  protected void setSelectedDeckId(int deckId) {
+    selectedDeckId = deckId;
   }
 
   /**
@@ -78,21 +83,13 @@ public abstract class BaseView implements DatabaseView {
     this.relayRunnables = relayRunnables;
   }
 
-  /**
-   *
-   */
-  protected abstract void setUpCardQueryDisplay();
-
-  @Override
-  public final void acceptCardQuery(CardQuery cardQuery) throws IllegalArgumentException {
+  protected final void setCardQuery(CardQuery cardQuery) throws IllegalArgumentException {
     if (cardQuery == null) {
       throw new IllegalArgumentException("Given card query can't be null!");
     }
     this.cardQuery = cardQuery;
-    setUpCardQueryDisplay();
   }
 
-  @Override
   public final CardQuery getCardQuery() throws IllegalStateException {
     if (isCardQueryAssigned()) {
       throw new IllegalStateException("This view hasn't been assigned a card query to work "
@@ -101,11 +98,18 @@ public abstract class BaseView implements DatabaseView {
     return cardQuery;
   }
 
-  @Override
-  public final int deckToRetrieveInfoOn() throws IllegalStateException {
+  protected final int getSelectedDeck() throws IllegalStateException {
     if (!isDeckSelected()) {
       throw new IllegalStateException("No deck has yet been selected!");
     }
     return selectedDeckId;
+  }
+
+  protected void runAssociatedRelayRunnable(DatabaseViewConnection connection) {
+    if (connection == null) {
+      throw new IllegalArgumentException("Given connection can't be null!");
+    }
+    haveRelayRunnablesBeenAssigned();
+    relayRunnables.get(connection).run();
   }
 }

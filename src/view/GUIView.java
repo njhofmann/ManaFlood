@@ -8,6 +8,7 @@ import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
@@ -17,6 +18,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import relay.DatabaseViewConnection;
 import value_objects.card.Card;
+import value_objects.card.query.CardQuery;
 import value_objects.deck.Deck;
 import value_objects.deck.instance.DeckInstance;
 import value_objects.utility.Pair;
@@ -27,37 +29,39 @@ import value_objects.utility.Pair;
  */
 public class GUIView extends BaseView implements DatabaseView {
 
-  private final HBox rootPane;
+  private HBox rootPane;
 
-  private final VBox deckAndCardSelectionPane;
+  private VBox deckAndCardSelectionPane;
 
-  private final Button viewAvailableDecksButton;
+  private Button viewAvailableDecksButton;
 
-  private final Button cardSelectionButton;
+  private Button cardSelectionButton;
 
-  private final Button addNewDeckButton;
+  private Button addNewDeckButton;
 
-  private final VBox availableDecksDisplay;
+  private VBox availableDecksDisplay;
 
-  private final VBox cardSelectionDisplay;
+  private VBox cardSelectionDisplay;
 
-  private final VBox deckDisplayArea;
+  private VBox deckDisplayArea;
 
-  private final HBox deckDisplayHeaderArea;
+  private HBox deckDisplayHeaderArea;
 
-  private final TextField deckNameDisplay;
+  private TextField deckNameDisplay;
 
-  private final Button deckDespButton;
+  private Button deckDespButton;
 
-  private final Button deckHistoryButton;
+  private Button deckHistoryButton;
 
-  private final Button mockDeckHandButton;
+  private Button mockDeckHandButton;
 
-  private final Button deckStatsButton;
+  private Button deckStatsButton;
 
-  private final Button saveDeckInstanceButton;
+  private Button saveDeckInstanceButton;
 
-  private final Button exportDeckButton;
+  private Button exportDeckButton;
+
+  private HBox deckInfoDisplayArea;
 
   public GUIView() {
 
@@ -90,8 +94,27 @@ public class GUIView extends BaseView implements DatabaseView {
       children.add(cardSelectionDisplay);
     });
 
-    // Set up the deck display are
-    deckDisplayArea = new VBox();
+    // Set up the deck display area
+    deckNameDisplay = new TextField();
+
+    deckDespButton = new Button("Description");
+    deckHistoryButton = new Button("History");
+    VBox deckSpecificButtons = new VBox(deckDespButton, deckHistoryButton);
+
+    mockDeckHandButton = new Button("Mock Hand");
+    deckStatsButton = new Button("Stats");
+    VBox statsButtons = new VBox(mockDeckHandButton, deckStatsButton);
+
+    saveDeckInstanceButton = new Button("Save");
+    exportDeckButton = new Button("Export");
+    VBox dataSavingButtons = new VBox(saveDeckInstanceButton, exportDeckButton);
+
+    deckDisplayHeaderArea = new HBox(deckNameDisplay, deckSpecificButtons,
+        statsButtons, dataSavingButtons);
+
+    deckInfoDisplayArea = new HBox();
+
+    deckDisplayArea = new VBox(deckDisplayHeaderArea, deckInfoDisplayArea);
 
     rootPane = new HBox(deckAndCardSelectionPane, deckDisplayArea);
   }
@@ -121,21 +144,36 @@ public class GUIView extends BaseView implements DatabaseView {
     for (int deckId : deckInfo.keySet()) {
       Button deckButton = new Button(deckInfo.get(deckId));
       deckButton.setOnAction(actionEvent -> {
-        selectedDeckId = deckId;
-        relayRunnables.get(DatabaseViewConnection.RetrieveDeckInfo).run();
+        setSelectedDeckId(deckId);
+        runAssociatedRelayRunnable(DatabaseViewConnection.RetrieveDeckInfo);
       });
       deckDisplayAreaChildren.add(deckButton);
     }
   }
 
   @Override
-  public void acceptCards(SortedSet<Card> cards) throws IllegalArgumentException {
+  public void acceptCardQuery(CardQuery cardQuery) throws IllegalArgumentException {
 
+  }
+
+  @Override
+  public void acceptCards(SortedSet<Card> cards) throws IllegalArgumentException {
+    /**
+     * List images of each card displayed in given set in cardSelectionDisplay
+     * - Include option to add to deck (if opened)
+     * - Sort by options
+     * - New search option
+     */
   }
 
   @Override
   public void acceptDeckInfo(Deck deck) throws IllegalArgumentException {
 
+  }
+
+  @Override
+  public int deckToRetrieveInfoOn() throws IllegalStateException {
+    return 0;
   }
 
   @Override
@@ -163,32 +201,8 @@ public class GUIView extends BaseView implements DatabaseView {
     return null;
   }
 
-  /**
-   * Sets up the card query display by filling in the card display area pane.
-   */
   @Override
-  protected void setUpCardQueryDisplay() {
-    // TODO set up card query display area
-  }
-
-  @Override
-  public void start() {
-    /**
-     * After this {@link GUIView} has been set up, starts a JavaFX {@link Application} to attach
-     * this GUIView to - then shows the GUI.
-     */
-    class RunManaFloodGUI extends Application {
-
-      @Override
-      public void start(Stage stage) {
-        Scene scene = new Scene(rootPane);
-        stage.setTitle("ManaFlood");
-        // TODO image header
-        stage.setResizable(false);
-        stage.setScene(scene);
-        stage.show();
-      }
-    }
-    RunManaFloodGUI.launch();
+  public Parent asParent() {
+    return rootPane;
   }
 }

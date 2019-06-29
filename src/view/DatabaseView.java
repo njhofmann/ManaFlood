@@ -3,6 +3,7 @@ package view;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.SortedSet;
+import javafx.scene.Parent;
 import relay.DatabaseViewConnection;
 import value_objects.card.Card;
 import value_objects.card.query.CardQuery;
@@ -111,7 +112,8 @@ public interface DatabaseView {
   Pair<Integer, String> newDeckDesp() throws IllegalStateException;
 
   /**
-   * Starts displaying this {@link DatabaseView}.
+   *
+   * @return
    */
-  void start();
+  Parent asParent();
 }
