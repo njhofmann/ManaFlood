@@ -24,6 +24,12 @@ public abstract class BaseView implements DatabaseView  {
    */
   protected Integer selectedDeckId;
 
+  /**
+   * ID of the {@link Deck} the user of this {@link DatabaseView} wishes to delete from the CDDB. If
+   * null, no Deck has been selected for deletion.
+   */
+  protected Integer deckToDelete;
+
   protected EnumMap<DatabaseViewConnection, Runnable> relayRunnables = null;
 
   /**
@@ -44,14 +50,29 @@ public abstract class BaseView implements DatabaseView  {
     return selectedDeckId == null;
   }
 
+  /**
+   *
+   * @param deckId
+   */
   protected void setSelectedDeckId(int deckId) {
     selectedDeckId = deckId;
+  }
+
+  protected void setDeckToDelete(int deckId) {
+    deckToDelete = deckId;
+  }
+
+  /**
+   *
+   */
+  protected void resetDeckToDelete() {
+    deckToDelete = null;
   }
 
   /**
    * @throws IllegalStateException if this DatabaseView's relayRunnables haven't been assigned yet.
    */
-  protected void haveRelayRunnablesBeenAssigned() {
+  protected final void haveRelayRunnablesBeenAssigned() {
     if (relayRunnables == null) {
       throw new IllegalStateException("Relay runnables have not yet been assigned!");
     }
@@ -65,7 +86,7 @@ public abstract class BaseView implements DatabaseView  {
    * @throws IllegalArgumentException if given mapping is null, a value is null, or not every value
    * of a DatabaseViewConnection is included in the mapping
    */
-  protected void checkRelayRunnables(EnumMap<DatabaseViewConnection, Runnable> relayRunnables) {
+  protected final void checkRelayRunnables(EnumMap<DatabaseViewConnection, Runnable> relayRunnables) {
     if (relayRunnables == null) {
       throw new IllegalArgumentException("Given mapping can't be null!");
     }
@@ -98,14 +119,23 @@ public abstract class BaseView implements DatabaseView  {
     return cardQuery;
   }
 
-  protected final int getSelectedDeck() throws IllegalStateException {
+  @Override
+  public final int deckToRetrieveInfoOn() throws IllegalStateException {
     if (!isDeckSelected()) {
       throw new IllegalStateException("No deck has yet been selected!");
     }
     return selectedDeckId;
   }
 
-  protected void runAssociatedRelayRunnable(DatabaseViewConnection connection) {
+  @Override
+  public int deckToDelete() throws IllegalStateException {
+    if (deckToDelete == null) {
+      throw new IllegalStateException("No deck has been selected for deletion!");
+    }
+    return deckToDelete;
+  }
+
+  protected final void runAssociatedRelayRunnable(DatabaseViewConnection connection) {
     if (connection == null) {
       throw new IllegalArgumentException("Given connection can't be null!");
     }

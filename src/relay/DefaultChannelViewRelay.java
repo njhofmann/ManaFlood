@@ -131,8 +131,9 @@ public class DefaultChannelViewRelay implements ChannelViewRelay {
 
   @Override
   public void start() {
-    databaseView.start();
+
   }
+
 
   /**
    * {@link Runnable} for retrieving the ID of a {@link Deck} from the {@link DatabaseView}

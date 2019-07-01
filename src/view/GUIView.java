@@ -1,24 +1,31 @@
 package view;
 
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
-import javafx.application.Application;
+import java.util.stream.Collectors;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 import relay.DatabaseViewConnection;
 import value_objects.card.Card;
 import value_objects.card.query.CardQuery;
+import value_objects.card.query.SearchOption;
 import value_objects.deck.Deck;
 import value_objects.deck.instance.DeckInstance;
 import value_objects.utility.Pair;
@@ -42,6 +49,8 @@ public class GUIView extends BaseView implements DatabaseView {
   private VBox availableDecksDisplay;
 
   private VBox cardSelectionDisplay;
+
+  private VBox cardSelectionResultDisplay;
 
   private VBox deckDisplayArea;
 
@@ -72,51 +81,64 @@ public class GUIView extends BaseView implements DatabaseView {
 
     HBox deckAndCardSelectionPaneButtons = new HBox(viewAvailableDecksButton, cardSelectionButton);
 
-    addNewDeckButton = new Button();
+    addNewDeckButton = new Button("New Deck");
 
-    availableDecksDisplay = new VBox(addNewDeckButton);
+    availableDecksDisplay = new VBox();
 
     cardSelectionDisplay = new VBox();
+
+    cardSelectionResultDisplay = new VBox();
 
     deckAndCardSelectionPane = new VBox(deckAndCardSelectionPaneButtons, availableDecksDisplay);
 
     // Set button such that it makes available decks display visible to the user
     viewAvailableDecksButton.setOnAction(actionEvent -> {
       List<Node> children = deckAndCardSelectionPane.getChildren();
-      children.remove(children.size() - 1);
-      children.add(availableDecksDisplay);
+      System.out.println(children.size());
+      if (children.size() > 1) {
+        children.remove(children.size() - 1);
+        children.add(availableDecksDisplay);
+      }
     });
 
     // Set button such that it makes card selection display visible to the user
     cardSelectionButton.setOnAction(actionEvent -> {
       List<Node> children = deckAndCardSelectionPane.getChildren();
-      children.remove(children.size() - 1);
-      children.add(cardSelectionDisplay);
+      if (children.size() > 1) {
+        children.remove(children.size() - 1);
+        children.add(cardSelectionDisplay);
+      }
     });
 
     // Set up the deck display area
     deckNameDisplay = new TextField();
 
     deckDespButton = new Button("Description");
+    deckDespButton.setMaxWidth(Double.MAX_VALUE);
     deckHistoryButton = new Button("History");
-    VBox deckSpecificButtons = new VBox(deckDespButton, deckHistoryButton);
+    deckHistoryButton.setMaxWidth(Double.MAX_VALUE);
+    VBox deckInfoButtons = new VBox(deckDespButton, deckHistoryButton);
 
     mockDeckHandButton = new Button("Mock Hand");
+    mockDeckHandButton.setMaxWidth(Double.MAX_VALUE);
     deckStatsButton = new Button("Stats");
-    VBox statsButtons = new VBox(mockDeckHandButton, deckStatsButton);
+    deckStatsButton.setMaxWidth(Double.MAX_VALUE);
+    VBox deckStatButtons = new VBox(mockDeckHandButton, deckStatsButton);
 
     saveDeckInstanceButton = new Button("Save");
+    saveDeckInstanceButton.setMaxWidth(Double.MAX_VALUE);
     exportDeckButton = new Button("Export");
-    VBox dataSavingButtons = new VBox(saveDeckInstanceButton, exportDeckButton);
+    exportDeckButton.setMaxWidth(Double.MAX_VALUE);
+    VBox deckSaveButtons = new VBox(saveDeckInstanceButton, exportDeckButton);
 
-    deckDisplayHeaderArea = new HBox(deckNameDisplay, deckSpecificButtons,
-        statsButtons, dataSavingButtons);
+    deckDisplayHeaderArea = new HBox(deckNameDisplay, deckInfoButtons, deckStatButtons, deckSaveButtons);
 
-    deckInfoDisplayArea = new HBox();
+    deckInfoDisplayArea = new HBox(new Button("Foo"));
 
     deckDisplayArea = new VBox(deckDisplayHeaderArea, deckInfoDisplayArea);
 
     rootPane = new HBox(deckAndCardSelectionPane, deckDisplayArea);
+
   }
 
   @Override
@@ -135,7 +157,7 @@ public class GUIView extends BaseView implements DatabaseView {
     }
 
     // Clear deck display area of everything but the new deck button
-    List<Node> deckDisplayAreaChildren = deckDisplayArea.getChildren();
+    List<Node> deckDisplayAreaChildren = availableDecksDisplay.getChildren();
     deckDisplayAreaChildren.clear();
     deckDisplayAreaChildren.add(addNewDeckButton);
 
@@ -147,12 +169,167 @@ public class GUIView extends BaseView implements DatabaseView {
         setSelectedDeckId(deckId);
         runAssociatedRelayRunnable(DatabaseViewConnection.RetrieveDeckInfo);
       });
-      deckDisplayAreaChildren.add(deckButton);
+
+      Button deckDeleteButton = new Button("Delete");
+      deckDeleteButton.setOnAction(actionEvent -> {
+        setDeckToDelete(deckId);
+        runAssociatedRelayRunnable(DatabaseViewConnection.DeleteDeck);
+        resetDeckToDelete();
+      });
+
+      deckDisplayAreaChildren.add(new HBox(deckButton, deckDeleteButton));
     }
   }
 
   @Override
   public void acceptCardQuery(CardQuery cardQuery) throws IllegalArgumentException {
+    haveRelayRunnablesBeenAssigned();
+    setCardQuery(cardQuery);
+
+    //TODO setup card query as needed
+
+    // by name
+
+    // by text
+
+    // by color
+
+    // by color identity
+
+    // by supertype
+
+    // by type
+
+    // by subtype
+
+    // by block
+
+    // by set
+
+    // by artist
+
+    // by rarity
+
+    // by stat
+
+    //by stat vs stat
+
+    // by mana type
+
+    // submit button
+
+
+  }
+
+  private abstract class SearchOptionVBox extends VBox {
+
+    protected final Label mustIncludeLabel;
+
+    protected final Label oneOfLabel;
+
+    protected final Label notIncludeLabel;
+
+    private SearchOptionVBox() {
+      super();
+      mustIncludeLabel = new Label("Must Include");
+      oneOfLabel = new Label("One Of");
+      notIncludeLabel = new Label("Not Include");
+    }
+
+    abstract Set<String> getMustIncludeParams();
+
+    abstract Set<String> getOneOfParams();
+
+    abstract Set<String> getNotParams();
+  }
+
+  private class DynamicSearchOptionVBox extends SearchOptionVBox {
+
+    private final TextField mustIncludeTextField;
+
+    private final TextField oneOfTextField;
+
+    private final TextField notIncludeTextField;
+
+    private DynamicSearchOptionVBox() {
+      super();
+      mustIncludeTextField = new TextField();
+      oneOfTextField = new TextField();
+      notIncludeTextField = new TextField();
+
+      HBox mustIncludeHBox = new HBox(mustIncludeLabel, mustIncludeTextField);
+      HBox oneOfHBox = new HBox(oneOfLabel, oneOfTextField);
+      HBox notIncludeHBox = new HBox(notIncludeLabel, notIncludeTextField);
+
+      getChildren().addAll(mustIncludeHBox, oneOfHBox, notIncludeHBox);
+    }
+
+    @Override
+    Set<String> getMustIncludeParams() {
+      return null;
+    }
+
+    @Override
+    Set<String> getOneOfParams() {
+      return null;
+    }
+
+    @Override
+    Set<String> getNotParams() {
+      return null;
+    }
+  }
+
+  private class StaticSearchOptionParams extends SearchOptionVBox {
+
+    private final MenuButton mustIncludeMenuButton;
+
+    private final MenuButton oneOfMenuButton;
+
+    private final MenuButton notIncludeMenuButton;
+
+    private StaticSearchOptionParams(Collection<String> searchOptions) {
+      super();
+      if (searchOptions == null || searchOptions.isEmpty()) {
+        throw new IllegalArgumentException("Given set of search options can't be null or empty!");
+      }
+
+      mustIncludeMenuButton = new MenuButton();
+      mustIncludeMenuButton.getItems().addAll(searchOptions.stream().map(MenuItem::new)
+          .collect(Collectors.toList()));
+
+      oneOfMenuButton = new MenuButton();
+      oneOfMenuButton.getItems().addAll(searchOptions.stream().map(MenuItem::new)
+          .collect(Collectors.toList()));
+
+      notIncludeMenuButton = new MenuButton();
+      notIncludeMenuButton.getItems().addAll(searchOptions.stream().map(MenuItem::new)
+          .collect(Collectors.toList()));
+
+      HBox mustIncludeHBox = new HBox(mustIncludeLabel, mustIncludeMenuButton);
+      HBox oneOfHBox = new HBox(oneOfLabel, oneOfMenuButton);
+      HBox notIncludeHBox = new HBox(notIncludeLabel, notIncludeMenuButton);
+
+      getChildren().addAll(mustIncludeHBox, oneOfHBox, notIncludeHBox);
+    }
+
+    @Override
+    Set<String> getMustIncludeParams() {
+      return null;
+    }
+
+    @Override
+    Set<String> getOneOfParams() {
+      return null;
+    }
+
+    @Override
+    Set<String> getNotParams() {
+      return null;
+    }
+  }
+
+  private class EnumeratedVBoxTriple<A, B, C> extends VBox {
 
   }
 
@@ -169,16 +346,6 @@ public class GUIView extends BaseView implements DatabaseView {
   @Override
   public void acceptDeckInfo(Deck deck) throws IllegalArgumentException {
 
-  }
-
-  @Override
-  public int deckToRetrieveInfoOn() throws IllegalStateException {
-    return 0;
-  }
-
-  @Override
-  public int deckToDelete() throws IllegalStateException {
-    return 0;
   }
 
   @Override

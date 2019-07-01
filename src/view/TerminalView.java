@@ -47,10 +47,6 @@ public class TerminalView extends BaseView implements DatabaseView {
 
   }
 
-  @Override
-  public int deckToRetrieveInfoOn() throws IllegalStateException {
-    return 0;
-  }
 
   @Override
   public int deckToDelete() throws IllegalStateException {

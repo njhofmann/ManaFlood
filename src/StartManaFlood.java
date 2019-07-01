@@ -67,10 +67,9 @@ public class StartManaFlood extends Application {
     }
     ChannelViewRelay channelViewRelay = new DefaultChannelViewRelay(databaseChannel, databaseView);
 
-    Scene scene = new Scene(databaseView.asParent());
+    Scene scene = new Scene(databaseView.asParent(), 500, 500);
     stage.setTitle("ManaFlood");
     // TODO image header
-    stage.setResizable(false);
     stage.setScene(scene);
     stage.show();
   }
