@@ -1,11 +1,14 @@
 package view;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -14,6 +17,7 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -284,9 +288,15 @@ public class GUIView extends BaseView implements DatabaseView {
 
     private final MenuButton mustIncludeMenuButton;
 
+    private final List<CheckMenuItem> mustIncludeCheckMenuItems;
+
     private final MenuButton oneOfMenuButton;
 
+    private final List<CheckMenuItem> oneOfCheckMenuItems;
+
     private final MenuButton notIncludeMenuButton;
+
+    private final List<CheckMenuItem> notIncludeCheckMenuItems;
 
     private StaticSearchOptionParams(Collection<String> searchOptions) {
       super();
@@ -294,17 +304,17 @@ public class GUIView extends BaseView implements DatabaseView {
         throw new IllegalArgumentException("Given set of search options can't be null or empty!");
       }
 
+      mustIncludeCheckMenuItems = searchOptionsToCheckMenuItemList(searchOptions);
       mustIncludeMenuButton = new MenuButton();
-      mustIncludeMenuButton.getItems().addAll(searchOptions.stream().map(MenuItem::new)
-          .collect(Collectors.toList()));
+      mustIncludeMenuButton.getItems().addAll(mustIncludeCheckMenuItems);
 
+      oneOfCheckMenuItems = searchOptionsToCheckMenuItemList(searchOptions);
       oneOfMenuButton = new MenuButton();
-      oneOfMenuButton.getItems().addAll(searchOptions.stream().map(MenuItem::new)
-          .collect(Collectors.toList()));
+      oneOfMenuButton.getItems().addAll(oneOfCheckMenuItems);
 
+      notIncludeCheckMenuItems = searchOptionsToCheckMenuItemList(searchOptions);
       notIncludeMenuButton = new MenuButton();
-      notIncludeMenuButton.getItems().addAll(searchOptions.stream().map(MenuItem::new)
-          .collect(Collectors.toList()));
+      notIncludeMenuButton.getItems().addAll(notIncludeCheckMenuItems);
 
       HBox mustIncludeHBox = new HBox(mustIncludeLabel, mustIncludeMenuButton);
       HBox oneOfHBox = new HBox(oneOfLabel, oneOfMenuButton);
@@ -313,19 +323,29 @@ public class GUIView extends BaseView implements DatabaseView {
       getChildren().addAll(mustIncludeHBox, oneOfHBox, notIncludeHBox);
     }
 
+    private List<CheckMenuItem> searchOptionsToCheckMenuItemList(Collection<String> searchOptions) {
+      return searchOptions.stream().map(CheckMenuItem::new).collect(Collectors.toList());
+    }
+
+    private Set<String> getSelectedItems(List<CheckMenuItem> checkMenuItems) {
+      return checkMenuItems.stream().filter(
+          CheckMenuItem::isSelected).map(MenuItem::getText)
+          .collect(Collectors.toCollection(TreeSet::new));
+    }
+
     @Override
     Set<String> getMustIncludeParams() {
-      return null;
+      return getSelectedItems(mustIncludeCheckMenuItems);
     }
 
     @Override
     Set<String> getOneOfParams() {
-      return null;
+      return getSelectedItems(oneOfCheckMenuItems);
     }
 
     @Override
     Set<String> getNotParams() {
-      return null;
+      return getSelectedItems(notIncludeCheckMenuItems);
     }
   }
 
