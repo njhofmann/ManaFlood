@@ -1,5 +1,6 @@
 package view;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -186,33 +187,48 @@ public class GUIView extends BaseView implements DatabaseView {
   }
 
   @Override
-  public void acceptCardQuery(CardQuery cardQuery) throws IllegalArgumentException {
+  public void acceptCardQuery(CardQuery cardQuery) throws IllegalArgumentException,
+      SQLException {
     haveRelayRunnablesBeenAssigned();
     setCardQuery(cardQuery);
 
     //TODO setup card query as needed
 
     // by name
+    SearchOptionVBox nameOptionVBox = new DynamicSearchOptionVBox();
 
     // by text
+    SearchOptionVBox textOptionVBox = new DynamicSearchOptionVBox();
 
     // by color
+    SearchOptionVBox colorOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableColors());
 
     // by color identity
+    SearchOptionVBox colorIdentityOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableColors());
 
     // by supertype
+    SearchOptionVBox supertypeOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableSupertypes());
 
     // by type
+    SearchOptionVBox typeOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableTypes());
 
     // by subtype
+    SearchOptionVBox subtypeOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableSubtypes());
 
     // by block
+    SearchOptionVBox blockOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableBlocks());
 
     // by set
+    SearchOptionVBox setOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableSets());
 
     // by artist
+    SearchOptionVBox artistOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableArtists());
 
     // by rarity
+    SearchOptionVBox rarityOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableRarityTypes());
+
+    // by flavor text
+    SearchOptionVBox flavorTextOptionVBox = new DynamicSearchOptionVBox();
 
     // by stat
 
@@ -260,31 +276,37 @@ public class GUIView extends BaseView implements DatabaseView {
       mustIncludeTextField = new TextField();
       oneOfTextField = new TextField();
       notIncludeTextField = new TextField();
-
       HBox mustIncludeHBox = new HBox(mustIncludeLabel, mustIncludeTextField);
       HBox oneOfHBox = new HBox(oneOfLabel, oneOfTextField);
       HBox notIncludeHBox = new HBox(notIncludeLabel, notIncludeTextField);
-
       getChildren().addAll(mustIncludeHBox, oneOfHBox, notIncludeHBox);
+    }
+
+    private Set<String> textFieldToStringSet(TextField textField) {
+      if (textField == null) {
+        throw new IllegalArgumentException("Given array of strings can't be null!");
+      }
+      return Arrays.stream(textField.getText().split("\\s+"))
+          .collect(Collectors.toCollection(TreeSet::new));
     }
 
     @Override
     Set<String> getMustIncludeParams() {
-      return null;
+      return textFieldToStringSet(mustIncludeTextField);
     }
 
     @Override
     Set<String> getOneOfParams() {
-      return null;
+      return textFieldToStringSet(oneOfTextField);
     }
 
     @Override
     Set<String> getNotParams() {
-      return null;
+      return textFieldToStringSet(notIncludeTextField);
     }
   }
 
-  private class StaticSearchOptionParams extends SearchOptionVBox {
+  private class StaticSearchOptionVBox extends SearchOptionVBox {
 
     private final MenuButton mustIncludeMenuButton;
 
@@ -298,7 +320,7 @@ public class GUIView extends BaseView implements DatabaseView {
 
     private final List<CheckMenuItem> notIncludeCheckMenuItems;
 
-    private StaticSearchOptionParams(Collection<String> searchOptions) {
+    private StaticSearchOptionVBox(Collection<String> searchOptions) {
       super();
       if (searchOptions == null || searchOptions.isEmpty()) {
         throw new IllegalArgumentException("Given set of search options can't be null or empty!");
