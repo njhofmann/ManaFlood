@@ -25,4 +25,22 @@ public enum Comparison {
   public String getValue() {
     return value;
   }
+
+  @Override
+  public String toString() {
+    return value;
+  }
+
+  public static Comparison getComparison(String value) {
+    if (value == null) {
+      throw new IllegalArgumentException("Given value can't be null!");
+    }
+
+    for (Comparison comparison : Comparison.values()) {
+      if (comparison.getValue().equals(value)) {
+        return comparison;
+      }
+    }
+    throw new IllegalArgumentException("Given string value doesn't match any value of this enum!");
+  }
 }

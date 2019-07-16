@@ -47,4 +47,22 @@ public enum Stat {
   public String getValue() {
     return value;
   }
+
+  @Override
+  public String toString() {
+    return value;
+  }
+
+  public static Stat getStat(String value) {
+    if (value == null) {
+      throw new IllegalArgumentException("Given value can't be null!");
+    }
+
+    for (Stat stat : Stat.values()) {
+      if (stat.getValue().equals(value)) {
+        return stat;
+      }
+    }
+    throw new IllegalArgumentException("Given string value doesn't match any value of this enum!");
+  }
 }
