@@ -3,6 +3,7 @@ package view;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,22 +13,23 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.Menu;
 import javafx.scene.control.MenuButton;
-import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import relay.DatabaseViewConnection;
 import value_objects.card.Card;
 import value_objects.card.query.CardQuery;
 import value_objects.card.query.Comparison;
+import value_objects.card.query.Stat;
 import value_objects.deck.Deck;
 import value_objects.deck.instance.DeckInstance;
 import value_objects.utility.Pair;
@@ -229,10 +231,19 @@ public class GUIView extends BaseView implements DatabaseView {
     SearchOptionVBox flavorTextOptionVBox = new DynamicSearchOptionVBox();
 
     // by stat
+    GenericComparisonVBox<Stat, Integer> statOptionVBox = new GenericComparisonVBox<>(
+        Arrays.asList(Stat.values()),
+        IntStream.range(-2, 21).boxed().collect(Collectors.toList()));
 
     //by stat vs stat
+    GenericComparisonVBox<Stat, Integer> statVsStatOptionVBox = new GenericComparisonVBox<>(
+        Arrays.asList(Stat.values()),
+        Arrays.asList(Stat.values()));
 
     // by mana type
+    GenericComparisonVBox<Stat, Integer> manaTypeOptionVBox = new GenericComparisonVBox<>(
+        cardQuery.getAvailableManaTypes(),
+        IntStream.range(-2, 21).boxed().collect(Collectors.toList()));
 
     // submit button
 
@@ -387,73 +398,89 @@ public class GUIView extends BaseView implements DatabaseView {
 
     private final Collection<B> bParams;
 
-    private final Map<MenuButton, ToggleGroup> menuButtonToToggleGroup;
-
-    private final Map<HBox, Triple<MenuButton, MenuButton, MenuButton>> optionBoxToMenuButtons;
+    private final Map<HBox, Triple<ChoiceBox<A>, ChoiceBox<Comparison>, ChoiceBox<B>>> optionBoxToChoiceBox;
 
     GenericComparisonVBox(Collection<A> aParams, Collection<B> bParams) {
       if (aParams == null || aParams.isEmpty() || bParams == null || bParams.isEmpty()) {
         throw new IllegalArgumentException("Given collections of params can't be null!");
       }
-      menuButtonToToggleGroup = new HashMap<>();
-      optionBoxToMenuButtons = new HashMap<>();
+      optionBoxToChoiceBox = new HashMap<>();
       this.aParams = aParams;
       this.bParams = bParams;
-      holdingBox = new VBox(getNewOption());
+      holdingBox = new VBox();
+      addNewOption();
     }
 
-    private <T> MenuButton setUpMenuButton(Collection<T> searchOptions) {
+    private <T> ChoiceBox<T> setUpChoiceBox(Collection<T> searchOptions) {
       if (searchOptions == null || searchOptions.isEmpty()) {
         throw new IllegalArgumentException("Given search options can't be null or empty!");
       }
-      List<RadioMenuItem> radioMenuItems = searchOptions.stream().map(Object::toString)
-          .map(RadioMenuItem::new).collect(Collectors.toList());
 
-      ToggleGroup toggleGroup = new ToggleGroup();
-      for (RadioMenuItem radioMenuItem : radioMenuItems) {
-        radioMenuItem.setToggleGroup(toggleGroup);
-      }
-
-      MenuButton menuButton = new MenuButton();
-      menuButton.getItems().addAll(radioMenuItems);
-      menuButtonToToggleGroup.put(menuButton, toggleGroup);
-
-      return menuButton;
+      ChoiceBox<T> choiceBox = new ChoiceBox<T>();
+      choiceBox.getItems().addAll(searchOptions);
+      return choiceBox;
     }
 
-    private HBox getNewOption() {
-      MenuButton aSelectionMenu = setUpMenuButton(aParams);
-
-      MenuButton comparisonSelectionMenu = setUpMenuButton(Arrays.asList(Comparison.values()));
-
-      MenuButton bSelectionMenu = setUpMenuButton(bParams);
+    private void addNewOption() {
+      ChoiceBox<A> aSelectionMenu = setUpChoiceBox(aParams);
+      ChoiceBox<Comparison> comparisonSelectionMenu = setUpChoiceBox(Arrays.asList(Comparison.values()));
+      ChoiceBox<B> bSelectionMenu = setUpChoiceBox(bParams);
 
       Button addRemoveOptionButton = new Button(GenericComparisonVBox.addButtonText);
       HBox optionBox = new HBox(aSelectionMenu, comparisonSelectionMenu,
           bSelectionMenu, addRemoveOptionButton);
 
       addRemoveOptionButton.setOnAction(actionEvent -> {
-        if (addRemoveOptionButton.getText().equals(GenericComparisonVBox.addButtonText)) {
+        // All associated choice boxes must have been selected
+        if (addRemoveOptionButton.getText().equals(GenericComparisonVBox.addButtonText) &&
+        hasChoiceBoxBeenSelected(aSelectionMenu) &&
+        hasChoiceBoxBeenSelected(comparisonSelectionMenu) &&
+        hasChoiceBoxBeenSelected(bSelectionMenu)) {
+          // If so change to delete mode and add a new option
           addRemoveOptionButton.setText(GenericComparisonVBox.removeButtonText);
-          getNewOption();
+          addNewOption();
         }
         else {
-          if (holdingBox.getChildren().size() > 1) {
-            holdingBox.getChildren().remove(optionBox);
-
+          // In delete mode, only remove if there is at least one other option box
+          ObservableList<Node> children = holdingBox.getChildren();
+          if (children.size() > 1) {
+            children.remove(optionBox);
+            optionBoxToChoiceBox.remove(optionBox);
           }
+
+          // TODO need to change remaining option box to add mode?
         }
       });
 
-      return optionBox;
+      optionBoxToChoiceBox.put(optionBox, new Triple<>(aSelectionMenu, comparisonSelectionMenu, bSelectionMenu));
+      holdingBox.getChildren().addAll(optionBox);
     }
 
-    Set<Triple<String, Comparison, String>> getParams() {
-      // TODO remove toggle group, switch mapping to radiobutton directly
-      Set<Triple<String, Comparison, String>> selectedParams = new HashSet<>();
-      for (HBox optionBox : optionBoxToMenuButtons.keySet()) {
+    private <T> boolean hasChoiceBoxBeenSelected(ChoiceBox<T> choiceBox) {
+      if (choiceBox == null) {
+        throw new IllegalArgumentException("Given choice box can't be null!");
+      }
+      return choiceBox.getValue() != null;
+    }
 
-        Triple<MenuButton, MenuButton, MenuButton> associatedMenuButtons = optionBoxToMenuButtons.get(optionBox);
+    Set<Triple<A, Comparison, B>> getParams() {
+      // TODO remove toggle group, switch mapping to radiobutton directly
+      Set<Triple<A, Comparison, B>> selectedParams = new HashSet<>();
+      for (HBox optionBox : optionBoxToChoiceBox.keySet()) {
+
+        Triple<ChoiceBox<A>, ChoiceBox<Comparison>, ChoiceBox<B>> associatedChoiceBoxes =
+            optionBoxToChoiceBox.get(optionBox);
+        ChoiceBox<A> aChoiceBox = associatedChoiceBoxes.getA();
+        ChoiceBox<Comparison> comparisonChoiceBox = associatedChoiceBoxes.getB();
+        ChoiceBox<B> bChoiceBox = associatedChoiceBoxes.getC();
+
+        if (hasChoiceBoxBeenSelected(aChoiceBox) &&
+            hasChoiceBoxBeenSelected(comparisonChoiceBox) &&
+            hasChoiceBoxBeenSelected(bChoiceBox)) {
+          selectedParams.add(new Triple<>(aChoiceBox.getValue(),
+              comparisonChoiceBox.getValue(),
+              bChoiceBox.getValue()));
+        }
       }
       return selectedParams;
     }
