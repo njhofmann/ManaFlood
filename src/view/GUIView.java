@@ -3,7 +3,6 @@ package view;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,14 +16,19 @@ import java.util.stream.IntStream;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import relay.DatabaseViewConnection;
 import value_objects.card.Card;
 import value_objects.card.query.CardQuery;
@@ -44,6 +48,8 @@ public class GUIView extends BaseView implements DatabaseView {
   private static final int minSearchOptionNumber = -2;
 
   private static final int maxSearchOptionNumber = 21;
+
+  private Pair<String, String> newDeckNameAndDesp;
 
   private HBox rootPane;
 
@@ -91,6 +97,9 @@ public class GUIView extends BaseView implements DatabaseView {
     HBox deckAndCardSelectionPaneButtons = new HBox(viewAvailableDecksButton, cardSelectionButton);
 
     addNewDeckButton = new Button("New Deck");
+    addNewDeckButton.setOnAction(actionEvent -> {
+      getSetAndAddNewDeckNameAndDesp();
+    });
 
     availableDecksDisplay = new VBox();
 
@@ -103,7 +112,6 @@ public class GUIView extends BaseView implements DatabaseView {
     // Set button such that it makes available decks display visible to the user
     viewAvailableDecksButton.setOnAction(actionEvent -> {
       List<Node> children = deckAndCardSelectionPane.getChildren();
-      System.out.println(children.size());
       if (children.size() > 1) {
         children.remove(children.size() - 1);
         children.add(availableDecksDisplay);
@@ -190,89 +198,135 @@ public class GUIView extends BaseView implements DatabaseView {
     }
   }
 
-  @Override
-  public void acceptCardQuery(CardQuery cardQuery) throws IllegalArgumentException,
-      SQLException {
-    haveRelayRunnablesBeenAssigned();
-    setCardQuery(cardQuery);
+  /**
+   * Opens a new window prompt for the user to enter the name and description for a new deck by
+   * resetting the value of {@link GUIView#newDeckNameAndDesp}, then calling the
+   * Runnable associated with the {@link DatabaseViewConnection#NewDeck}.
+   */
+  private void getSetAndAddNewDeckNameAndDesp() {
+    Stage stage = new Stage();
+    GridPane gridPane = new GridPane();
 
-    //TODO setup card query as needed
+    Label nameLabel = new Label("Name:");
+    gridPane.add(nameLabel, 0, 0);
 
-    // by name
-    SearchOptionVBox nameOptionVBox = new DynamicSearchOptionVBox();
+    TextField nameField = new TextField();
+    gridPane.add(nameField, 1, 0);
 
-    // by text
-    SearchOptionVBox textOptionVBox = new DynamicSearchOptionVBox();
+    Label despLabel = new Label("Description:");
+    gridPane.add(despLabel, 0, 1);
 
-    // by color
-    SearchOptionVBox colorOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableColors());
+    TextField despField = new TextField();
+    gridPane.add(despField, 1, 1);
 
-    // by color identity
-    SearchOptionVBox colorIdentityOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableColors());
-
-    // by supertype
-    SearchOptionVBox supertypeOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableSupertypes());
-
-    // by type
-    SearchOptionVBox typeOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableTypes());
-
-    // by subtype
-    SearchOptionVBox subtypeOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableSubtypes());
-
-    // by block
-    SearchOptionVBox blockOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableBlocks());
-
-    // by set
-    SearchOptionVBox setOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableSets());
-
-    // by artist
-    SearchOptionVBox artistOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableArtists());
-
-    // by rarity
-    SearchOptionVBox rarityOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableRarityTypes());
-
-    // by flavor text
-    SearchOptionVBox flavorTextOptionVBox = new DynamicSearchOptionVBox();
-
-    // by stat
-    GenericComparisonVBox<Stat, Integer> statOptionVBox = new GenericComparisonVBox<>(
-        Arrays.asList(Stat.values()),
-        IntStream.range(minSearchOptionNumber, maxSearchOptionNumber).boxed().collect(Collectors.toList()));
-
-    //by stat vs stat
-    GenericComparisonVBox<Stat, Stat> statVsStatOptionVBox = new GenericComparisonVBox<>(
-        Arrays.asList(Stat.values()),
-        Arrays.asList(Stat.values()));
-
-    // by mana type
-    GenericComparisonVBox<String, Integer> manaTypeOptionVBox = new GenericComparisonVBox<>(
-        cardQuery.getAvailableManaTypes(),
-        IntStream.range(minSearchOptionNumber, maxSearchOptionNumber).boxed().collect(Collectors.toList()));
-
-    // submit button
-    Button submitQuery = new Button("Submit");
-    submitQuery.setOnAction(actionEvent -> {
-      // add entered info into card query
-
-      // enter stat info
-      for (Triple<Stat, Comparison, Integer> statOption : statOptionVBox.getParams()) {
-        cardQuery.byStat(statOption.getA(), statOption.getB(), statOption.getC());
+    Button submitButton = new Button("Submit");
+    gridPane.add(submitButton, 0, 2);
+    submitButton.setOnAction(actionEvent -> {
+      if (!nameField.getText().isEmpty()) {
+        newDeckNameAndDesp = new Pair<>(nameField.getText(), despField.getText());
+        stage.close();
+        runAssociatedRelayRunnable(DatabaseViewConnection.NewDeck);
       }
-      // TODO add info to card query
-
-      // submit for card query
-      runAssociatedRelayRunnable(DatabaseViewConnection.QueryCards);
     });
 
-    // display options
-    ObservableList<Node> displayChildren = cardSelectionResultDisplay.getChildren();
-    displayChildren.clear();
-    displayChildren.addAll(nameOptionVBox, textOptionVBox, colorOptionVBox,
-        colorIdentityOptionVBox, supertypeOptionVBox, typeOptionVBox,
-        subtypeOptionVBox, blockOptionVBox, setOptionVBox,
-        artistOptionVBox, rarityOptionVBox, flavorTextOptionVBox,
-        statOptionVBox, statVsStatOptionVBox, manaTypeOptionVBox,
-        submitQuery);
+    Button cancelButton = new Button("Cancel");
+    gridPane.add(cancelButton, 1, 2);
+    cancelButton.setOnAction(actionEvent -> {
+      stage.close();
+    });
+    stage.setScene(new Scene(gridPane));
+    stage.show();
+  }
+
+  @Override
+  public void acceptCardQuery(CardQuery cardQuery) throws IllegalArgumentException {
+
+    try {
+      haveRelayRunnablesBeenAssigned();
+      setCardQuery(cardQuery);
+
+      // by name
+      SearchOptionVBox nameOptionVBox = new DynamicSearchOptionVBox();
+
+      // by text
+      SearchOptionVBox textOptionVBox = new DynamicSearchOptionVBox();
+
+      // by color
+      SearchOptionVBox colorOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableColors());
+
+      // by color identity
+      SearchOptionVBox colorIdentityOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableColors());
+
+      // by supertype
+      SearchOptionVBox supertypeOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableSupertypes());
+
+      // by type
+      SearchOptionVBox typeOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableTypes());
+
+      // by subtype
+      SearchOptionVBox subtypeOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableSubtypes());
+
+      // by block
+      SearchOptionVBox blockOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableBlocks());
+
+      // by set
+      SearchOptionVBox setOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableSets());
+
+      // by artist
+      SearchOptionVBox artistOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableArtists());
+
+      // by rarity
+      SearchOptionVBox rarityOptionVBox = new StaticSearchOptionVBox(cardQuery.getAvailableRarityTypes());
+
+      // by flavor text
+      SearchOptionVBox flavorTextOptionVBox = new DynamicSearchOptionVBox();
+
+      // by stat
+      GenericComparisonVBox<Stat, Integer> statOptionVBox = new GenericComparisonVBox<>(
+          Arrays.asList(Stat.values()),
+          IntStream.range(minSearchOptionNumber, maxSearchOptionNumber).boxed().collect(Collectors.toList()));
+
+      //by stat vs stat
+      GenericComparisonVBox<Stat, Stat> statVsStatOptionVBox = new GenericComparisonVBox<>(
+          Arrays.asList(Stat.values()),
+          Arrays.asList(Stat.values()));
+
+      // by mana type
+      GenericComparisonVBox<String, Integer> manaTypeOptionVBox = new GenericComparisonVBox<>(
+          cardQuery.getAvailableManaTypes(),
+          IntStream.range(minSearchOptionNumber, maxSearchOptionNumber).boxed().collect(Collectors.toList()));
+
+      // submit button
+      Button submitQuery = new Button("Submit");
+      submitQuery.setOnAction(actionEvent -> {
+        // add entered info into card query
+
+        // enter stat info
+        for (Triple<Stat, Comparison, Integer> statOption : statOptionVBox.getParams()) {
+          cardQuery.byStat(statOption.getA(), statOption.getB(), statOption.getC());
+        }
+        // TODO add info to card query
+
+        // submit for card query
+        runAssociatedRelayRunnable(DatabaseViewConnection.QueryCards);
+      });
+
+      // display options
+      ObservableList<Node> displayChildren = cardSelectionResultDisplay.getChildren();
+      displayChildren.clear();
+      displayChildren.addAll(nameOptionVBox, textOptionVBox, colorOptionVBox,
+          colorIdentityOptionVBox, supertypeOptionVBox, typeOptionVBox,
+          subtypeOptionVBox, blockOptionVBox, setOptionVBox,
+          artistOptionVBox, rarityOptionVBox, flavorTextOptionVBox,
+          statOptionVBox, statVsStatOptionVBox, manaTypeOptionVBox,
+          submitQuery);
+    }
+    catch (SQLException e) {
+      Alert error = new Alert(AlertType.ERROR);
+      error.setHeaderText("Card Query Error");
+      error.setContentText(e.getMessage());
+      error.show();
+    }
   }
 
   private abstract class SearchOptionVBox extends VBox {
@@ -527,8 +581,11 @@ public class GUIView extends BaseView implements DatabaseView {
   }
 
   @Override
-  public Deck deckToAdd() throws IllegalStateException {
-    return null;
+  public Pair<String, String> newDeckToAdd() throws IllegalStateException {
+    if (newDeckNameAndDesp == null) {
+      throw new IllegalStateException("Name and desp for a new deck have not been set!");
+    }
+    return newDeckNameAndDesp;
   }
 
   @Override

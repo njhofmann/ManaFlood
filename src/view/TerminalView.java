@@ -54,7 +54,7 @@ public class TerminalView extends BaseView implements DatabaseView {
   }
 
   @Override
-  public Deck deckToAdd() throws IllegalStateException {
+  public Deck newDeckToAdd() throws IllegalStateException {
     return null;
   }
 

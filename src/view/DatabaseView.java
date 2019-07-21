@@ -84,11 +84,10 @@ public interface DatabaseView {
   int deckToDelete() throws IllegalStateException;
 
   /**
-   * Retrieves a new {@link Deck} the user has created to add to the CDDB.
-   * @return Deck to add to the CDDB
-   * @throws IllegalStateException if no deck has created to add
+   * Retrieves a name and a description for a new {@link Deck} the user wishes to add to the CDDB.
+   * @return name and desp of a new Deck to add to CDDB
    */
-  Deck deckToAdd() throws IllegalStateException;
+  Pair<String, String> newDeckToAdd() throws IllegalStateException;
 
   /**
    * Retrieves a new {@link DeckInstance} the user has created to add to the CDDB.
@@ -112,8 +111,8 @@ public interface DatabaseView {
   Pair<Integer, String> newDeckDesp() throws IllegalStateException;
 
   /**
-   *
-   * @return
+   * Returns the parent pane of this {@link DatabaseView} so that it can be displayed to the user.
+   * @return parent pane of this DatabaseView
    */
   Parent asParent();
 }

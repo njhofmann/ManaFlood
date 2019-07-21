@@ -63,6 +63,15 @@ public interface DatabaseChannel {
   Deck getDeck(int deckID) throws IllegalArgumentException, SQLException;
 
   /**
+   * Adds a new {@link Deck} to the CDDB with the given name and description.
+   * @param name name of new Deck
+   * @param desp description of new deck
+   * @throws IllegalArgumentException if either param is null, or if the name is empty or blank
+   * @throws SQLException if there is an error to add new Deck with given info to the CDDB
+   */
+  void addDeck(String name, String desp) throws IllegalArgumentException, SQLException;
+
+  /**
    * Adds this {@link Deck} and its {@link DeckInstance}s to the CDDB.
    * @param deck deck to add
    * @throws IllegalArgumentException if given deck is null, or if there is already a deck in the

@@ -75,7 +75,7 @@ public class DefaultChannelViewRelay implements ChannelViewRelay {
     relayRunnables.put(DatabaseViewConnection.RetrieveDeckInfo, new RetrieveDeckInfo());
     relayRunnables.put(DatabaseViewConnection.DeleteDeck, new DeleteDeck());
     relayRunnables.put(DatabaseViewConnection.QueryCards, new QueryCards());
-    relayRunnables.put(DatabaseViewConnection.NewDeck, new AddDeck());
+    relayRunnables.put(DatabaseViewConnection.NewDeck, new NewDeck());
     relayRunnables.put(DatabaseViewConnection.NewDeckInstance, new AddDeckInstance());
     relayRunnables.put(DatabaseViewConnection.EditDeckName, new ChangeDeckName());
     relayRunnables.put(DatabaseViewConnection.EditDeckDesp, new ChangeDeckDescription());
@@ -199,12 +199,13 @@ public class DefaultChannelViewRelay implements ChannelViewRelay {
    * {@link Runnable} for retrieving a new {@link Deck} from the {@link DatabaseView}
    * and adding it in the CDDB through the {@link DatabaseChannel}.
    */
-  private class AddDeck implements Runnable {
+  private class NewDeck implements Runnable {
     @Override
     public void run() {
       try {
         // Add deck
-        databaseChannel.addDeck(databaseView.deckToAdd());
+        Pair<String, String> nameAndDesp = databaseView.newDeckToAdd();
+        databaseChannel.addDeck(nameAndDesp.getA(), nameAndDesp.getB());
 
         // Update list of available decks
         retrieveAvailableDecksInfo();

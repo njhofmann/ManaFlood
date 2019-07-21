@@ -225,6 +225,28 @@ public class DefaultDatabaseChannel extends DatabasePort implements DatabaseChan
   }
 
   @Override
+  public void addDeck(String name, String desp) throws IllegalArgumentException, SQLException {
+    if (name == null || desp == null) {
+      throw new IllegalArgumentException("Given params can't be null!");
+    }
+    else if (name.isBlank()) {
+      throw new IllegalArgumentException("Given name can't be empty or blank!");
+    }
+
+    // Assign ID to new Deck by getting all decks in CDDB, finding max ID, and adding 1.
+    // If no decks added, begin with ID of 0.
+    int newDeckId = 0;
+    SortedSet<Integer> sortedDeckIds = new TreeSet<>(getDecks().keySet());
+    if (!sortedDeckIds.isEmpty()) {
+      newDeckId = sortedDeckIds.last() + 1;
+    }
+
+    SortedSet<DeckInstance> history = new TreeSet<>();
+    history.add(new DefaultDeckInstance(newDeckId, LocalDateTime.now(), new HashMap<>(), new HashMap<>()));
+    addDeck(new DefaultDeck(newDeckId, name, desp, history));
+  }
+
+  @Override
   public void addDeck(Deck deck) throws IllegalArgumentException, SQLException {
     if (deck == null) {
       throw new IllegalArgumentException("Given deck can't be null!");
