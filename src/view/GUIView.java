@@ -41,6 +41,10 @@ import value_objects.utility.Triple;
  */
 public class GUIView extends BaseView implements DatabaseView {
 
+  private static final int minSearchOptionNumber = -2;
+
+  private static final int maxSearchOptionNumber = 21;
+
   private HBox rootPane;
 
   private VBox deckAndCardSelectionPane;
@@ -233,21 +237,42 @@ public class GUIView extends BaseView implements DatabaseView {
     // by stat
     GenericComparisonVBox<Stat, Integer> statOptionVBox = new GenericComparisonVBox<>(
         Arrays.asList(Stat.values()),
-        IntStream.range(-2, 21).boxed().collect(Collectors.toList()));
+        IntStream.range(minSearchOptionNumber, maxSearchOptionNumber).boxed().collect(Collectors.toList()));
 
     //by stat vs stat
-    GenericComparisonVBox<Stat, Integer> statVsStatOptionVBox = new GenericComparisonVBox<>(
+    GenericComparisonVBox<Stat, Stat> statVsStatOptionVBox = new GenericComparisonVBox<>(
         Arrays.asList(Stat.values()),
         Arrays.asList(Stat.values()));
 
     // by mana type
-    GenericComparisonVBox<Stat, Integer> manaTypeOptionVBox = new GenericComparisonVBox<>(
+    GenericComparisonVBox<String, Integer> manaTypeOptionVBox = new GenericComparisonVBox<>(
         cardQuery.getAvailableManaTypes(),
-        IntStream.range(-2, 21).boxed().collect(Collectors.toList()));
+        IntStream.range(minSearchOptionNumber, maxSearchOptionNumber).boxed().collect(Collectors.toList()));
 
     // submit button
+    Button submitQuery = new Button("Submit");
+    submitQuery.setOnAction(actionEvent -> {
+      // add entered info into card query
 
+      // enter stat info
+      for (Triple<Stat, Comparison, Integer> statOption : statOptionVBox.getParams()) {
+        cardQuery.byStat(statOption.getA(), statOption.getB(), statOption.getC());
+      }
+      // TODO add info to card query
 
+      // submit for card query
+      runAssociatedRelayRunnable(DatabaseViewConnection.QueryCards);
+    });
+
+    // display options
+    ObservableList<Node> displayChildren = cardSelectionResultDisplay.getChildren();
+    displayChildren.clear();
+    displayChildren.addAll(nameOptionVBox, textOptionVBox, colorOptionVBox,
+        colorIdentityOptionVBox, supertypeOptionVBox, typeOptionVBox,
+        subtypeOptionVBox, blockOptionVBox, setOptionVBox,
+        artistOptionVBox, rarityOptionVBox, flavorTextOptionVBox,
+        statOptionVBox, statVsStatOptionVBox, manaTypeOptionVBox,
+        submitQuery);
   }
 
   private abstract class SearchOptionVBox extends VBox {
